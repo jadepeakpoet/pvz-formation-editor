@@ -457,8 +457,8 @@ class FormationRepository {
     });
   }
 
-  /// Plan without writing. Multiple protected sessions in one group remain
-  /// separate; an unprotected head is never preferred over an active session.
+  /// Plan without writing. Keep the earliest-modified copy. Newer protected
+  /// sessions remain separate until they can be safely deduplicated.
   Future<ArchiveDedupPlan> planDuplicateArchives(
           {Set<String> protectedArchiveIds = const {}}) =>
       _serial(() async {
@@ -471,11 +471,8 @@ class FormationRepository {
         var preserved = 0, skippedProtected = 0;
         for (final rows in byContent.values.where((rows) => rows.length > 1)) {
           rows.sort((a, b) {
-            final protectedA = protectedArchiveIds.contains(a['id']);
-            final protectedB = protectedArchiveIds.contains(b['id']);
-            if (protectedA != protectedB) return protectedA ? -1 : 1;
             final date =
-                (b['updated_at'] as int).compareTo(a['updated_at'] as int);
+                (a['updated_at'] as int).compareTo(b['updated_at'] as int);
             return date == 0
                 ? (a['id'] as String).compareTo(b['id'] as String)
                 : date;
@@ -686,6 +683,9 @@ class FormationRepository {
             final contentChanged = (name != null && name != previous['name']) ||
                 (note != null && note != previous['note']) ||
                 (tags != null && jsonEncode(tags) != previous['tags']);
+            final favoriteChanged = favorite != null &&
+                (favorite ? 1 : 0) != previous['favorite'];
+            if (!contentChanged && !favoriteChanged) return;
             final now =
                 await _nextArchiveTimestamp(id, previous['updated_at'] as int);
             if (contentChanged) {

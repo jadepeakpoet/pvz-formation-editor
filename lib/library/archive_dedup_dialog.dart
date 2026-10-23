@@ -39,7 +39,7 @@ Future<ArchiveDedupResult?> showArchiveDedupDialog(
                         const SizedBox(height: 8),
                         Text(
                             AppLanguage.text(
-                                '仅合并阵型内容、备注、标签和收藏状态相同的存档。优先保留正在打开的存档，否则保留最近修改的一份；历史版本会完整保留。'),
+                                '仅合并阵型内容、备注、标签和收藏状态相同的存档，保留修改时间最早的一份；正在打开的其他副本暂不清理，历史版本会完整保留。'),
                             style: const TextStyle(fontSize: 12)),
                         const SizedBox(height: 12),
                         ConstrainedBox(

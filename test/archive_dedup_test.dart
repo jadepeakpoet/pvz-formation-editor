@@ -56,7 +56,7 @@ void main() {
   }
 
   test(
-      'read-only plan ignores local object IDs and keeps latest head unchanged',
+      'read-only plan ignores local object IDs and keeps earliest-modified head unchanged',
       () async {
     await add('a', doc: document('a', value: 0));
     await repo.saveArchive(
@@ -65,7 +65,7 @@ void main() {
     await repo.saveArchive(
         id: 'unused', updateId: 'b', name: '阵型-b', document: document('b'));
     sql("UPDATE archives SET updated_at=10 WHERE id='a'");
-    sql("UPDATE archives SET updated_at=20 WHERE id='b'");
+    sql("UPDATE archives SET updated_at=1, created_at=20 WHERE id='b'");
     final before = (await repo.listArchives()).firstWhere((a) => a.id == 'b');
     final plan = await repo.planDuplicateArchives();
     expect(plan.groupsCount, 1);
@@ -92,6 +92,48 @@ void main() {
         true);
     expect(history.map((v) => v.document['sunValue']), containsAll([0, 1, 2]));
     expect((await repo.planDuplicateArchives()).removableCount, 0);
+  });
+
+  test('earliest modification decides keeper independently of creation and ID order', () async {
+    await add('a');
+    await add('z');
+    sql("UPDATE archives SET created_at=10, updated_at=100 WHERE id='a'");
+    sql("UPDATE archives SET created_at=20, updated_at=50 WHERE id='z'");
+    final plan = await repo.planDuplicateArchives();
+    expect(plan.groups.single.keeper.id, 'z');
+    await repo.removeDuplicateArchives(plan);
+    expect((await repo.listArchives()).single.id, 'z');
+  });
+
+  test('unchanged saves and metadata keep modification time and history', () async {
+    final saved = await add('a', tags: ['标签'], note: '备注');
+    sql("UPDATE archives SET updated_at=10 WHERE id='a'");
+    for (var i = 0; i < 2; i++) {
+      final same = await repo.saveArchive(id: 'unused', updateId: 'a',
+          name: saved.name, document: saved.document, note: saved.note, tags: saved.tags);
+      expect(same.updatedAt.millisecondsSinceEpoch, 10);
+      await repo.updateArchiveMetadata('a', name: saved.name, note: saved.note,
+          tags: saved.tags, favorite: false);
+      await repo.updateArchiveMetadata('a');
+    }
+    expect((await repo.listArchives()).single.updatedAt.millisecondsSinceEpoch, 10);
+    expect(await repo.listVersions('a'), isEmpty);
+    await repo.updateArchiveMetadata('a', favorite: true);
+    final changed = (await repo.listArchives()).single;
+    expect(changed.updatedAt.millisecondsSinceEpoch, greaterThan(10));
+    await repo.updateArchiveMetadata('a', favorite: true);
+    expect((await repo.listArchives()).single.updatedAt, changed.updatedAt);
+    await repo.updateArchiveMetadata('a', note: '新的备注');
+    expect((await repo.listArchives()).single.updatedAt.isAfter(changed.updatedAt), isTrue);
+    expect((await repo.listVersions('a')).length, 1);
+  });
+
+  test('equal modification times use stable IDs', () async {
+    await add('a');
+    await add('b');
+    sql("UPDATE archives SET created_at=10, updated_at=20 WHERE id='b'");
+    sql("UPDATE archives SET created_at=10, updated_at=20 WHERE id='a'");
+    expect((await repo.planDuplicateArchives()).groups.single.keeper.id, 'a');
   });
 
   test(
@@ -131,20 +173,21 @@ void main() {
     expect((await repo.planDuplicateArchives()).removableCount, 1);
   });
 
-  test('protected active heads win and every other protected head survives',
+  test('earliest head wins while newer protected heads survive',
       () async {
     for (final id in ['a', 'b', 'c', 'd']) {
       await add(id);
     }
-    sql("UPDATE archives SET updated_at=10 WHERE id='a'");
-    sql("UPDATE archives SET updated_at=20 WHERE id='c'");
+    sql("UPDATE archives SET created_at=30, updated_at=1 WHERE id='b'");
+    sql("UPDATE archives SET created_at=10, updated_at=10 WHERE id='a'");
+    sql("UPDATE archives SET created_at=20, updated_at=20 WHERE id='c'");
     final plan =
         await repo.planDuplicateArchives(protectedArchiveIds: {'a', 'c'});
-    expect(plan.groups.single.keeper.id, 'c');
-    expect(plan.skippedProtectedCount, 1);
-    expect(plan.removableCount, 2);
+    expect(plan.groups.single.keeper.id, 'b');
+    expect(plan.skippedProtectedCount, 2);
+    expect(plan.removableCount, 1);
     await repo.removeDuplicateArchives(plan, protectedArchiveIds: {'a', 'c'});
-    expect((await repo.listArchives()).map((a) => a.id).toSet(), {'a', 'c'});
+    expect((await repo.listArchives()).map((a) => a.id).toSet(), {'a', 'b', 'c'});
   });
 
   test(
@@ -179,7 +222,7 @@ void main() {
     await add('a');
     await add('b');
     sql("UPDATE archives SET updated_at=10 WHERE id='a'");
-    sql("UPDATE archives SET updated_at=20 WHERE id='b'");
+    sql("UPDATE archives SET updated_at=1, created_at=20 WHERE id='b'");
     await repo.rememberOpenedArchive('a');
     sql("INSERT INTO legacy_draft_archives VALUES('legacy-draft','a')");
     final plan = await repo.planDuplicateArchives();
@@ -204,7 +247,7 @@ void main() {
     await add('a');
     await add('b');
     sql("UPDATE archives SET updated_at=10 WHERE id='a'");
-    sql("UPDATE archives SET updated_at=20 WHERE id='b'");
+    sql("UPDATE archives SET updated_at=1, created_at=20 WHERE id='b'");
     await repo.rememberOpenedArchive('a');
     final plan = await repo.planDuplicateArchives();
     sql("CREATE TRIGGER stop_delete BEFORE DELETE ON archives BEGIN SELECT RAISE(ABORT,'blocked'); END");

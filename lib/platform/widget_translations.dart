@@ -14,8 +14,8 @@ const Map<String, String> widgetTranslations = {
   '没有可清理的重复存档。正在打开的存档会保留。': 'No removable duplicates. Open archives are kept.',
   '发现 {groups} 组重复，可清理 {count} 个存档。':
       'Found {groups} duplicate groups; {count} archives can be removed.',
-  '仅合并阵型内容、备注、标签和收藏状态相同的存档。优先保留正在打开的存档，否则保留最近修改的一份；历史版本会完整保留。':
-      'Only matching formations, notes, tags and favorite status are merged. Open archives are kept first; otherwise the most recently changed copy is kept. All version history is retained.',
+  '仅合并阵型内容、备注、标签和收藏状态相同的存档，保留修改时间最早的一份；正在打开的其他副本暂不清理，历史版本会完整保留。':
+      'Only matching formations, notes, tags and favorite status are merged. The earliest-modified copy is kept. Other open copies are skipped, and all version history is retained.',
   '保留：{name}；清理 {count} 份重复': 'Keep: {name}; remove {count} duplicates',
   '已清理 {count} 个重复存档，历史版本已保留。':
       'Removed {count} duplicate archives. Version history was retained.',
