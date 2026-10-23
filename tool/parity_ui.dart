@@ -173,7 +173,7 @@ Future<void> main() async {
           '图鉴选卡': '铲除范围：',
           '镜像窗口': '镜像窗口（最多三个独立快照）',
           '载入导出': '1.载入和导出布阵字符串',
-          '选项设置': '更换地图 '
+          '选项设置': '更换地图'
         }[tab]!;
         h.expect(
             tab == '镜像窗口'
@@ -185,15 +185,15 @@ Future<void> main() async {
       });
     }
     for (final map in BoardMap.all.where((m) => m.originalIndex != null)) {
-      await h.run('map.${map.id}', '原站地图选择再应用：${map.name}', () async {
+      await h.run('map.${map.id}', '地图弹窗点击即应用：${map.name}', () async {
         await fresh('选项设置');
         final before = session.document.fingerprint;
-        await h.choose<String>(map.id,
-            where: (w) => w.key == const ValueKey('original-lMap'));
-        h.expect(session.document.fingerprint == before,
-            'Selecting a map must not change document before apply');
         await h.tapElement(
-            h.find((w) => w.key == const ValueKey('original-btnMap-reset')));
+            h.find((w) => w.key == const ValueKey('settings-change-map')));
+        h.expect(session.document.fingerprint == before,
+            'Opening map dialog must not change document');
+        await h.tapElement(
+            h.find((w) => w.key == ValueKey('map-picker-map-${map.id}')));
         h.expect(
             session.document.mapId == map.id && session.document.pieces.isEmpty,
             'Map reset/apply policy differs');
@@ -201,18 +201,22 @@ Future<void> main() async {
     }
     for (final keep in [false, true]) {
       await h.run('map.policy.${keep ? 'keep' : 'reset'}',
-          '原站双换图按钮：${keep ? '保留' : '清空'}植物', () async {
+          '地图保留植物勾选：${keep ? '保留' : '清空'}植物', () async {
         await fresh();
         await seed();
         await cell(5, 0);
         await h.tap('选项设置');
         final before = session.document.fingerprint;
-        await h.choose<String>('day',
-            where: (w) => w.key == const ValueKey('original-lMap'));
+        await h.tapElement(
+            h.find((w) => w.key == const ValueKey('settings-change-map')));
+        if (keep) {
+          await h.tapElement(
+              h.find((w) => w.key == const ValueKey('map-picker-keep-plants')));
+        }
         h.expect(session.document.fingerprint == before,
-            'Pending map selection changed source board');
-        await h.tapElement(h.find((w) =>
-            w.key == ValueKey('original-btnMap-${keep ? 'keep' : 'reset'}')));
+            'Map checkbox must not change source board');
+        await h.tapElement(
+            h.find((w) => w.key == const ValueKey('map-picker-map-day')));
         h.expect(
             session.document.mapId == 'day' &&
                 session.document.pieces.length == (keep ? 1 : 0),
@@ -222,9 +226,11 @@ Future<void> main() async {
     for (final map in BoardMap.all.where((m) => m.originalIndex != null)) {
       await h.run('map-download.${map.id}', '下载原站地图原文件：${map.name}', () async {
         await fresh('选项设置');
+        await h.tapElement(
+            h.find((w) => w.key == const ValueKey('settings-change-map')));
+        await h.tapElement(
+            h.find((w) => w.key == ValueKey('map-picker-map-${map.id}')));
         final documentBefore = session.document.fingerprint;
-        await h.choose<String>(map.id,
-            where: (w) => w.key == const ValueKey('original-lMap'));
         final before = saved.length;
         await h.tapElement(
             h.find((w) => w.key == const ValueKey('original-imgBack')));
@@ -250,7 +256,7 @@ Future<void> main() async {
         image.dispose();
         codec.dispose();
         h.expect(session.document.fingerprint == documentBefore,
-            'Downloading staged map changed board');
+            'Downloading current map changed board');
       });
     }
     for (final category in ['植物', '僵尸', '物品', '特效']) {

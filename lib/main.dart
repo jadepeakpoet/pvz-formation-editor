@@ -3799,24 +3799,15 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
         const LanguageSelector(),
         const SizedBox(height: 8),
         Row(children: [
-          Text(AppLanguage.text('更换地图 '), style: const TextStyle(fontSize: 12)),
+          classicButton('更换地图', () => unawaited(chooseMapFromCatalog()),
+              key: const ValueKey('settings-change-map')),
           Expanded(
-              child: DropdownButton<String>(
-                  key: const ValueKey('original-lMap'),
-                  isDense: true,
-                  isExpanded: true,
-                  value: pendingMapId ?? s.document.mapId,
-                  style: const TextStyle(fontSize: 12, color: Colors.black),
-                  items: BoardMap.all
-                      .map((m) => DropdownMenuItem(
-                          value: m.id,
-                          child: Text(AppLanguage.text(m.name),
-                              overflow: TextOverflow.ellipsis)))
-                      .toList(),
-                  onChanged: (v) => setState(() => pendingMapId = v))),
+              child: Text(AppLanguage.text(s.document.map.name),
+                  style: const TextStyle(fontSize: 12),
+                  overflow: TextOverflow.ellipsis)),
           classicButton('下载地图', () async {
             try {
-              final map = BoardMap.byId(pendingMapId ?? s.document.mapId);
+              final map = s.document.map;
               final path = 'image/${map.background}';
               final bytes = await rootBundle.load('assets/original/$path');
               await ProjectFiles.save(
@@ -3829,14 +3820,6 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
             }
           }, key: const ValueKey('original-imgBack')),
         ]),
-        Wrap(children: [
-          classicButton('换地图且重置植物', () => applySelectedMap(false),
-              key: const ValueKey('original-btnMap-reset')),
-          classicButton('仅换地图不换植物', () => applySelectedMap(true),
-              key: const ValueKey('original-btnMap-keep'))
-        ]),
-        Text(AppLanguage.text('换不同类型地图不换植物可能会发生坐标不对应'),
-            style: const TextStyle(fontSize: 12)),
         const SizedBox(height: 14),
         originalVolume('cMusic', '音乐音量 ', musicLevel, (i) {
           setState(() => musicLevel = i);

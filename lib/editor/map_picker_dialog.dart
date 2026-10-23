@@ -23,6 +23,18 @@ class _MapPickerDialog extends StatefulWidget {
 
 class _MapPickerDialogState extends State<_MapPickerDialog> {
   late String selectedMapId = widget.currentMapId;
+  bool keepPlants = false;
+
+  void previewMap(String id) {
+    if (selectedMapId != id) setState(() => selectedMapId = id);
+  }
+
+  void chooseMap(String id) {
+    previewMap(id);
+    if (!widget.readOnly) {
+      Navigator.of(context).pop((mapId: id, keepPlants: keepPlants));
+    }
+  }
 
   Widget preview(BoardMap map, {Key? key}) => AspectRatio(
       aspectRatio: 4 / 3,
@@ -44,7 +56,13 @@ class _MapPickerDialogState extends State<_MapPickerDialog> {
               button: true,
               child: InkWell(
                   key: ValueKey('map-picker-map-${map.id}'),
-                  onTap: () => setState(() => selectedMapId = map.id),
+                  onHover: (hovering) {
+                    if (hovering) previewMap(map.id);
+                  },
+                  onFocusChange: (focused) {
+                    if (focused) previewMap(map.id);
+                  },
+                  onTap: () => chooseMap(map.id),
                   child: Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
@@ -84,9 +102,6 @@ class _MapPickerDialogState extends State<_MapPickerDialog> {
     ]);
   }
 
-  void choose(bool keep) =>
-      Navigator.of(context).pop((mapId: selectedMapId, keepPlants: keep));
-
   @override
   Widget build(BuildContext context) {
     final availableHeight = MediaQuery.sizeOf(context).height - 32;
@@ -102,10 +117,32 @@ class _MapPickerDialogState extends State<_MapPickerDialog> {
                 child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Text(AppLanguage.text('更换地图'),
-                          style: const TextStyle(
-                              fontSize: 20, fontWeight: FontWeight.w600)),
-                      const SizedBox(height: 12),
+                      Row(children: [
+                        Expanded(
+                            child: Text(AppLanguage.text('更换地图'),
+                                style: const TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w600))),
+                        TextButton(
+                            key: const ValueKey('map-picker-cancel'),
+                            onPressed: () => Navigator.of(context).pop(),
+                            child: Text(AppLanguage.text('取消'))),
+                      ]),
+                      Row(children: [
+                        SizedBox(
+                            width: 24,
+                            height: 32,
+                            child: Checkbox(
+                                key: const ValueKey('map-picker-keep-plants'),
+                                value: keepPlants,
+                                onChanged: widget.readOnly
+                                    ? null
+                                    : (value) =>
+                                        setState(() => keepPlants = value!))),
+                        const SizedBox(width: 6),
+                        Text(AppLanguage.text('保留植物')),
+                      ]),
+                      const SizedBox(height: 8),
                       Expanded(child: LayoutBuilder(builder: (_, constraints) {
                         if (constraints.maxWidth < 560) {
                           return Column(children: [
@@ -128,31 +165,12 @@ class _MapPickerDialogState extends State<_MapPickerDialog> {
                             ]);
                       })),
                       const SizedBox(height: 8),
-                      Text(AppLanguage.text('保留植物时，超出新地图范围的植物将被移除。'),
+                      Text(
+                          AppLanguage.text(keepPlants
+                              ? '保留植物时，超出新地图范围的植物将被移除。'
+                              : '未勾选“保留植物”，切换地图时将清空植物。'),
                           style: const TextStyle(
                               fontSize: 11, color: Color(0xff63755f))),
-                      const SizedBox(height: 8),
-                      Wrap(
-                          alignment: WrapAlignment.end,
-                          spacing: 8,
-                          runSpacing: 4,
-                          children: [
-                            TextButton(
-                                key: const ValueKey('map-picker-cancel'),
-                                onPressed: () => Navigator.of(context).pop(),
-                                child: Text(AppLanguage.text('取消'))),
-                            OutlinedButton(
-                                key: const ValueKey('map-picker-reset'),
-                                onPressed: widget.readOnly
-                                    ? null
-                                    : () => choose(false),
-                                child: Text(AppLanguage.text('换地图且重置植物'))),
-                            FilledButton(
-                                key: const ValueKey('map-picker-keep'),
-                                onPressed:
-                                    widget.readOnly ? null : () => choose(true),
-                                child: Text(AppLanguage.text('仅换地图不换植物'))),
-                          ]),
                     ]))));
   }
 }

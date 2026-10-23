@@ -1,5 +1,7 @@
 /// English translations for the main editor interface.
 const Map<String, String> mainTranslations = {
+  '保留植物': 'Keep plants',
+  '未勾选“保留植物”，切换地图时将清空植物。': 'Plants will be cleared unless Keep plants is checked.',
   '保留植物时，超出新地图范围的植物将被移除。': 'Plants outside the new map bounds will be removed.',
   '主画面已更新，请重新选择地图': 'The formation changed. Please select the map again.',
   '地图预览': 'Map preview',

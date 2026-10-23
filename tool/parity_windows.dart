@@ -199,11 +199,10 @@ Future<void> toolboxMain() async {
           case 'changeMap':
             await h.tap('选项设置');
             final fingerprint = session.document.fingerprint;
-            await h.choose<String>('day',
-                where: (w) => w.key == const ValueKey('original-lMap'));
+            await h.keyTap('settings-change-map');
             _check(session.document.fingerprint == fingerprint,
-                'Choosing pending map must wait for apply button');
-            await h.keyTap('original-btnMap-reset');
+                'Opening map picker must not change the document');
+            await h.keyTap('map-picker-map-day');
             break;
           case 'preset':
             await h.tap('懒人布局');
