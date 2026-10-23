@@ -95,7 +95,7 @@ BEGIN
             VALUE "InternalName", "pvz_formation_editor" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2026 com.example. All rights reserved." "\0"
             VALUE "OriginalFilename", "pvz_formation_editor.exe" "\0"
-            VALUE "ProductName", "PvZ Formation Editor" "\0"
+            VALUE "ProductName", "PVZ Formation Editor" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

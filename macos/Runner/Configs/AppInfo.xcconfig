@@ -5,7 +5,7 @@
 // 'flutter create' template.
 
 // The application's name. By default this is also the title of the Flutter window.
-PRODUCT_NAME = PvZ Formation Editor
+PRODUCT_NAME = PVZ Formation Editor
 // Keep the executable identity stable for graceful replacement across builds.
 EXECUTABLE_NAME = pvz_formation_editor
 

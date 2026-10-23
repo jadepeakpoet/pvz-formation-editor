@@ -1,9 +1,9 @@
 // Gracefully replace this application across build locations, then launch once.
-// Usage: swift tool/restart_macos_app.swift /absolute/path/to/PvZ Formation Editor.app
+// Usage: swift tool/restart_macos_app.swift /absolute/path/to/PVZ Formation Editor.app
 import Cocoa
 
 guard CommandLine.arguments.count == 2 else {
-  fputs("Usage: restart_macos_app.swift /path/to/PvZ Formation Editor.app\n", stderr)
+  fputs("Usage: restart_macos_app.swift /path/to/PVZ Formation Editor.app\n", stderr)
   exit(2)
 }
 let url = URL(fileURLWithPath: CommandLine.arguments[1]).resolvingSymlinksInPath()
