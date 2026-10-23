@@ -1,0 +1,3882 @@
+{
+  "catalogVersion": 1,
+  "source": "local Canvas placeholder, not original artwork",
+  "objects": [
+    {
+      "id": "lily",
+      "name": "睡莲",
+      "category": "植物",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4284722008,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0.25
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.24
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 0,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "pot",
+      "name": "花盆",
+      "category": "植物",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4290738514,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0.25
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.24
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 0,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "pea",
+      "name": "豌豆射手",
+      "category": "植物",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4285972307,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 10,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "sunflower",
+      "name": "向日葵",
+      "category": "植物",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4293901123,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 10,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "doubleSun",
+      "name": "双子向日葵",
+      "category": "植物",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4293371961,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 10,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "repeater",
+      "name": "双发射手",
+      "category": "植物",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4283276628,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 10,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "gatling",
+      "name": "机枪射手",
+      "category": "植物",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4282745927,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 10,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "snow",
+      "name": "寒冰射手",
+      "category": "植物",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4286630367,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 10,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "wallnut",
+      "name": "坚果墙",
+      "category": "植物",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4290350160,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 10,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "tallnut",
+      "name": "高坚果",
+      "category": "植物",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4288639295,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 10,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "pumpkin",
+      "name": "南瓜头",
+      "category": "植物",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4292839993,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 20,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "coffee",
+      "name": "咖啡豆",
+      "category": "植物",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4287522117,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 30,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "cob",
+      "name": "玉米加农炮",
+      "category": "植物",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4292328533,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        1.44,
+        0.68
+      ],
+      "occupancy": [
+        2,
+        1
+      ],
+      "layer": 10,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "gloom",
+      "name": "忧郁菇",
+      "category": "植物",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4288049848,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 10,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "fume",
+      "name": "大喷菇",
+      "category": "植物",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4289297604,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 10,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "ice",
+      "name": "寒冰菇",
+      "category": "植物",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4289845734,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 10,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "doom",
+      "name": "毁灭菇",
+      "category": "植物",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4285815179,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 10,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "cattail",
+      "name": "香蒲",
+      "category": "植物",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4292058467,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 10,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "umbrella",
+      "name": "叶子保护伞",
+      "category": "植物",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4285904232,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 10,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "spike",
+      "name": "地刺王",
+      "category": "植物",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4287534740,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 10,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "garlic",
+      "name": "大蒜",
+      "category": "植物",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4293255112,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 10,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "melon",
+      "name": "西瓜投手",
+      "category": "植物",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4284786797,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 10,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "winter",
+      "name": "冰瓜",
+      "category": "植物",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4286102726,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 10,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "cherry",
+      "name": "樱桃炸弹",
+      "category": "植物",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4286820201,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 10,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "potato",
+      "name": "土豆雷",
+      "category": "植物",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4286820201,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 10,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "chomper",
+      "name": "大嘴花",
+      "category": "植物",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4286820201,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 10,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "puff",
+      "name": "小喷菇",
+      "category": "植物",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4286820201,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 10,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "sunshroom",
+      "name": "阳光菇",
+      "category": "植物",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4286820201,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 10,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "gravebuster",
+      "name": "墓碑吞噬者",
+      "category": "植物",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4286820201,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 10,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "hypno",
+      "name": "魅惑菇",
+      "category": "植物",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4286820201,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 10,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "scaredy",
+      "name": "胆小菇",
+      "category": "植物",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4286820201,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 10,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "squash",
+      "name": "窝瓜",
+      "category": "植物",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4286820201,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 10,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "threepea",
+      "name": "三线射手",
+      "category": "植物",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4286820201,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 10,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "tangle",
+      "name": "缠绕海草",
+      "category": "植物",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4286820201,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 10,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "jalapeno",
+      "name": "火爆辣椒",
+      "category": "植物",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4286820201,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 10,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "spikeweed",
+      "name": "地刺",
+      "category": "植物",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4286820201,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 10,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "torch",
+      "name": "火炬树桩",
+      "category": "植物",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4286820201,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 10,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "seashroom",
+      "name": "海蘑菇",
+      "category": "植物",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4286820201,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 10,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "plantern",
+      "name": "路灯花",
+      "category": "植物",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4286820201,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 10,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "cactus",
+      "name": "仙人掌",
+      "category": "植物",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4286820201,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 10,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "blover",
+      "name": "三叶草",
+      "category": "植物",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4286820201,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 10,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "splitpea",
+      "name": "裂荚射手",
+      "category": "植物",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4286820201,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 10,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "starfruit",
+      "name": "杨桃",
+      "category": "植物",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4286820201,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 10,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "magnet",
+      "name": "磁力菇",
+      "category": "植物",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4286820201,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 10,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "cabbage",
+      "name": "卷心菜投手",
+      "category": "植物",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4286820201,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 10,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "kernel",
+      "name": "玉米投手",
+      "category": "植物",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4286820201,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 10,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "goldmagnet",
+      "name": "吸金磁",
+      "category": "植物",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4286820201,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 10,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "marigold",
+      "name": "金盏花",
+      "category": "植物",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4286820201,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 10,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "zombie",
+      "name": "普通僵尸",
+      "category": "僵尸",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4287601787,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 40,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "cone",
+      "name": "路障僵尸",
+      "category": "僵尸",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4290614874,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 40,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "bucket",
+      "name": "铁桶僵尸",
+      "category": "僵尸",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4287075997,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 40,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "gargantuar",
+      "name": "巨人僵尸",
+      "category": "僵尸",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4285825385,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 40,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "flag",
+      "name": "旗帜僵尸",
+      "category": "僵尸",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4287601787,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 40,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "pole",
+      "name": "撑杆僵尸",
+      "category": "僵尸",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4287601787,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 40,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "newspaper",
+      "name": "读报僵尸",
+      "category": "僵尸",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4287601787,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 40,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "screen",
+      "name": "铁门僵尸",
+      "category": "僵尸",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4287601787,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 40,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "football",
+      "name": "橄榄球僵尸",
+      "category": "僵尸",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4287601787,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 40,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "dancer",
+      "name": "舞王僵尸",
+      "category": "僵尸",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4287601787,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 40,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "backup",
+      "name": "伴舞僵尸",
+      "category": "僵尸",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4287601787,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 40,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "ducky",
+      "name": "鸭子救生圈僵尸",
+      "category": "僵尸",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4287601787,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 40,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "snorkel",
+      "name": "潜水僵尸",
+      "category": "僵尸",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4287601787,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 40,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "zomboni",
+      "name": "冰车僵尸",
+      "category": "僵尸",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4287601787,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 40,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "bobsled",
+      "name": "雪橇僵尸",
+      "category": "僵尸",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4287601787,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 40,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "dolphin",
+      "name": "海豚骑士僵尸",
+      "category": "僵尸",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4287601787,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 40,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "jack",
+      "name": "玩偶匣僵尸",
+      "category": "僵尸",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4287601787,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 40,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "balloon",
+      "name": "气球僵尸",
+      "category": "僵尸",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4287601787,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 40,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "digger",
+      "name": "矿工僵尸",
+      "category": "僵尸",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4287601787,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 40,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "pogo",
+      "name": "跳跳僵尸",
+      "category": "僵尸",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4287601787,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 40,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "yeti",
+      "name": "雪人僵尸",
+      "category": "僵尸",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4287601787,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 40,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "bungee",
+      "name": "蹦极僵尸",
+      "category": "僵尸",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4287601787,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 40,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "ladderZombie",
+      "name": "扶梯僵尸",
+      "category": "僵尸",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4287601787,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 40,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "catapult",
+      "name": "投石车僵尸",
+      "category": "僵尸",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4287601787,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 40,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "imp",
+      "name": "小鬼僵尸",
+      "category": "僵尸",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4287601787,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 40,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "boss",
+      "name": "僵王标记",
+      "category": "僵尸",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4287601787,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 40,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "rake",
+      "name": "钉耙",
+      "category": "物品",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4290618490,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 5,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "grave",
+      "name": "墓碑",
+      "category": "物品",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4287337106,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 5,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "ladder",
+      "name": "梯子",
+      "category": "物品",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4291144318,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 25,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "crater",
+      "name": "弹坑",
+      "category": "物品",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4285951325,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0.25
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.24
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": -1,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "FumeCloud",
+      "name": "喷菇烟雾",
+      "category": "特效",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4287601787,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 50,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "LanternShine",
+      "name": "路灯光晕",
+      "category": "特效",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4287601787,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 50,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "Pumpkin_back",
+      "name": "南瓜后半",
+      "category": "特效",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4287601787,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 50,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "Umbrellaleaf_BIG",
+      "name": "撑开保护伞",
+      "category": "特效",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4287601787,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 50,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "GloomPuff",
+      "name": "忧郁菇烟雾",
+      "category": "特效",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4287601787,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 50,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "Spotlight",
+      "name": "舞台灯光",
+      "category": "僵尸",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4287601787,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 40,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "Spotlight2",
+      "name": "舞台灯光二",
+      "category": "僵尸",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4287601787,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 40,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "BungiZombie_hand",
+      "name": "蹦极僵尸手",
+      "category": "僵尸",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4287601787,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 40,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "Redeyed_Gargantuar",
+      "name": "红眼巨人僵尸",
+      "category": "僵尸",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4287601787,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 40,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "Imitater",
+      "name": "模仿者",
+      "category": "特效",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4287601787,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 50,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "ScaryPot",
+      "name": "花瓶",
+      "category": "物品",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4287601787,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 5,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "ScaryPot_back",
+      "name": "花瓶后半",
+      "category": "物品",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4287601787,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 5,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "Lawnmower",
+      "name": "草地小推车",
+      "category": "物品",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4287601787,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 5,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "Poolcleaner",
+      "name": "泳池清理车",
+      "category": "物品",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4287601787,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 5,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "Roofcleaner",
+      "name": "屋顶清理车",
+      "category": "物品",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4287601787,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 5,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "Brain",
+      "name": "脑子",
+      "category": "物品",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4287601787,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 5,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "Stripe",
+      "name": "条纹",
+      "category": "物品",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4287601787,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 5,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "SnowFlakes",
+      "name": "雪花",
+      "category": "物品",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4287601787,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 5,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "BungeeTarget",
+      "name": "蹦极目标",
+      "category": "物品",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4287601787,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 5,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "Ice",
+      "name": "冰道",
+      "category": "物品",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4287601787,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 5,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "Ice1",
+      "name": "冰道边缘",
+      "category": "特效",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4287601787,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 50,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "sun",
+      "name": "阳光",
+      "category": "特效",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4294956644,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 50,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "iceTrail",
+      "name": "冰道",
+      "category": "特效",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4289978347,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0.25
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.24
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": -2,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    },
+    {
+      "id": "explosion",
+      "name": "爆炸标记",
+      "category": "特效",
+      "image": null,
+      "frames": [
+        "默认",
+        "轮廓"
+      ],
+      "color": 4293890135,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "offsetCells": [
+        0,
+        0
+      ],
+      "displaySizeCells": [
+        0.72,
+        0.68
+      ],
+      "occupancy": [
+        1,
+        1
+      ],
+      "layer": 50,
+      "effects": [
+        "模仿者",
+        "冰冻",
+        "魅惑",
+        "高亮",
+        "阴影",
+        "灰烬",
+        "半透明",
+        "我是僵尸"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,150 @@
+{
+  "scope": "Real headless Flutter, temporary SQLite, no native-window acceptance",
+  "cases": [
+    {
+      "id": "support.hover-preview",
+      "description": "Hover shows missing supports at cell anchors, follows planting settings and never edits the document",
+      "status": "pass",
+      "screenshot": "/tmp/pvz-planting-support/support.hover-preview.png",
+      "screenshots": [
+        "/tmp/pvz-planting-support/support-water-preview.png",
+        "/tmp/pvz-planting-support/support-roof-preview.png",
+        "/tmp/pvz-planting-support/support.hover-preview.png"
+      ],
+      "observations": null
+    },
+    {
+      "id": "coffee.independent-slot",
+      "description": "Coffee overlays plant, shell and base, remains one slot and undoes atomically",
+      "status": "pass",
+      "screenshot": "/tmp/pvz-planting-support/coffee.independent-slot.png",
+      "screenshots": [
+        "/tmp/pvz-planting-support/coffee.independent-slot.png"
+      ],
+      "observations": null
+    },
+    {
+      "id": "shovel.top-bank",
+      "description": "Original top shovel bank toggles tool, highlights/removes one plant, preserves undo and readonly",
+      "status": "pass",
+      "screenshot": "/tmp/pvz-planting-support/shovel.top-bank.png",
+      "screenshots": [
+        "/tmp/pvz-planting-support/shovel.cursor-above-bank.png",
+        "/tmp/pvz-planting-support/shovel.top-bank.png"
+      ],
+      "observations": null
+    },
+    {
+      "id": "cards.toggle",
+      "description": "Repeated card clicks cancel planting or remove seed slot; preserve mimic indices and undo",
+      "status": "pass",
+      "screenshot": "/tmp/pvz-planting-support/cards.toggle.png",
+      "screenshots": [
+        "/tmp/pvz-planting-support/cards.toggle.png"
+      ],
+      "observations": null
+    },
+    {
+      "id": "defaults.water.undo",
+      "description": "Water plant and missing lily form one undo command",
+      "status": "pass",
+      "screenshot": "/tmp/pvz-planting-support/defaults.water.undo.png",
+      "screenshots": [
+        "/tmp/pvz-planting-support/defaults.water.undo.png"
+      ],
+      "observations": null
+    },
+    {
+      "id": "roof.modes",
+      "description": "Roof-only, all-land and disabled pot modes",
+      "status": "pass",
+      "screenshot": "/tmp/pvz-planting-support/roof.modes.png",
+      "screenshots": [
+        "/tmp/pvz-planting-support/roof.modes.png"
+      ],
+      "observations": null
+    },
+    {
+      "id": "batch.width",
+      "description": "Batch two-cell plants receive two supports without duplicates",
+      "status": "pass",
+      "screenshot": "/tmp/pvz-planting-support/batch.width.png",
+      "screenshots": [
+        "/tmp/pvz-planting-support/batch.width.png"
+      ],
+      "observations": null
+    },
+    {
+      "id": "terrain.exclusions",
+      "description": "Native aquatics, bases, nonplants, blocked terrain and switches",
+      "status": "pass",
+      "screenshot": "/tmp/pvz-planting-support/terrain.exclusions.png",
+      "screenshots": [
+        "/tmp/pvz-planting-support/terrain.exclusions.png"
+      ],
+      "observations": null
+    },
+    {
+      "id": "replacement.cannon-overlap",
+      "description": "New footprint replaces both cannons; front cell permits planting and bases preserve cannon",
+      "status": "pass",
+      "screenshot": "/tmp/pvz-planting-support/replacement.cannon-overlap.png",
+      "screenshots": [
+        "/tmp/pvz-planting-support/replacement.cannon-overlap.png"
+      ],
+      "observations": null
+    },
+    {
+      "id": "replacement.cannon",
+      "description": "Planting clears all previous plants across the footprint but preserves supports",
+      "status": "pass",
+      "screenshot": "/tmp/pvz-planting-support/replacement.cannon.png",
+      "screenshots": [
+        "/tmp/pvz-planting-support/replacement.cannon.png"
+      ],
+      "observations": null
+    },
+    {
+      "id": "aquatic.no-lily",
+      "description": "Aquatics remove existing lilies, never add them, and undo restores prior art",
+      "status": "pass",
+      "screenshot": "/tmp/pvz-planting-support/aquatic.no-lily.png",
+      "screenshots": [
+        "/tmp/pvz-planting-support/aquatic.no-lily.png"
+      ],
+      "observations": null
+    },
+    {
+      "id": "preferences.persist.sync",
+      "description": "Preferences survive reload and travel in native window state",
+      "status": "pass",
+      "screenshot": "/tmp/pvz-planting-support/preferences.persist.sync.png",
+      "screenshots": [
+        "/tmp/pvz-planting-support/preferences.persist.sync.png"
+      ],
+      "observations": null
+    },
+    {
+      "id": "shovel.transparent-overlap-and-gesture",
+      "description": "Transparent lower-row pixels pass through; one drag never tunnels through a removed sprite",
+      "status": "pass",
+      "screenshot": "/tmp/pvz-planting-support/shovel.transparent-overlap-and-gesture.png",
+      "screenshots": [
+        "/tmp/pvz-planting-support/shovel.transparent-overlap-and-gesture.png"
+      ],
+      "observations": null
+    },
+    {
+      "id": "shovel.visible.delete.undo",
+      "description": "Smart clicks outside cell and shell Delete remain atomic",
+      "status": "pass",
+      "screenshot": "/tmp/pvz-planting-support/shovel.visible.delete.undo.png",
+      "screenshots": [
+        "/tmp/pvz-planting-support/shovel.visible.delete.undo.png"
+      ],
+      "observations": null
+    }
+  ],
+  "analyze": "No issues found",
+  "branding": "PvZ Formation Editor / 植物大战僵尸布阵器"
+}

@@ -1,0 +1,294 @@
+{
+  "scope": "actual native three-engine Workspace, library and toolbox; temporary database; no channel mocks",
+  "pid": 40040,
+  "run": "1792611288549684-40040",
+  "cases": [
+    {
+      "id": "tabs.library-current-independent",
+      "status": "pass",
+      "diagnostics": {
+        "sidebarHeaderHeight": 0,
+        "libraryVisible": false,
+        "sidebarFrame": [
+          1068.0,
+          280.0,
+          410.0,
+          727.0
+        ],
+        "mainKey": true,
+        "sidebarContentSize": [
+          410.0,
+          695.0
+        ],
+        "sidebarHeaderSegments": {},
+        "libraryContentSize": [
+          410.0,
+          695.0
+        ],
+        "toolboxFrame": [
+          1068.0,
+          280.0,
+          410.0,
+          727.0
+        ],
+        "sidebarMode": "toolbox",
+        "mainTitle": "植物大战僵尸阵型编辑器 · PVZ Studio",
+        "libraryFrame": [
+          1068.0,
+          280.0,
+          410.0,
+          727.0
+        ],
+        "sidebarKey": false,
+        "hasActiveDocument": true,
+        "mainFrame": [
+          250.0,
+          280.0,
+          810.0,
+          727.0
+        ],
+        "hasLibraryEngine": true,
+        "toolboxContentSize": [
+          410.0,
+          695.0
+        ],
+        "toolboxVisible": true,
+        "toolboxResizable": false,
+        "sidebarPlacement": "independent",
+        "mainContentSize": [
+          810.0,
+          695.0
+        ],
+        "toolbarVisible": false,
+        "libraryResizable": false,
+        "mainResizable": false,
+        "toolbarEnabled": false,
+        "hasToolboxEngine": true,
+        "sidebarVisible": true,
+        "toolbarLabel": "",
+        "sharedSidebarWindow": true,
+        "sidebarWindowNumber": 5028
+      },
+      "toolbox": {
+        "pendingMapId": null,
+        "exportFormat": "toolkit",
+        "readOnly": false,
+        "documentToken": "qa-archive:1",
+        "mirrors": [],
+        "tool": "放置",
+        "effects": [],
+        "mirrorPokerWidths": [],
+        "document": {
+          "schemaVersion": 1,
+          "map": "day",
+          "fogColumns": 0,
+          "seedSlots": [],
+          "display": {
+            "卡槽": true,
+            "迷雾": false,
+            "继续标识": false,
+            "泥土": true,
+            "脑子": false,
+            "小推车": true,
+            "坐标": false,
+            "阳光": true
+          },
+          "sunValue": 9990,
+          "board": {
+            "columns": 9,
+            "rows": 5
+          },
+          "objects": [
+            {
+              "id": "source",
+              "scale": 1.0,
+              "flippedVertical": false,
+              "row": 0,
+              "frameCol": 0,
+              "flipped": false,
+              "width": 1,
+              "effects": [],
+              "type": "pea",
+              "opacity": 1.0,
+              "websiteEffects": "0",
+              "layer": 10,
+              "height": 1,
+              "appearance": "默认",
+              "frameRow": 0,
+              "col": 0
+            }
+          ]
+        },
+        "musicLevel": 0,
+        "baseFingerprint": "{\"schemaVersion\":1,\"map\":\"day\",\"sunValue\":9990,\"fogColumns\":0,\"seedSlots\":[],\"board\":{\"rows\":5,\"columns\":9},\"objects\":[{\"id\":\"source\",\"type\":\"pea\",\"row\":0,\"col\":0,\"layer\":10,\"width\":1,\"height\":1,\"scale\":1.0,\"opacity\":1.0,\"frameRow\":0,\"frameCol\":0,\"websiteEffects\":\"0\",\"flipped\":false,\"flippedVertical\":false,\"effects\":[],\"appearance\":\"默认\"}],\"display\":{\"坐标\":false,\"阳光\":true,\"卡槽\":true,\"小推车\":true,\"脑子\":false,\"迷雾\":false,\"继续标识\":false,\"泥土\":true}}",
+        "activeDraftId": "qa-archive",
+        "selectedId": null,
+        "documentJson": "{\"schemaVersion\":1,\"map\":\"day\",\"sunValue\":9990,\"fogColumns\":0,\"seedSlots\":[],\"board\":{\"rows\":5,\"columns\":9},\"objects\":[{\"id\":\"source\",\"type\":\"pea\",\"row\":0,\"col\":0,\"layer\":10,\"width\":1,\"height\":1,\"scale\":1.0,\"opacity\":1.0,\"frameRow\":0,\"frameCol\":0,\"websiteEffects\":\"0\",\"flipped\":false,\"flippedVertical\":false,\"effects\":[],\"appearance\":\"默认\"}],\"display\":{\"坐标\":false,\"阳光\":true,\"卡槽\":true,\"小推车\":true,\"脑子\":false,\"迷雾\":false,\"继续标识\":false,\"泥土\":true}}",
+        "mirrorPositions": [],
+        "windowStyle": 1,
+        "name": "Native tabs archive",
+        "soundLevel": 0,
+        "batchShovelFilter": "普通植物",
+        "frameRow": 0,
+        "selectedType": "pea",
+        "mirrorScales": [],
+        "growMode": 1,
+        "shovelFilter": "智能",
+        "vertical": false,
+        "category": "植物",
+        "flip": false,
+        "frameCol": 0,
+        "cells": [],
+        "autoLily": true,
+        "mirrorBackgrounds": [],
+        "autoPotMode": "roof",
+        "liveOutput": "LI43NDH0RVRUVkNUUlQ="
+      }
+    },
+    {
+      "id": "tabs.library-new-retains-first",
+      "status": "pass",
+      "toolbox": {
+        "pendingMapId": null,
+        "exportFormat": "toolkit",
+        "readOnly": false,
+        "documentToken": "qa-archive:3",
+        "mirrors": [],
+        "tool": "放置",
+        "effects": [],
+        "mirrorPokerWidths": [],
+        "document": {
+          "schemaVersion": 1,
+          "map": "day",
+          "fogColumns": 0,
+          "seedSlots": [],
+          "display": {
+            "卡槽": true,
+            "迷雾": false,
+            "继续标识": false,
+            "泥土": true,
+            "脑子": false,
+            "小推车": true,
+            "坐标": false,
+            "阳光": true
+          },
+          "sunValue": 9990,
+          "board": {
+            "columns": 9,
+            "rows": 5
+          },
+          "objects": [
+            {
+              "id": "source",
+              "scale": 1.0,
+              "flippedVertical": false,
+              "row": 0,
+              "frameCol": 0,
+              "flipped": false,
+              "width": 1,
+              "effects": [],
+              "type": "pea",
+              "opacity": 1.0,
+              "websiteEffects": "0",
+              "layer": 10,
+              "height": 1,
+              "appearance": "默认",
+              "frameRow": 0,
+              "col": 0
+            }
+          ]
+        },
+        "musicLevel": 0,
+        "baseFingerprint": "{\"schemaVersion\":1,\"map\":\"day\",\"sunValue\":9990,\"fogColumns\":0,\"seedSlots\":[],\"board\":{\"rows\":5,\"columns\":9},\"objects\":[{\"id\":\"source\",\"type\":\"pea\",\"row\":0,\"col\":0,\"layer\":10,\"width\":1,\"height\":1,\"scale\":1.0,\"opacity\":1.0,\"frameRow\":0,\"frameCol\":0,\"websiteEffects\":\"0\",\"flipped\":false,\"flippedVertical\":false,\"effects\":[],\"appearance\":\"默认\"}],\"display\":{\"坐标\":false,\"阳光\":true,\"卡槽\":true,\"小推车\":true,\"脑子\":false,\"迷雾\":false,\"继续标识\":false,\"泥土\":true}}",
+        "activeDraftId": "qa-archive",
+        "selectedId": null,
+        "documentJson": "{\"schemaVersion\":1,\"map\":\"day\",\"sunValue\":9990,\"fogColumns\":0,\"seedSlots\":[],\"board\":{\"rows\":5,\"columns\":9},\"objects\":[{\"id\":\"source\",\"type\":\"pea\",\"row\":0,\"col\":0,\"layer\":10,\"width\":1,\"height\":1,\"scale\":1.0,\"opacity\":1.0,\"frameRow\":0,\"frameCol\":0,\"websiteEffects\":\"0\",\"flipped\":false,\"flippedVertical\":false,\"effects\":[],\"appearance\":\"默认\"}],\"display\":{\"坐标\":false,\"阳光\":true,\"卡槽\":true,\"小推车\":true,\"脑子\":false,\"迷雾\":false,\"继续标识\":false,\"泥土\":true}}",
+        "mirrorPositions": [],
+        "windowStyle": 1,
+        "name": "Native tabs archive",
+        "soundLevel": 0,
+        "batchShovelFilter": "普通植物",
+        "frameRow": 0,
+        "selectedType": "pea",
+        "mirrorScales": [],
+        "growMode": 1,
+        "shovelFilter": "智能",
+        "vertical": false,
+        "category": "植物",
+        "flip": false,
+        "frameCol": 0,
+        "cells": [],
+        "autoLily": true,
+        "mirrorBackgrounds": [],
+        "autoPotMode": "roof",
+        "liveOutput": "LI43NDH0RVRUVkNUUlQ="
+      }
+    },
+    {
+      "id": "tabs.library-clipboard-toolkit",
+      "status": "pass",
+      "clipboard": "LI43NDH0RVRUVkNUUlQ="
+    },
+    {
+      "id": "tabs.identical-blank-stale-token-and-close",
+      "status": "pass",
+      "toolbox": {
+        "mirrorPositions": [],
+        "vertical": false,
+        "readOnly": false,
+        "cells": [],
+        "baseFingerprint": "{\"schemaVersion\":1,\"map\":\"pool\",\"sunValue\":9990,\"fogColumns\":0,\"seedSlots\":[],\"board\":{\"rows\":6,\"columns\":9},\"objects\":[],\"display\":{\"坐标\":false,\"阳光\":true,\"卡槽\":true,\"小推车\":true,\"脑子\":false,\"迷雾\":false,\"继续标识\":false,\"泥土\":true}}",
+        "pendingMapId": null,
+        "frameRow": 0,
+        "documentJson": "{\"schemaVersion\":1,\"map\":\"pool\",\"sunValue\":9990,\"fogColumns\":0,\"seedSlots\":[],\"board\":{\"rows\":6,\"columns\":9},\"objects\":[],\"display\":{\"坐标\":false,\"阳光\":true,\"卡槽\":true,\"小推车\":true,\"脑子\":false,\"迷雾\":false,\"继续标识\":false,\"泥土\":true}}",
+        "windowStyle": 1,
+        "musicLevel": 0,
+        "mirrorPokerWidths": [],
+        "exportFormat": "toolkit",
+        "documentToken": "hnfe9fxjob-jln47s:6",
+        "shovelFilter": "智能",
+        "name": "新建阵型（2）",
+        "mirrors": [],
+        "growMode": 1,
+        "mirrorScales": [],
+        "tool": "放置",
+        "effects": [],
+        "autoPotMode": "roof",
+        "selectedType": "pea",
+        "autoLily": true,
+        "activeDraftId": "hnfe9fxjob-jln47s",
+        "selectedId": null,
+        "soundLevel": 0,
+        "frameCol": 0,
+        "flip": false,
+        "category": "植物",
+        "batchShovelFilter": "普通植物",
+        "mirrorBackgrounds": [],
+        "document": {
+          "schemaVersion": 1,
+          "map": "pool",
+          "fogColumns": 0,
+          "seedSlots": [],
+          "display": {
+            "卡槽": true,
+            "迷雾": false,
+            "继续标识": false,
+            "泥土": true,
+            "脑子": false,
+            "小推车": true,
+            "坐标": false,
+            "阳光": true
+          },
+          "sunValue": 9990,
+          "board": {
+            "columns": 9,
+            "rows": 6
+          },
+          "objects": []
+        },
+        "liveOutput": "LI43NPRLVFRUOFRVVg=="
+      }
+    }
+  ],
+  "errors": []
+}

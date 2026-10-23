@@ -1,0 +1,12 @@
+{
+  "source": "http://jspvz.com/ArrayDesign/",
+  "evidenceKind": "coordinator-observed DOM, transcribed facts",
+  "openChooser": "#Imitater opens #tabSeedChooser_i",
+  "chooseGray": "#dSeedChooser_i img[Peashooter_i]",
+  "grayCard": {"src": "image/Card/Peashooter_i.png", "id": "iTenCard_0"},
+  "normalCard": {"src": "image/Card/Peashooter.png", "id": "TenCard_0"},
+  "imitaterSignAfterSelection": 0,
+  "deletingGrayCardReenablesChooser": true,
+  "expectedSeedSlots": ["pea", "pea"],
+  "expectedImitaterSeedSlots": [0]
+}

@@ -1,0 +1,28 @@
+name: pvz_formation_editor
+description: PvZ Formation Editor · 植物大战僵尸布阵器
+publish_to: none
+version: 0.1.0+1
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+dependencies:
+  flutter:
+    sdk: flutter
+  path_provider: ^2.1.3
+  sqflite: ^2.3.3+1
+  ffi: ^2.1.2
+dev_dependencies:
+  test: ^1.24.9
+  flutter_lints: ^2.0.3
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/catalog.json
+    - assets/original/
+    - assets/original/image/
+    - assets/original/image/Aero/
+    - assets/original/image/Card/
+    - assets/original/audio/
+  fonts:
+    - family: Continuum Bold
+      fonts:
+        - asset: assets/original/fonts/ContinuumBold.ttf

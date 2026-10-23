@@ -1,0 +1,33 @@
+{
+  "functional": {
+    "domainTests": 747,
+    "domainFiles": 17,
+    "fullUiCases": 755,
+    "initialUiPass": 743,
+    "initialUiFail": 12,
+    "finalUiPass": 755,
+    "editorSuites": 25,
+    "librarySuites": 11,
+    "nativeToolboxCases": 16,
+    "nativeDocumentCases": 2,
+    "nativeTabCases": 4,
+    "nativeFileCases": 4
+  },
+  "performance": {
+    "baselineStatus": "complete",
+    "headlessUiStatus": "complete",
+    "nativeCombinedUiStatus": "complete",
+    "profileBuild": "blocked: x86_64 gen_snapshot_arm64 on arm64 host without Rosetta",
+    "rawFiles": [
+      "/tmp/pvz-performance-baseline.json",
+      "/tmp/pvz-performance-ui-headless.json",
+      "/tmp/pvz-performance-ui-native.json",
+      "/tmp/pvz-performance-windows/report.json"
+    ],
+    "nativeDualWindowStatus": "complete",
+    "nativeDualWindowChangingEvents": 80,
+    "finalNativeRollP95ms": 30.116,
+    "finalNativeNavigationP95ms": 79.863,
+    "environmentCleanup": "Final native UI and dual-engine measurements repeated after all prior isolated QA windows closed; initial results preserved."
+  }
+}

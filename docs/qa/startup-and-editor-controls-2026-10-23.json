@@ -1,0 +1,285 @@
+{
+  "date": "2026-10-23",
+  "scope": "Startup resume, transient blanks, history controls, shovel cursor, source seed chooser; real headless Flutter and temporary SQLite, not native-window acceptance",
+  "startup": {
+    "cases": [
+      {
+        "id": "default-blank-stays-transient-until-explicit-save",
+        "status": "pass"
+      },
+      {
+        "id": "nondefault-document-or-name-autosaves",
+        "status": "pass"
+      },
+      {
+        "id": "first-edit-clear-undo-redo-remain-persistent",
+        "status": "pass"
+      },
+      {
+        "id": "startup-resume-prefers-pointer-over-latest-update",
+        "status": "pass"
+      },
+      {
+        "id": "startup-bootstrap-skips-old-generated-blanks-without-deleting",
+        "status": "pass"
+      },
+      {
+        "id": "last-opened-pointer-survives-reopen-and-rejects-missing",
+        "status": "pass"
+      },
+      {
+        "id": "tab-ready-open-activate-history-and-flushall-remember-active",
+        "status": "pass"
+      },
+      {
+        "id": "blank-tabs-close-without-archives-or-pointer-overwrite",
+        "status": "pass"
+      }
+    ],
+    "passed": 8,
+    "total": 8
+  },
+  "editorTabs": {
+    "passed": 22,
+    "log": "/tmp/pvz-resume-editor_tabs.log"
+  },
+  "sessions": {
+    "passedGroups": 10,
+    "log": "/tmp/pvz-resume-session.log"
+  },
+  "storageMigrationPreferences": {
+    "passed": 23,
+    "log": "/tmp/pvz-resume-storage.log"
+  },
+  "ui": {
+    "cases": [
+      {
+        "id": "current-ui.drag-grouped-undo",
+        "description": "Actual plant card and board drag; toolbar Undo/Redo operate one drag atomically",
+        "status": "pass",
+        "screenshot": "/tmp/pvz-full-editor/ui-screenshots/current-ui.drag-grouped-undo.png",
+        "screenshots": [
+          "/tmp/pvz-full-editor/ui-screenshots/current-ui.drag-grouped-undo.png"
+        ],
+        "observations": null
+      },
+      {
+        "id": "current-ui.saved-archive",
+        "description": "UI edits persist to their associated archive without deprecated draft records",
+        "status": "pass",
+        "screenshot": "/tmp/pvz-full-editor/ui-screenshots/current-ui.saved-archive.png",
+        "screenshots": [
+          "/tmp/pvz-full-editor/ui-screenshots/current-ui.saved-archive.png"
+        ],
+        "observations": null
+      },
+      {
+        "id": "current-ui.toolbox-scroll",
+        "description": "Toolbox clamps at both ends and retains each tab offset across rebuilds and picker switches",
+        "status": "pass",
+        "screenshot": "/tmp/pvz-full-editor/ui-screenshots/current-ui.toolbox-scroll.png",
+        "screenshots": [
+          "/tmp/pvz-full-editor/ui-screenshots/current-ui.toolbox-scroll.png"
+        ],
+        "observations": null
+      },
+      {
+        "id": "current-ui.seed-return-and-geometry",
+        "description": "Top selected cards return, lower choices reset, mimic shifts and source panel geometry holds",
+        "status": "pass",
+        "screenshot": "/tmp/pvz-full-editor/ui-screenshots/current-ui.seed-return-and-geometry.png",
+        "screenshots": [
+          "/tmp/pvz-full-editor/ui-screenshots/seed-selected-before-return.png",
+          "/tmp/pvz-full-editor/ui-screenshots/seed-mimic-source-position.png",
+          "/tmp/pvz-full-editor/ui-screenshots/current-ui.seed-return-and-geometry.png"
+        ],
+        "observations": null
+      },
+      {
+        "id": "current-ui.narrow-window",
+        "description": "Actual 390px viewport relayout retains document and opens/closes card preview without overflow",
+        "status": "pass",
+        "screenshot": "/tmp/pvz-full-editor/ui-screenshots/current-ui.narrow-window.png",
+        "screenshots": [
+          "/tmp/pvz-full-editor/ui-screenshots/current-ui.narrow-window.png"
+        ],
+        "observations": null
+      },
+      {
+        "id": "current-ui.history-shortcuts",
+        "description": "Curved history icons and platform key events for undo, restore and save",
+        "status": "pass",
+        "screenshot": "/tmp/pvz-full-editor/ui-screenshots/current-ui.history-shortcuts.png",
+        "screenshots": [
+          "/tmp/pvz-full-editor/ui-screenshots/current-ui.history-shortcuts.png"
+        ],
+        "observations": null
+      }
+    ],
+    "flutterErrors": [],
+    "scope": "real headless pointer UI; no native window automation; temporary SQLite"
+  },
+  "planting": [
+    {
+      "id": "coffee.independent-slot",
+      "description": "Coffee overlays plant, shell and base, remains one slot and undoes atomically",
+      "status": "pass",
+      "screenshot": "/tmp/pvz-planting-support/coffee.independent-slot.png",
+      "screenshots": [
+        "/tmp/pvz-planting-support/coffee.independent-slot.png"
+      ],
+      "observations": null
+    },
+    {
+      "id": "shovel.top-bank",
+      "description": "Original top shovel bank toggles tool, highlights/removes one plant, preserves undo and readonly",
+      "status": "pass",
+      "screenshot": "/tmp/pvz-planting-support/shovel.top-bank.png",
+      "screenshots": [
+        "/tmp/pvz-planting-support/shovel.cursor-above-bank.png",
+        "/tmp/pvz-planting-support/shovel.top-bank.png"
+      ],
+      "observations": null
+    },
+    {
+      "id": "cards.toggle",
+      "description": "Repeated card clicks cancel planting or remove seed slot; preserve mimic indices and undo",
+      "status": "pass",
+      "screenshot": "/tmp/pvz-planting-support/cards.toggle.png",
+      "screenshots": [
+        "/tmp/pvz-planting-support/cards.toggle.png"
+      ],
+      "observations": null
+    },
+    {
+      "id": "defaults.water.undo",
+      "description": "Water plant and missing lily form one undo command",
+      "status": "pass",
+      "screenshot": "/tmp/pvz-planting-support/defaults.water.undo.png",
+      "screenshots": [
+        "/tmp/pvz-planting-support/defaults.water.undo.png"
+      ],
+      "observations": null
+    },
+    {
+      "id": "roof.modes",
+      "description": "Roof-only, all-land and disabled pot modes",
+      "status": "pass",
+      "screenshot": "/tmp/pvz-planting-support/roof.modes.png",
+      "screenshots": [
+        "/tmp/pvz-planting-support/roof.modes.png"
+      ],
+      "observations": null
+    },
+    {
+      "id": "batch.width",
+      "description": "Batch two-cell plants receive two supports without duplicates",
+      "status": "pass",
+      "screenshot": "/tmp/pvz-planting-support/batch.width.png",
+      "screenshots": [
+        "/tmp/pvz-planting-support/batch.width.png"
+      ],
+      "observations": null
+    },
+    {
+      "id": "terrain.exclusions",
+      "description": "Native aquatics, bases, nonplants, blocked terrain and switches",
+      "status": "pass",
+      "screenshot": "/tmp/pvz-planting-support/terrain.exclusions.png",
+      "screenshots": [
+        "/tmp/pvz-planting-support/terrain.exclusions.png"
+      ],
+      "observations": null
+    },
+    {
+      "id": "replacement.cannon-overlap",
+      "description": "New footprint replaces both cannons; front cell permits planting and bases preserve cannon",
+      "status": "pass",
+      "screenshot": "/tmp/pvz-planting-support/replacement.cannon-overlap.png",
+      "screenshots": [
+        "/tmp/pvz-planting-support/replacement.cannon-overlap.png"
+      ],
+      "observations": null
+    },
+    {
+      "id": "replacement.cannon",
+      "description": "Planting clears all previous plants across the footprint but preserves supports",
+      "status": "pass",
+      "screenshot": "/tmp/pvz-planting-support/replacement.cannon.png",
+      "screenshots": [
+        "/tmp/pvz-planting-support/replacement.cannon.png"
+      ],
+      "observations": null
+    },
+    {
+      "id": "aquatic.no-lily",
+      "description": "Aquatics remove existing lilies, never add them, and undo restores prior art",
+      "status": "pass",
+      "screenshot": "/tmp/pvz-planting-support/aquatic.no-lily.png",
+      "screenshots": [
+        "/tmp/pvz-planting-support/aquatic.no-lily.png"
+      ],
+      "observations": null
+    },
+    {
+      "id": "preferences.persist.sync",
+      "description": "Preferences survive reload and travel in native window state",
+      "status": "pass",
+      "screenshot": "/tmp/pvz-planting-support/preferences.persist.sync.png",
+      "screenshots": [
+        "/tmp/pvz-planting-support/preferences.persist.sync.png"
+      ],
+      "observations": null
+    },
+    {
+      "id": "shovel.transparent-overlap-and-gesture",
+      "description": "Transparent lower-row pixels pass through; one drag never tunnels through a removed sprite",
+      "status": "pass",
+      "screenshot": "/tmp/pvz-planting-support/shovel.transparent-overlap-and-gesture.png",
+      "screenshots": [
+        "/tmp/pvz-planting-support/shovel.transparent-overlap-and-gesture.png"
+      ],
+      "observations": null
+    },
+    {
+      "id": "shovel.visible.delete.undo",
+      "description": "Smart clicks outside cell and shell Delete remain atomic",
+      "status": "pass",
+      "screenshot": "/tmp/pvz-planting-support/shovel.visible.delete.undo.png",
+      "screenshots": [
+        "/tmp/pvz-planting-support/shovel.visible.delete.undo.png"
+      ],
+      "observations": null
+    }
+  ],
+  "seedChooser": {
+    "pass": [
+      "normal add and second-click removal",
+      "base-only mimic chooser; same plant normal+gray; closes mimic overlay",
+      "normal removal preserves and shifts gray index",
+      "selected mimic entry stays disabled until top-bank return",
+      "ten-card limit, blocked eleventh and mimic, removal while full",
+      "map, sun, fog, pieces and other document fields unchanged",
+      "read-only selection and mimic guards",
+      "ROCK close callback only, no document or route changes"
+    ],
+    "errors": [],
+    "scope": "standalone widget, real Flutter pointers, source visual parity not evaluated"
+  },
+  "analyze": "No issues found",
+  "flutterBundle": "passed",
+  "nativeBuild": {
+    "status": "blocked",
+    "reason": "Xcode host services inaccessible; workspace rejected; escalation disallowed by managed policy",
+    "log": "/tmp/pvz-startup-resume-build.log"
+  },
+  "delivery": {
+    "app": "/tmp/pvz-startup-resume-delivery-mp06hp0x/pvz_formation_editor.app",
+    "packaging": "fresh Flutter bundle in a copy of unchanged Debug native host",
+    "launch": "restart helper attempted; LaunchServices returned -10827 kLSNoExecutableErr; not launched",
+    "executableCheck": "CFBundleExecutable matches existing executable arm64 Mach-O; LaunchServices still returned -10827",
+    "runningApplicationQuery": "NSRunningApplication query returned no matching bundle identifiers; no claim of a running app"
+  },
+  "git": "No repository metadata or confirmed remote; no commit/push",
+  "seedChooserInteraction": "First toolbox control directly toggles board overlay without switching content tabs; actual top-bank normal/mimic return, lower-card reselection, shifted indices and undo verified in current-ui.seed-return-and-geometry"
+}

@@ -1,0 +1,47 @@
+[
+  {
+    "combo": [
+      "iImitater",
+      "iFrozen"
+    ],
+    "dom": [
+      "<canvas id=\"Plant_2_3_0.6091130604156424\" width=\"100\" height=\"100\" class=\"p_Gray\" name=\"Peashooter\" px=\"44\" py=\"90\" pkind=\"Plant\" pr=\"2\" pc=\"3\" x=\"240\" y=\"155\" zindex=\"17\" side=\"0\" style=\"left: 196px; top: 155px;\" r=\"0\" c=\"0\" gray=\"0010imitater\"></canvas>"
+    ],
+    "saved": "0,0 2 3 0 0 0010imitater 1 "
+  },
+  {
+    "combo": [
+      "iFrozen",
+      "iCharm"
+    ],
+    "dom": [
+      "<canvas id=\"Plant_2_3_0.8643416098890232\" width=\"100\" height=\"100\" class=\"p\" name=\"Peashooter\" px=\"44\" py=\"90\" pkind=\"Plant\" pr=\"2\" pc=\"3\" x=\"240\" y=\"155\" zindex=\"17\" side=\"0\" style=\"left: 196px; top: 155px;\" r=\"0\" c=\"0\" gray=\"1010\"></canvas>"
+    ],
+    "saved": "0,0 2 3 0 0 1010 1 "
+  },
+  {
+    "combo": [
+      "iIZE",
+      "iAshes"
+    ],
+    "dom": [
+      "<canvas id=\"Plant_2_3_0.7050427058997867\" width=\"100\" height=\"100\" class=\"p\" name=\"Peashooter\" px=\"44\" py=\"90\" pkind=\"Plant\" pr=\"2\" pc=\"3\" x=\"240\" y=\"155\" zindex=\"17\" side=\"0\" style=\"left: 196px; top: 155px;\" r=\"0\" c=\"0\" gray=\"0000black\"></canvas>"
+    ],
+    "saved": "0,0 2 3 0 0 0000black 1 "
+  },
+  {
+    "combo": [
+      "iImitater",
+      "iFrozen",
+      "iCharm",
+      "iHighlights",
+      "iIZE",
+      "iAshes",
+      "iTran"
+    ],
+    "dom": [
+      "<canvas id=\"Plant_2_3_0.8998035061521467\" width=\"100\" height=\"100\" class=\"p\" name=\"Peashooter\" px=\"44\" py=\"90\" pkind=\"Plant\" pr=\"2\" pc=\"3\" x=\"240\" y=\"155\" zindex=\"17\" side=\"0\" style=\"left: 196px; top: 155px; opacity: 0.5;\" r=\"0\" c=\"0\" gray=\"1011black\"></canvas>"
+    ],
+    "saved": "0,0 2 3 0 0 1011black 0.5 "
+  }
+]

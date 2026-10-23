@@ -1,0 +1,307 @@
+[
+  {
+    "label": "陆路",
+    "checked": [
+      {
+        "checked": true,
+        "id": "lRow1",
+        "value": "1"
+      },
+      {
+        "checked": true,
+        "id": "lRow2",
+        "value": "2"
+      },
+      {
+        "checked": true,
+        "id": "lRow5",
+        "value": "5"
+      },
+      {
+        "checked": true,
+        "id": "lRow6",
+        "value": "6"
+      },
+      {
+        "checked": true,
+        "id": "lCol1",
+        "value": "1"
+      },
+      {
+        "checked": true,
+        "id": "lCol2",
+        "value": "2"
+      },
+      {
+        "checked": true,
+        "id": "lCol3",
+        "value": "3"
+      },
+      {
+        "checked": true,
+        "id": "lCol4",
+        "value": "4"
+      },
+      {
+        "checked": true,
+        "id": "lCol5",
+        "value": "5"
+      },
+      {
+        "checked": true,
+        "id": "lCol6",
+        "value": "6"
+      },
+      {
+        "checked": true,
+        "id": "lCol7",
+        "value": "7"
+      },
+      {
+        "checked": true,
+        "id": "lCol8",
+        "value": "8"
+      },
+      {
+        "checked": true,
+        "id": "lCol9",
+        "value": "9"
+      }
+    ]
+  },
+  {
+    "label": "水路",
+    "checked": [
+      {
+        "checked": true,
+        "id": "lRow3",
+        "value": "3"
+      },
+      {
+        "checked": true,
+        "id": "lRow4",
+        "value": "4"
+      },
+      {
+        "checked": true,
+        "id": "lCol1",
+        "value": "1"
+      },
+      {
+        "checked": true,
+        "id": "lCol2",
+        "value": "2"
+      },
+      {
+        "checked": true,
+        "id": "lCol3",
+        "value": "3"
+      },
+      {
+        "checked": true,
+        "id": "lCol4",
+        "value": "4"
+      },
+      {
+        "checked": true,
+        "id": "lCol5",
+        "value": "5"
+      },
+      {
+        "checked": true,
+        "id": "lCol6",
+        "value": "6"
+      },
+      {
+        "checked": true,
+        "id": "lCol7",
+        "value": "7"
+      },
+      {
+        "checked": true,
+        "id": "lCol8",
+        "value": "8"
+      },
+      {
+        "checked": true,
+        "id": "lCol9",
+        "value": "9"
+      }
+    ]
+  },
+  {
+    "label": "后置炮",
+    "checked": [
+      {
+        "checked": true,
+        "id": "lRow1",
+        "value": "1"
+      },
+      {
+        "checked": true,
+        "id": "lRow2",
+        "value": "2"
+      },
+      {
+        "checked": true,
+        "id": "lRow5",
+        "value": "5"
+      },
+      {
+        "checked": true,
+        "id": "lRow6",
+        "value": "6"
+      },
+      {
+        "checked": true,
+        "id": "lCol4",
+        "value": "4"
+      }
+    ]
+  },
+  {
+    "label": "前置炮",
+    "checked": [
+      {
+        "checked": true,
+        "id": "lRow1",
+        "value": "1"
+      },
+      {
+        "checked": true,
+        "id": "lRow2",
+        "value": "2"
+      },
+      {
+        "checked": true,
+        "id": "lRow5",
+        "value": "5"
+      },
+      {
+        "checked": true,
+        "id": "lRow6",
+        "value": "6"
+      },
+      {
+        "checked": true,
+        "id": "lCol5",
+        "value": "5"
+      }
+    ]
+  },
+  {
+    "label": "超前置炮",
+    "checked": [
+      {
+        "checked": true,
+        "id": "lRow1",
+        "value": "1"
+      },
+      {
+        "checked": true,
+        "id": "lRow2",
+        "value": "2"
+      },
+      {
+        "checked": true,
+        "id": "lRow5",
+        "value": "5"
+      },
+      {
+        "checked": true,
+        "id": "lRow6",
+        "value": "6"
+      },
+      {
+        "checked": true,
+        "id": "lCol7",
+        "value": "7"
+      }
+    ]
+  },
+  {
+    "label": "底线炮",
+    "checked": [
+      {
+        "checked": true,
+        "id": "lRow1",
+        "value": "1"
+      },
+      {
+        "checked": true,
+        "id": "lRow2",
+        "value": "2"
+      },
+      {
+        "checked": true,
+        "id": "lRow5",
+        "value": "5"
+      },
+      {
+        "checked": true,
+        "id": "lRow6",
+        "value": "6"
+      },
+      {
+        "checked": true,
+        "id": "lCol1",
+        "value": "1"
+      }
+    ]
+  },
+  {
+    "label": "水路前场",
+    "checked": [
+      {
+        "checked": true,
+        "id": "lRow3",
+        "value": "3"
+      },
+      {
+        "checked": true,
+        "id": "lRow4",
+        "value": "4"
+      },
+      {
+        "checked": true,
+        "id": "lCol7",
+        "value": "7"
+      },
+      {
+        "checked": true,
+        "id": "lCol8",
+        "value": "8"
+      },
+      {
+        "checked": true,
+        "id": "lCol9",
+        "value": "9"
+      }
+    ]
+  },
+  {
+    "label": "水路56列",
+    "checked": [
+      {
+        "checked": true,
+        "id": "lRow3",
+        "value": "3"
+      },
+      {
+        "checked": true,
+        "id": "lRow4",
+        "value": "4"
+      },
+      {
+        "checked": true,
+        "id": "lCol5",
+        "value": "5"
+      },
+      {
+        "checked": true,
+        "id": "lCol6",
+        "value": "6"
+      }
+    ]
+  }
+]

@@ -1,0 +1,42 @@
+{
+  "passed": true,
+  "invalidAndMo3Rejected": true,
+  "files": [
+    {
+      "name": "plant",
+      "channels": 1,
+      "sampleRate": 44100,
+      "samples": 33280,
+      "duration": 0.7546485260770975,
+      "original": {
+        "sample_rate": "44100",
+        "channels": 1,
+        "duration_ts": 33280
+      }
+    },
+    {
+      "name": "plant2",
+      "channels": 2,
+      "sampleRate": 44100,
+      "samples": 32768,
+      "duration": 0.7430385487528345,
+      "original": {
+        "sample_rate": "44100",
+        "channels": 2,
+        "duration_ts": 32768
+      }
+    },
+    {
+      "name": "plant_water",
+      "channels": 2,
+      "sampleRate": 44100,
+      "samples": 61952,
+      "duration": 1.4048072562358276,
+      "original": {
+        "sample_rate": "44100",
+        "channels": 2,
+        "duration_ts": 61952
+      }
+    }
+  ]
+}

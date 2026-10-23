@@ -1,0 +1,37 @@
+[
+  {
+    "effect": "模仿者",
+    "source": "0,50 2 3 0 0 1 1  0 240 94",
+    "interaction": "actual-card-and-board-click"
+  },
+  {
+    "effect": "冰冻",
+    "source": "0,50 2 3 0 0 0010 1  0 240 94",
+    "interaction": "actual-card-and-board-click"
+  },
+  {
+    "effect": "魅惑",
+    "source": "0,50 2 3 0 0 1000 1  0 240 94",
+    "interaction": "actual-card-and-board-click"
+  },
+  {
+    "effect": "高亮",
+    "source": "0,50 2 3 0 0 0001 1  0 240 94",
+    "interaction": "actual-card-and-board-click"
+  },
+  {
+    "effect": "阴影",
+    "source": "0,50 2 3 0 0 0000dropshadow 1  0 240 94",
+    "interaction": "actual-card-and-board-click"
+  },
+  {
+    "effect": "灰烬",
+    "source": "0,50 2 3 0 0 0000black 1  0 240 94",
+    "interaction": "actual-card-and-board-click"
+  },
+  {
+    "effect": "半透明",
+    "source": "0,50 2 3 0 0 0 0.5  0 240 94",
+    "interaction": "actual-card-and-board-click"
+  }
+]
