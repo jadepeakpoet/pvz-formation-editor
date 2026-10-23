@@ -1,5 +1,7 @@
 # PVZ Formation Editor
 
+<img src="assets/branding/app-logo.png" width="128" alt="PVZ Formation Editor logo">
+
 [简体中文](README.md) | [English](README.en.md)
 
 Author and maintainer: **yuexiaomeng** · [Authors](AUTHORS) · [Acknowledgments](ACKNOWLEDGMENTS.md)

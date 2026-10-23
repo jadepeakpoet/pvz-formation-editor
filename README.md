@@ -1,5 +1,7 @@
 # PVZ Formation Editor · 植物大战僵尸布阵器
 
+<img src="assets/branding/app-logo.png" width="128" alt="PVZ Formation Editor logo">
+
 [简体中文](README.md) | [English](README.en.md)
 
 作者：**yuexiaomeng** · [作者信息](AUTHORS) · [鸣谢](ACKNOWLEDGMENTS.md)
