@@ -123,7 +123,7 @@ Future<void> main() async {
         'No state change');
   });
   await h.run('reset',
-      'Right click restores first state and undo preserves the previous state',
+      'Right click restores default state and undo preserves the previous state',
       () async {
     final previous = session.document.pieces.single;
     final pointer = BoardGeometry(session.document).cellCenter(0, 0);
@@ -370,6 +370,65 @@ Future<void> main() async {
     page.selectedType = 'wallnut';
     final Piece other = page.plantingPiece(0, 0);
     h.expect(other.frameRow == 0, 'Other plant defaults must be unchanged');
+  });
+  await h.run('reset-default-and-all',
+      'Right click and lazy batch reset share species defaults, preserve attributes and undo atomically', () async {
+    final pieces = [
+      Piece(id: 'fume', type: 'fume', row: 0, col: 0, layer: 10,
+          frameRow: 2, frameCol: 1, effects: {'模仿者'}, flipped: true),
+      Piece(id: 'gloom', type: 'gloom', row: 1, col: 2, layer: 10,
+          frameRow: 0, frameCol: 1, opacity: .7),
+      Piece(id: 'nut', type: 'wallnut', row: 2, col: 4, layer: 10,
+          frameRow: 1, frameCol: 1, scale: 1.1),
+      Piece(id: 'cactus', type: 'cactus', row: 3, col: 6, layer: 10,
+          frameRow: 2, frameCol: 1),
+      Piece(id: 'zombie', type: 'zombie', row: 4, col: 8, layer: 20,
+          frameRow: 1, frameCol: 1),
+    ];
+    session.readOnly = false;
+    session.execute('reset fixture', Formation(mapId: 'roof', pieces: pieces));
+    await OriginalAssets.ensureHitMasks(pieces.map((p) => p.type));
+    page.selectedType = 'pea';
+    page.growMode = 3;
+    page.tool = '选择';
+    page.update();
+    final before = session.document.fingerprint;
+    page.resetPlantState(BoardGeometry(session.document).pieceCenter(pieces.first));
+    final fume = session.document.pieces.first;
+    h.expect(fume.frameRow == 1 && fume.frameCol == 0 &&
+        fume.flipped && fume.effects.contains('模仿者'),
+        'Right-click must restore awake default regardless of selected card or frame mode');
+    final depth = session.undoDepth;
+    page.resetPlantState(BoardGeometry(session.document).pieceCenter(fume));
+    h.expect(session.undoDepth == depth, 'Resetting default state must not add no-op history');
+    session.undo();
+    h.expect(session.document.fingerprint == before, 'Right reset undo must restore exact document');
+    page.selectToolboxTab(1);
+    await h.settle();
+    final prior = session.undoDepth;
+    await h.tapElement(h.find((w) => w.key == const ValueKey('lazy-reset-plant-states')));
+    final expected = session.document.copy(pieces: [
+      pieces[0].copy(frameRow: 1, frameCol: 0),
+      pieces[1].copy(frameRow: 1, frameCol: 0),
+      pieces[2].copy(frameRow: 0, frameCol: 0),
+      pieces[3].copy(frameRow: 0, frameCol: 0),
+      pieces[4],
+    ]);
+    h.expect(session.document.fingerprint == expected.fingerprint && session.undoDepth == prior + 1,
+        'Lazy reset must apply species defaults once and preserve all other attributes and nonplants');
+    final after = session.document.fingerprint;
+    session.undo();
+    h.expect(session.document.fingerprint == before, 'Batch reset undo must restore all plants');
+    session.redo();
+    h.expect(session.document.fingerprint == after, 'Batch reset redo must restore defaults');
+    session.readOnly = true;
+    page.update();
+    await h.settle();
+    final button = h.find((w) => w.key == const ValueKey('lazy-reset-plant-states')).widget as ButtonStyleButton;
+    h.expect(button.onPressed == null, 'Readonly batch reset must be disabled');
+    page.resetAllPlantStates();
+    h.expect(session.document.fingerprint == after, 'Readonly reset must not mutate document');
+    session.readOnly = false;
   });
   await h.report();
   session.dispose();

@@ -2755,6 +2755,23 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     return indexed.map((e) => e.value).toList();
   }
 
+  (int, int) defaultPlantFrame(String type) =>
+      type == 'fume' || type == 'gloom' ? (1, 0) : (0, 0);
+
+  Piece plantWithDefaultState(Piece piece) {
+    final frame = defaultPlantFrame(piece.type);
+    return piece.copy(frameRow: frame.$1, frameCol: frame.$2);
+  }
+
+  void resetAllPlantStates() {
+    if (s.readOnly) return;
+    finishGesture();
+    s.execute('恢复植物默认状态', s.document.copy(pieces: [
+      for (final piece in s.document.pieces)
+        piece.spec.category == '植物' ? plantWithDefaultState(piece) : piece,
+    ]));
+  }
+
   void resetPlantState(Offset position) {
     if (s.readOnly) return;
     finishGesture();
@@ -2763,11 +2780,11 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     if (plants.isEmpty) return;
     final piece = plants.first;
     s.execute(
-        '恢复植物初始状态',
+        '恢复植物默认状态',
         s.document.copy(
             pieces: s.document.pieces
                 .map((p) =>
-                    p.id == piece.id ? p.copy(frameRow: 0, frameCol: 0) : p)
+                    p.id == piece.id ? plantWithDefaultState(p) : p)
                 .toList()));
   }
 
@@ -2942,9 +2959,10 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
   Piece plantingPiece(int row, int col, {bool preview = false}) {
     final spec = ObjectSpec.byId(selectedType);
     var frameRow = plantingFrameRow, frameCol = plantingFrameCol;
-    if (growMode == 1 && (selectedType == 'fume' || selectedType == 'gloom')) {
-      frameRow = 1;
-      frameCol = 0;
+    if (growMode == 1) {
+      final frame = defaultPlantFrame(selectedType);
+      frameRow = frame.$1;
+      frameCol = frame.$2;
     }
     final data = OriginalAssets
         .sprites[OriginalAssets.names[selectedType] ?? selectedType];
@@ -4497,6 +4515,10 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
               }
             })
         ]),
+        const Divider(),
+        classicButton('植物恢复默认状态', s.readOnly ? null : resetAllPlantStates,
+            key: const ValueKey('lazy-reset-plant-states'),
+            tooltip: '将全部植物恢复为默认状态，可撤销'),
       ]);
     }
     const plantOrder = [

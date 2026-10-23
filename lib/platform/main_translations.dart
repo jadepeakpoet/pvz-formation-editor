@@ -1,5 +1,9 @@
 /// English translations for the main editor interface.
 const Map<String, String> mainTranslations = {
+  '恢复植物默认状态': 'Restore default plant states',
+  '植物恢复默认状态': 'Reset plant states',
+  '将全部植物恢复为默认状态，可撤销': 'Restore all plants to their default states. Undo is available.',
+
   '一键预选': 'Quick selection',
   '清除指定植物': 'Clear a selected type',
   '清空选中区域': 'Clear selected cells',
