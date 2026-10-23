@@ -11,18 +11,13 @@ class BoardGeometry {
   BoardGeometry(this.document);
   Size get size => const Size(800, 600);
   double get cellWidth => 720 / document.map.columns;
-  double get boardTop => document.mapId == 'custom'
-      ? 70
-      : document.map.roof
-          ? (document.map.rows == 6 ? 10 : 70)
-          : document.map.rows == 6
-              ? 80
-              : 72.5;
-  double get cellHeight => document.mapId == 'custom'
-      ? 520 / document.map.rows
-      : document.map.roof || document.map.rows == 6
-          ? 85
-          : 100;
+  double get boardTop => document.map.roof
+      ? (document.map.rows == 6 ? 10 : 70)
+      : document.map.rows == 6
+          ? 80
+          : 72.5;
+  double get cellHeight =>
+      document.map.roof || document.map.rows == 6 ? 85 : 100;
   // Roof rises 20 pixels per column; highland has a 20 pixel step.
   double slope(double column) {
     if (document.mapId == 'highland') return column >= 4 ? -20 : 0;

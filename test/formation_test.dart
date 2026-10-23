@@ -23,6 +23,19 @@ Formation sample() => Formation(mapId: 'pool', sunValue: 12345, pieces: [
     });
 
 void main() {
+  test('removed free board is rejected when loading project data', () {
+    final legacy = sample().toJson()
+      ..['map'] = 'custom'
+      ..['rows'] = 8
+      ..['columns'] = 12;
+    final project =
+        jsonDecode(ProjectCodec.encode(sample())) as Map<String, dynamic>;
+    project['document'] = legacy;
+    final unsupportedMap = throwsA(isA<FormatException>()
+        .having((error) => error.message, 'message', contains('custom')));
+    expect(() => Formation.fromJson(legacy), unsupportedMap);
+    expect(() => ProjectCodec.decode(jsonEncode(project)), unsupportedMap);
+  });
   test('complete project preserves multilayer cross-cell data and effects', () {
     final original = sample();
     final restored = ProjectCodec.decode(ProjectCodec.encode(original));

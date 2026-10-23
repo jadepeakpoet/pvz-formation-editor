@@ -43,6 +43,15 @@ class _ArchiveHistoryDialogState extends State<_ArchiveHistoryDialog> {
     return null;
   }
 
+  Formation? get previewDocument {
+    try {
+      return Formation.fromJson(
+          selected?.document ?? snapshot.current.document);
+    } on FormatException {
+      return null;
+    }
+  }
+
   String timestamp(DateTime value) {
     String two(int value) => value.toString().padLeft(2, '0');
     return '${value.year}-${two(value.month)}-${two(value.day)} '
@@ -60,7 +69,12 @@ class _ArchiveHistoryDialogState extends State<_ArchiveHistoryDialog> {
   Future<void> restore() async {
     final version = selected;
     final callback = widget.onRestore;
-    if (busy || version == null || callback == null) return;
+    if (busy ||
+        version == null ||
+        callback == null ||
+        previewDocument == null) {
+      return;
+    }
     setState(() {
       busy = true;
       error = null;
@@ -170,8 +184,15 @@ class _ArchiveHistoryDialogState extends State<_ArchiveHistoryDialog> {
 
   Widget preview() {
     final version = selected;
-    final document =
-        Formation.fromJson(version?.document ?? snapshot.current.document);
+    final document = previewDocument;
+    if (document == null) {
+      return Center(
+          child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(AppLanguage.text('该版本使用已移除或不支持的地图，无法预览和恢复。'),
+                  key: const ValueKey('archive-history-unsupported-map'),
+                  textAlign: TextAlign.center)));
+    }
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       Text(version?.name ?? snapshot.current.name,
           maxLines: 1,
@@ -285,6 +306,7 @@ class _ArchiveHistoryDialogState extends State<_ArchiveHistoryDialog> {
                                 key: const ValueKey('archive-history-restore'),
                                 onPressed: busy ||
                                         selected == null ||
+                                        previewDocument == null ||
                                         widget.onRestore == null
                                     ? null
                                     : restore,

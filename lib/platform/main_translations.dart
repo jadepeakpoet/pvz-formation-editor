@@ -1,5 +1,7 @@
 /// English translations for the main editor interface.
 const Map<String, String> mainTranslations = {
+  '该版本使用已移除或不支持的地图，无法预览和恢复。':
+      'This version uses a removed or unsupported map and cannot be previewed or restored.',
   '正在恢复历史版本': 'Restoring version history',
   '历史版本不属于当前存档': 'This version belongs to a different formation',
   '历史版本': 'Version history',
@@ -349,5 +351,4 @@ const Map<String, String> mainTranslations = {
   "订制蘑菇园(背景蘑菇处不能种植)":
       "Custom mushroom garden (background mushrooms block planting)",
   "订制温室花园(中间列不能种植)": "Custom Zen garden (center column blocked)",
-  "自由棋盘": "Free board",
 };

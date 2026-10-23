@@ -81,7 +81,19 @@ Future<void> main() async {
       tags: [],
       document: oldDocument.toJson(),
       createdAt: DateTime(2026, 10, 9));
-  final initial = (current: current, versions: [old, unrelated]);
+  final removed = ArchiveVersion(
+      id: 'removed-map',
+      archiveId: current.id,
+      name: 'Legacy formation',
+      note: '',
+      tags: [],
+      document: {
+        ...oldDocument.toJson(),
+        'map': 'custom',
+        'board': {'rows': 8, 'columns': 12}
+      },
+      createdAt: DateTime(2026, 10, 8));
+  final initial = (current: current, versions: [old, unrelated, removed]);
   var mode = 'restore';
   var restoreCalls = 0;
   String? restoredId;
@@ -233,6 +245,21 @@ Future<void> main() async {
           preview().fingerprint == oldDocument.fingerprint &&
           restoreButton().onPressed != null,
       'Restore error must remain visible and preserve selected preview for retry');
+  await close();
+
+  mode = 'restore';
+  await tap('open-history');
+  final beforeRemoved = restoreCalls;
+  await tap('archive-history-version-removed-map');
+  check(
+      find((w) => w.key == const ValueKey('archive-history-unsupported-map'))
+              .isNotEmpty &&
+          restoreButton().onPressed == null &&
+          restoreCalls == beforeRemoved,
+      'Removed maps must remain listed without being previewed or restored');
+  await tap('archive-history-current');
+  check(preview().fingerprint == currentDocument.fingerprint,
+      'An unsupported old map must not break the valid current preview');
   await close();
 
   mode = 'readonly';

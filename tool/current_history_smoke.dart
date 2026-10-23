@@ -23,8 +23,16 @@ Future<void> main() async {
   final repo =
       await FormationRepository.open('${directory.path}/history.sqlite');
   Formation doc(int sun) => Formation(sunValue: sun);
+  await repo.saveArchive(id: 'current', name: '当前存档', document: {
+    ...doc(50).toJson(),
+    'map': 'custom',
+    'board': {'rows': 8, 'columns': 12}
+  });
   await repo.saveArchive(
-      id: 'current', name: '当前存档', document: doc(100).toJson());
+      id: 'unused',
+      updateId: 'current',
+      name: '当前存档',
+      document: doc(100).toJson());
   await repo.saveArchive(
       id: 'unused',
       updateId: 'current',
@@ -43,7 +51,10 @@ Future<void> main() async {
       name: '其他存档',
       document: doc(900).toJson());
   final initialVersions = await repo.listVersions('current');
-  final oldest = initialVersions.last;
+  final oldest =
+      initialVersions.singleWhere((v) => v.document['sunValue'] == 100);
+  final removed =
+      initialVersions.singleWhere((v) => v.document['map'] == 'custom');
   final otherVersion = (await repo.listVersions('other')).single;
   final session = EditorSession(repo,
       id: 'current-tab',
@@ -122,6 +133,22 @@ Future<void> main() async {
             .isEmpty,
         'History leaked another formation');
     h.expect(previewSun() == 300, 'Current version should be selected first');
+    await tap('archive-history-version-${removed.id}');
+    h.expect(
+        h
+                .all((w) =>
+                    w.key == const ValueKey('archive-history-unsupported-map'))
+                .isNotEmpty &&
+            (h
+                        .find((w) =>
+                            w.key == const ValueKey('archive-history-restore'))
+                        .widget as FilledButton)
+                    .onPressed ==
+                null &&
+            session.document.sunValue == 300,
+        'Unsupported legacy map must remain listed but cannot replace current formation');
+    await tap('archive-history-current');
+
     final depth = session.undoDepth;
     await tap('archive-history-version-${oldest.id}');
     h.expect(
@@ -146,6 +173,8 @@ Future<void> main() async {
             previewSun() == 100,
         'Restore should remain in same tab with a toolbar undo command');
     final restoredVersions = await repo.listVersions('current');
+    h.expect(restoredVersions.any((v) => v.id == removed.id),
+        'Removing the feature must not delete legacy history data');
     h.expect(
         restoredVersions.length == initialVersions.length + 1 &&
             restoredVersions.first.document['sunValue'] == 300 &&

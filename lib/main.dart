@@ -797,6 +797,7 @@ class _LibraryPageState extends State<LibraryPage> {
                                 '${date(entry.value.createdAt)}:${entry.value.createdAt.second.toString().padLeft(2, '0')}.${entry.value.createdAt.millisecond.toString().padLeft(3, '0')}'))))
                         .toList()));
         if (v != null && mounted) {
+          Formation.fromJson(v.document);
           final request = <String, dynamic>{
             'kind': 'archive-rollback',
             'id': a.id,
@@ -2397,6 +2398,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
             .where((v) => v.id == request['versionId'])
             .firstOrNull;
         if (version == null) throw StateError('历史版本已不存在');
+        Formation.fromJson(version.document);
         final name = version.name == source.name
             ? source.name
             : await s.repository.uniqueDocumentName(version.name);
@@ -2988,6 +2990,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                       version.archiveId != archiveId) {
                     throw StateError('当前存档已切换，请重新打开历史版本');
                   }
+                  Formation.fromJson(version.document);
                   if (historyRestoring) throw StateError('正在恢复历史版本');
                   historyRestoring = true;
                   try {

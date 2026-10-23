@@ -87,7 +87,7 @@ void main() {
   });
   test('website conversion and project passthrough', () {
     final source = Formation(
-        mapId: 'custom',
+        mapId: 'day6',
         pieces: [p('a', 'pea'), p('b', 'sunflower'), p('fx', 'explosion')]);
     final result =
         FormationFormatter.format(source, format: FormationFormat.website);

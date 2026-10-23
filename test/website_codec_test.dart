@@ -233,9 +233,12 @@ void main() {
           flipped: flipped,
           flippedVertical: flippedVertical,
           appearance: appearance);
+  test('removed free board cannot be exported as a website map', () {
+    expect(() => WebsiteCodec.encode(Formation(mapId: 'custom')),
+        throwsFormatException);
+  });
   test('unsupported objects and visual data never silently disappear', () {
     final cases = [
-      Formation(mapId: 'custom'),
       Formation(display: {'坐标': false}),
       Formation(pieces: [piece('ducky', layer: 40)]),
       Formation(pieces: [

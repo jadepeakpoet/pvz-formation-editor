@@ -67,23 +67,22 @@ void main() {
       }
     }
   });
-  test('all 26 original maps accounted for, legal custom cells default land',
-      () {
+  test('only the 26 original maps are available and all have terrain data', () {
     final covered = {
       ...rows.keys,
       'mushroomGardenRestricted',
       'greenhouseRestricted'
     };
-    expect(
-        covered,
-        BoardMap.all
-            .where((m) => m.originalIndex != null)
-            .map((m) => m.id)
-            .toSet());
-    final map = BoardMap.byId('custom');
-    for (var r = 0; r < map.rows; r++) {
-      for (var c = 0; c < map.columns; c++) {
-        expect(OriginalTerrain.at(map, r, c), 1);
+    expect(BoardMap.all, hasLength(26));
+    expect(BoardMap.all.every((map) => map.originalIndex != null), isTrue);
+    expect(covered, BoardMap.all.map((map) => map.id).toSet());
+    expect(() => BoardMap.byId('custom'), throwsFormatException);
+  });
+  test('unknown map terrain is not treated as plantable land', () {
+    const map = BoardMap('unknown-map', 'Unknown map', 2, 2);
+    for (var row = 0; row < map.rows; row++) {
+      for (var col = 0; col < map.columns; col++) {
+        expect(OriginalTerrain.at(map, row, col), 0);
       }
     }
   });

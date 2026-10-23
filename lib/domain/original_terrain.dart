@@ -59,8 +59,8 @@ class OriginalTerrain {
   static int at(BoardMap map, int row, int col) {
     if (row < 0 || row >= map.rows || col < 0 || col >= map.columns) return 0;
     final matrix = _source[map.id];
-    // App-only custom boards have no source terrain restrictions.
-    if (matrix == null) return 1;
+    // Unknown terrain is not a plantable surface.
+    if (matrix == null) return 0;
     if (row >= matrix.length || col >= matrix[row].length) return 0;
     return matrix[row].codeUnitAt(col) - 48;
   }

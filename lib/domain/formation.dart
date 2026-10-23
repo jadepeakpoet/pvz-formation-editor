@@ -116,7 +116,6 @@ class BoardMap {
         originalIndex: 25,
         background: 'Background_Greenhouse.jpg',
         geometryVerified: false),
-    BoardMap('custom', '自由棋盘', 8, 12),
   ];
   static BoardMap byId(String id) => all.firstWhere((m) => m.id == id,
       orElse: () => throw FormatException('未知地图：$id'));
