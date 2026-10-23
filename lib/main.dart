@@ -21,6 +21,7 @@ import 'domain/layouts.dart';
 import 'domain/object_filter.dart';
 import 'editor/board_painter.dart';
 import 'editor/board_sun_editor.dart';
+import 'editor/rename_dialog.dart';
 import 'editor/shovel_targets.dart';
 import 'editor/classic_window.dart';
 import 'editor/original_assets.dart';
@@ -1936,6 +1937,50 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     ]));
   }
 
+  Widget seedChooserButton() => classicButton(seedChooserOpen ? '收起选卡' : '打开选卡',
+      () => unawaited(toggleSeedChooserFromTab()),
+      active: seedChooserOpen, key: const ValueKey('board-picker-toggle'));
+
+  bool renameDialogOpen = false;
+
+  Widget workspaceMoreMenu() => PopupMenuButton<String>(
+      key: const ValueKey('workspace-more'),
+      tooltip: AppLanguage.text('更多'),
+      padding: EdgeInsets.zero,
+      iconSize: 18,
+      enabled: !savingArchive && !renameDialogOpen,
+      icon: const Icon(Icons.more_horiz),
+      onSelected: (action) {
+        if (action == 'rename') {
+          unawaited(renameFromMenu());
+        } else {
+          unawaited(saveArchive(saveAs: action == 'saveAs'));
+        }
+      },
+      itemBuilder: (_) => [
+            PopupMenuItem(
+                value: 'save',
+                key: const ValueKey('archive-save'),
+                enabled: !s.readOnly,
+                child: Text(AppLanguage.text('保存'))),
+            PopupMenuItem(
+                value: 'saveAs',
+                key: const ValueKey('archive-save-as'),
+                child: Text(AppLanguage.text('另存为'))),
+            PopupMenuItem(
+                value: 'rename',
+                key: const ValueKey('workspace-rename'),
+                enabled: !s.readOnly && pendingDocumentRename == null,
+                child: Text(AppLanguage.text('重命名'))),
+          ]);
+
+  Widget workspaceTabBar() => SizedBox(
+      height: 28,
+      child: Row(children: [
+        Expanded(child: widget.tabBar!),
+        SizedBox(width: 32, child: workspaceMoreMenu())
+      ]));
+
   Widget nativeMainPage() => Scaffold(
       backgroundColor: const Color(0xff748899),
       body: Align(
@@ -1944,8 +1989,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
               width: 810,
               height: 667 + (widget.tabBar == null ? 0 : 28),
               child: Column(children: [
-                if (widget.tabBar != null)
-                  SizedBox(height: 28, child: widget.tabBar),
+                if (widget.tabBar != null) workspaceTabBar(),
                 Container(
                     height: 32,
                     color: const Color(0xffd9e1e7),
@@ -1954,13 +1998,10 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                       Expanded(child: documentHeading(showWindowError: true)),
                       historyButton(redo: false),
                       historyButton(redo: true),
+                      seedChooserButton(),
                       sidebarModeButton('toolbox'),
                       sidebarModeButton('library'),
-                      classicButton('保存', s.readOnly ? null : saveArchive,
-                          tooltip: saveShortcutHint,
-                          key: const ValueKey('archive-save')),
-                      classicButton('另存为', () => saveArchive(saveAs: true),
-                          key: const ValueKey('archive-save-as')),
+                      if (widget.tabBar == null) workspaceMoreMenu(),
                     ])),
                 SizedBox(
                     width: 810,
@@ -2858,6 +2899,35 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     }
   }
 
+  Future<void> renameFromMenu() async {
+    if (s.readOnly || savingArchive || renameDialogOpen) return;
+    final target = s;
+    await finishDocumentRename();
+    if (!mounted || !identical(s, target) || target.readOnly) return;
+    setState(() => renameDialogOpen = true);
+    try {
+      final requested = await showRenameDialog(context, target.name);
+      if (!mounted ||
+          !identical(s, target) ||
+          target.readOnly ||
+          requested == null ||
+          requested == target.name) return;
+      final operation = persistDocumentName(target, requested);
+      pendingDocumentRename = operation;
+      try {
+        await operation;
+      } finally {
+        if (identical(pendingDocumentRename, operation)) {
+          pendingDocumentRename = null;
+        }
+      }
+    } catch (error) {
+      if (mounted) message(context, '重命名失败：$error');
+    } finally {
+      if (mounted) setState(() => renameDialogOpen = false);
+    }
+  }
+
   Future<void> renameDocument() async {
     if (s.readOnly ||
         savingArchive ||
@@ -3353,7 +3423,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                                             SizedBox(
                                                 height: 28,
                                                 width: 810,
-                                                child: widget.tabBar),
+                                                child: workspaceTabBar()),
                                           Container(
                                               height: 32,
                                               padding:
@@ -3372,14 +3442,9 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                                                     child: documentHeading()),
                                                 historyButton(redo: false),
                                                 historyButton(redo: true),
-                                                classicButton(
-                                                    '保存',
-                                                    s.readOnly
-                                                        ? null
-                                                        : saveArchive,
-                                                    tooltip: saveShortcutHint,
-                                                    key: const ValueKey(
-                                                        'archive-save')),
+                                                seedChooserButton(),
+                                                if (widget.tabBar == null)
+                                                  workspaceMoreMenu(),
                                                 if (cells.isNotEmpty ||
                                                     tool == '批选')
                                                   classicButton('完成批量操作',

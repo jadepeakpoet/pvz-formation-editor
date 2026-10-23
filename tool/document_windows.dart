@@ -227,6 +227,7 @@ Future<void> main() async {
         .widget as TextField;
     field.controller!.text = '原生工作流存档';
     await h.key('document-rename', native);
+    await h.key('workspace-more', native);
     await h.key('archive-save', native);
     h.check(
         find((w) => w is AlertDialog) == null, 'Save showed Save As dialog');
@@ -251,6 +252,7 @@ Future<void> main() async {
     await mode('toolbox');
     final oldId = archiveId!;
     await plant(0, 2);
+    await h.key('workspace-more', native);
     await h.key('archive-save', native);
     final edited = tabs.active.document.fingerprint;
     final versions = await repo.listVersions(oldId);

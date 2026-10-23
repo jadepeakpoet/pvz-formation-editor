@@ -142,7 +142,9 @@ class _BoardSunEditorState extends State<BoardSunEditor> {
             }
             return KeyEventResult.ignored;
           },
-          child: TextField(
+          // Resolve editing shortcuts before the surrounding board shortcuts.
+          child: DefaultTextEditingShortcuts(
+              child: TextField(
             key: const ValueKey('board-sun-input'),
             controller: _controller,
             focusNode: _focus,
@@ -177,7 +179,7 @@ class _BoardSunEditorState extends State<BoardSunEditor> {
             },
             onSubmitted: (_) => _finish(),
             onTapOutside: (_) => _finish(),
-          ),
+          )),
         ),
       ),
     );

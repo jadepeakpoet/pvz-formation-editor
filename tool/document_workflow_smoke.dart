@@ -324,6 +324,7 @@ Future<void> main() async {
         'Empty inline input must preserve original name/history');
     await ui.tap('document-title');
     await typeInlineName('工作流失焦保存');
+    await ui.tap('workspace-more');
     await ui.tap('archive-save');
     await wait(() => tabs.active.name == '工作流失焦保存',
         'Blur/save did not commit inline rename');
@@ -335,6 +336,7 @@ Future<void> main() async {
     tabs.active
         .execute('UI workflow edit', tabs.active.document.copy(sunValue: 1234));
     await tabs.active.flush();
+    await ui.tap('workspace-more');
     await ui.tap('archive-save');
     ui.check(ui.elements((w) => w is AlertDialog).isEmpty,
         'Save must not show Save As dialog');

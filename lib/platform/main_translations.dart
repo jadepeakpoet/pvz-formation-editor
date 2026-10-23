@@ -1,5 +1,9 @@
 /// English translations for the main editor interface.
 const Map<String, String> mainTranslations = {
+  '重命名': 'Rename',
+  '更多': 'More',
+  '打开选卡': 'Choose plants',
+  '收起选卡': 'Close chooser',
   '陆地': 'Ground',
   '选择植物': 'Choose plants',
   '编辑阳光': 'Edit sun',
