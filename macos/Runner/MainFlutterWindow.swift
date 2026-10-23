@@ -101,6 +101,36 @@ class MainFlutterWindow: NSWindow, NSWindowDelegate {
   private var editorHoverTracker: EditorHoverTracker?
   private var latestToolboxState: [String: Any]?
   private var sidebarLifecycleSyncQueued = false
+  private var sidebarFrontQueued = false
+
+  override func sendEvent(_ event: NSEvent) {
+    super.sendEvent(event)
+    if event.type == .leftMouseDown { queueVisibleSidebarFront() }
+  }
+
+  func windowDidBecomeKey(_ notification: Notification) {
+    guard notification.object as? NSWindow === self else { return }
+    queueVisibleSidebarFront()
+  }
+
+  private func queueVisibleSidebarFront() {
+    guard !sidebarFrontQueued else { return }
+    sidebarFrontQueued = true
+    // Let the clicked window finish becoming key before ordering its companion.
+    DispatchQueue.main.async { [weak self] in
+      guard let self = self else { return }
+      self.sidebarFrontQueued = false
+      guard NSApp.isActive, !NSApp.isHidden, self.isKeyWindow,
+            self.isVisible, !self.isMiniaturized, self.attachedSheet == nil,
+            NSApp.modalWindow == nil,
+            let panel = self.sidebarWindow,
+            panel.isVisible, !panel.isMiniaturized,
+            panel.attachedSheet == nil else { return }
+      // Ordering does not change the key window or steal the board's responder.
+      // Reuse only the current visible panel; never reopen a hidden sidebar.
+      panel.order(.above, relativeTo: self.windowNumber)
+    }
+  }
 
   func windowShouldClose(_ sender: NSWindow) -> Bool {
     if sender === sidebarWindow {
@@ -116,6 +146,7 @@ class MainFlutterWindow: NSWindow, NSWindowDelegate {
     NSApp.activate(ignoringOtherApps: true)
     if target.isMiniaturized { target.deminiaturize(nil) }
     target.makeKeyAndOrderFront(nil)
+    if target === self { queueVisibleSidebarFront() }
   }
 
   private func configureSidebar(_ arguments: [String: Any]) {
@@ -149,6 +180,9 @@ class MainFlutterWindow: NSWindow, NSWindowDelegate {
   // frames disabled. The shared host owns visibility for both sidebar engines.
   @objc private func sidebarLifecycleChanged(_ notification: Notification) {
     queueSidebarLifecycleSync()
+    if notification.name == NSApplication.didBecomeActiveNotification {
+      queueVisibleSidebarFront()
+    }
   }
 
   private func queueSidebarLifecycleSync() {
