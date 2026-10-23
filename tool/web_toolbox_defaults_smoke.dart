@@ -149,6 +149,27 @@ Future<void> main() async {
           OriginalAudio.musicVolume == .75 &&
           OriginalAudio.soundVolume == 0,
       'Re-entering settings reset an existing document or selected volume');
+  final sunBox = h.find((w) => w.key == const ValueKey('original-tSun')).renderObject as RenderBox;
+  final sunField = h.find((w) => w.key == const ValueKey('original-tSun')).widget as TextField;
+  final sunLabel = h.find((w) => w is Text && w.data == '显示阳光、卡片槽').renderObject as RenderBox;
+  h.expect(sunBox.size.height >= 32 && sunField.textAlignVertical == TextAlignVertical.center &&
+      (sunBox.localToGlobal(sunBox.size.center(Offset.zero)).dy -
+       sunLabel.localToGlobal(sunLabel.size.center(Offset.zero)).dy).abs() < 1,
+      'Settings sun field must have comfortable height and align with its label');
+  page.toolboxPosition = const Offset(40, 90);
+  await h.tapElement(h.find((w) => w.key == const ValueKey('settings-reset-window-positions')));
+  h.expect(page.toolboxPosition == const Offset(808, 0) && session.document.fingerprint == selectedDocument,
+      'Settings reset must restore fallback window positions without editing formation');
+  final windowCalls = <MethodCall>[];
+  ParityBinding.handlers['pvz_formation_editor/windows'] = (call) async {
+    windowCalls.add(call);
+    return true;
+  };
+  page.nativeWindows = true;
+  await h.tapElement(h.find((w) => w.key == const ValueKey('settings-reset-window-positions')));
+  h.expect(windowCalls.any((call) => call.method == 'resetWindowPositions'),
+      'Settings reset must dispatch native window positioning');
+  page.nativeWindows = false;
   await h.screenshot('settings-retained-values');
 
   await tab(3);

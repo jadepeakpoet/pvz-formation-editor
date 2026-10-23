@@ -362,6 +362,28 @@ class MainFlutterWindow: NSWindow, NSWindowDelegate {
     return true
   }
 
+  private func resetWindowPositions(in requestedFrame: NSRect? = nil) -> Bool {
+    guard attachedSheet == nil, sidebarWindow?.attachedSheet == nil,
+          NSApp.modalWindow == nil,
+          let available = requestedFrame ?? (screen ?? sidebarWindow?.screen ?? NSScreen.main)?.visibleFrame else { return false }
+    // Reuse the initial editor/toolbox pairing, without opening a hidden panel
+    // or changing either window's size, key status or miniaturized state.
+    let mainSize = frame.size
+    let pairWidth = mainSize.width + 8 + (sidebarWindow?.frame.width ?? 410)
+    let left = available.minX + max(0, (available.width - pairWidth) / 2)
+    let bottom = min(available.maxY - mainSize.height,
+                     max(available.minY, available.midY - mainSize.height / 2))
+    setFrameOrigin(NSPoint(x: left, y: bottom))
+    if let panel = sidebarWindow {
+      let x = max(available.minX, min(frame.maxX + 8, available.maxX - panel.frame.width))
+      let top = min(available.maxY, max(frame.maxY, available.minY + panel.frame.height))
+      panel.setFrameTopLeftPoint(NSPoint(x: x, y: top))
+      sidebarInitiallyPositioned = true
+      sidebarPlacement = "independent"
+    }
+    return true
+  }
+
   private func positionSidebarOnce() {
     // Place once. Editor moves, mode switches and show/hide must never drag
     // another native window underneath an in-progress pointer gesture.
@@ -389,6 +411,8 @@ class MainFlutterWindow: NSWindow, NSWindowDelegate {
         result(window.selectSidebarMode("toolbox") && (window.sidebarWindow?.isKeyWindow ?? false))
       case "selectSidebarMode", "setSidebarVisible", "configureSidebar":
         window.handleSidebarCall(call, result: result)
+      case "resetWindowPositions":
+        result(window.resetWindowPositions())
       case "diagnostics":
         result(window.windowDiagnostics())
       case "ready":
@@ -545,6 +569,8 @@ class MainFlutterWindow: NSWindow, NSWindowDelegate {
         result(window.selectSidebarMode("library") && (window.sidebarWindow?.isKeyWindow ?? false))
       case "selectSidebarMode", "setSidebarVisible", "configureSidebar":
         window.handleSidebarCall(call, result: result)
+      case "resetWindowPositions":
+        result(window.resetWindowPositions())
       case "diagnostics":
         result(window.windowDiagnostics())
       default: result(FlutterMethodNotImplemented)
@@ -832,6 +858,8 @@ class MainFlutterWindow: NSWindow, NSWindowDelegate {
         result(nil)
       case "selectSidebarMode", "setSidebarVisible", "configureSidebar":
         window.handleSidebarCall(call, result: result)
+      case "resetWindowPositions":
+        result(window.resetWindowPositions())
       case "diagnostics":
         result(window.windowDiagnostics())
       case "deactivate":

@@ -3769,25 +3769,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                                                       finishBatchOperations,
                                                       key: const ValueKey(
                                                           'finish-batch-toolbar')),
-                                                classicButton(
-                                                    '窗口复位',
-                                                    () => setState(() {
-                                                          toolboxPosition =
-                                                              const Offset(
-                                                                  808, 0);
-                                                          for (var i = 0;
-                                                              i <
-                                                                  mirrors
-                                                                      .length;
-                                                              i++) {
-                                                            mirrorPositions[i] =
-                                                                Offset(
-                                                                    30.0 +
-                                                                        i * 32,
-                                                                    30.0 +
-                                                                        i * 32);
-                                                          }
-                                                        })),
+                                                classicButton('窗口复位', resetWindowPositions),
                                                 sidebarModeButton('toolbox'),
                                                 sidebarModeButton('library')
                                               ])),
@@ -4117,9 +4099,29 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     fit();
   }
 
+  Future<void> resetWindowPositions() async {
+    try {
+      if (nativeWindows || WindowBridge.supported) {
+        final reset = await WindowBridge.channel.invokeMethod<bool>('resetWindowPositions');
+        if (reset == false) throw StateError('窗口暂时无法复位');
+      } else {
+        setState(() {
+          toolboxPosition = const Offset(808, 0);
+          for (var i = 0; i < mirrors.length; i++) {
+            mirrorPositions[i] = Offset(30.0 + i * 32, 30.0 + i * 32);
+          }
+        });
+      }
+    } catch (e) {
+      if (mounted) message(context, '窗口复位失败：$e');
+    }
+  }
+
   Widget classicSettings() =>
       Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         const LanguageSelector(),
+        classicButton('恢复窗口初始位置', resetWindowPositions,
+            key: const ValueKey('settings-reset-window-positions')),
         const SizedBox(height: 8),
         mapChangeControls(const ValueKey('settings-change-map')),
         Row(children: [
@@ -4205,15 +4207,15 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                       s.document.copy(
                           display: {...s.document.display, '阳光': v, '卡槽': v}))),
           SizedBox(
-              width: 56,
-              height: 23,
+              width: 76,
+              height: 32,
               child: TextField(
                   key: const ValueKey('original-tSun'),
                   controller: sunEditor,
+                  textAlignVertical: TextAlignVertical.center,
                   style: const TextStyle(fontSize: 12),
                   decoration: const InputDecoration(
-                      contentPadding:
-                          EdgeInsets.symmetric(horizontal: 3, vertical: 2),
+                      contentPadding: EdgeInsets.symmetric(horizontal: 6),
                       isDense: true))),
           classicButton(
               '改阳光',

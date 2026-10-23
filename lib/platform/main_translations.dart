@@ -120,6 +120,8 @@ const Map<String, String> mainTranslations = {
   "撤销上一步操作（⌘Z）": "Undo (⌘Z)",
   "撤销上一步操作（Ctrl+Z）": "Undo (Ctrl+Z)",
   "窗口复位": "Reset windows",
+  "恢复窗口初始位置": "Restore initial window positions",
+  "窗口复位失败：{error}": "Could not reset windows: {error}",
   "完成批量操作": "Finish batch editing",
   "比例 ": "Scale ",
   "背景": "Background",
