@@ -199,6 +199,11 @@ Future<void> toolboxMain() async {
           case 'changeMap':
             await h.tap('选项设置');
             final fingerprint = session.document.fingerprint;
+            final keep = h
+                .find(
+                    (w) => w.key == const ValueKey('original-map-keep-plants'))
+                .widget as Checkbox;
+            if (keep.value == true) await h.keyTap('original-map-keep-plants');
             await h.keyTap('settings-change-map');
             _check(session.document.fingerprint == fingerprint,
                 'Opening map picker must not change the document');

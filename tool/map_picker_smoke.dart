@@ -1,8 +1,10 @@
 import 'dart:io';
+import 'dart:convert';
 import 'dart:ui' as ui;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:pvz_formation_editor/domain/formation.dart';
 import 'package:pvz_formation_editor/editor/board_painter.dart';
 import 'package:pvz_formation_editor/editor/map_picker_dialog.dart';
 import 'package:pvz_formation_editor/editor/original_assets.dart';
@@ -52,7 +54,19 @@ Future<void> main() async {
   final boundary = GlobalKey();
   Future<MapPickerChoice?>? pending;
   var readOnly = false;
+  var keepPlants = false;
   var completed = false;
+  final source = Formation(mapId: 'pool', sunValue: 1234, pieces: [
+    Piece(
+        id: 'keep-pea',
+        type: 'pea',
+        row: 1,
+        col: 1,
+        layer: 10,
+        effects: {'模仿者'}),
+    Piece(id: 'sixth-row', type: 'pumpkin', row: 5, col: 8, layer: 20),
+  ]);
+  final before = jsonEncode(source.toJson());
   void mount() {
     runApp(RepaintBoundary(
         key: boundary,
@@ -68,18 +82,45 @@ Future<void> main() async {
                         onPressed: () {
                           completed = false;
                           pending = showMapPickerDialog(context,
-                              currentMapId: 'pool', readOnly: readOnly);
+                              currentMapId: source.mapId,
+                              currentFormation: source,
+                              keepPlants: keepPlants,
+                              readOnly: readOnly);
                           pending!.then((_) => completed = true);
                         },
                         child: const Text('Open')))))));
   }
 
-  String previewMap() =>
+  Formation previewDocument() =>
       ((find((w) => w.key == const ValueKey('map-picker-preview')).single.widget
                   as CustomPaint)
               .painter as BoardPainter)
-          .document
-          .mapId;
+          .document;
+  String previewMap() => previewDocument().mapId;
+  void checkAllPreviews(bool retained) {
+    final painters = find((w) => w is CustomPaint && w.painter is BoardPainter)
+        .map((element) =>
+            (element.widget as CustomPaint).painter as BoardPainter);
+    check(painters.length > 10, 'Map thumbnail previews not found');
+    for (final painter in painters) {
+      final expected = retained
+          ? source.pieces
+              .where((piece) => source.fits(piece, painter.document.map))
+              .map((piece) => piece.id)
+              .toList()
+          : <String>[];
+      check(
+          jsonEncode(
+                  painter.document.pieces.map((piece) => piece.id).toList()) ==
+              jsonEncode(expected),
+          'Preview retained wrong pieces on ${painter.document.mapId}');
+      check(painter.document.display.isEmpty && !painter.helpers,
+          'Preview must not include editor helper overlays');
+    }
+    check(jsonEncode(source.toJson()) == before,
+        'Preview mutated source formation');
+  }
+
   Future<void> screenshot(String name) async {
     final render =
         boundary.currentContext!.findRenderObject() as RenderRepaintBoundary;
@@ -90,10 +131,6 @@ Future<void> main() async {
     image.dispose();
   }
 
-  Checkbox keepCheckbox() =>
-      find((w) => w.key == const ValueKey('map-picker-keep-plants'))
-          .single
-          .widget as Checkbox;
   Future<void> hover(String key) async {
     final element = find((w) => w.key == ValueKey(key)).single;
     await Scrollable.ensureVisible(element, duration: Duration.zero);
@@ -114,20 +151,30 @@ Future<void> main() async {
   await settle();
   await tap('open');
   check(previewMap() == 'pool', 'Current map must be preselected');
-  check(keepCheckbox().value == false, 'Keep plants must default unchecked');
+  check(find((w) => w.key == const ValueKey('map-picker-keep-plants')).isEmpty,
+      'Keep checkbox must live beside caller button, not in dialog');
+  checkAllPreviews(false);
   final cancelBox = find((w) => w.key == const ValueKey('map-picker-cancel'))
       .single
       .renderObject as RenderBox;
   final previewBox = find((w) => w.key == const ValueKey('map-picker-preview'))
       .single
       .renderObject as RenderBox;
+  final mapBox = find((w) => w.key == const ValueKey('map-picker-map-pool'))
+      .single
+      .renderObject as RenderBox;
   check(
       cancelBox.localToGlobal(Offset.zero).dy <
           previewBox.localToGlobal(Offset.zero).dy,
       'Cancel must be in top header');
+  check(
+      previewBox.localToGlobal(Offset.zero).dx <
+          mapBox.localToGlobal(Offset.zero).dx,
+      'Wide preview must be to left of map list');
   await hover('map-picker-map-roof');
   check(previewMap() == 'roof' && !completed,
       'Hover must preview without applying');
+  checkAllPreviews(false);
   await screenshot('wide');
   await tap('map-picker-cancel');
   check(await pending == null, 'Cancel must not return map change');
@@ -135,33 +182,39 @@ Future<void> main() async {
   await tap('map-picker-map-day');
   final reset = await pending;
   check(reset?.mapId == 'day' && reset?.keepPlants == false && completed,
-      'Click must immediately select map with clear-plants default');
+      'Click must immediately select map with caller default false');
   await settle();
   check(find((w) => w.key == const ValueKey('map-picker-dialog')).isEmpty,
       'Map click must close dialog without second confirmation');
+  keepPlants = true;
+  mount();
+  await settle();
   await tap('open');
-  await tap('map-picker-keep-plants');
-  check(keepCheckbox().value == true, 'Keep plants toggle failed');
+  check(previewDocument().pieces.length == 2,
+      'Retained current map preview must include existing plants');
+  checkAllPreviews(true);
+  await hover('map-picker-map-roof');
+  check(
+      previewDocument().pieces.single.id == 'keep-pea' &&
+          previewDocument().pieces.single.effects.contains('模仿者'),
+      'Roof preview must filter sixth row and retain plant appearance');
+  checkAllPreviews(true);
+  await screenshot('retained');
   await tap('map-picker-map-roof');
   final keep = await pending;
   check(keep?.mapId == 'roof' && keep?.keepPlants == true,
-      'Keep checkbox must travel in immediate result');
-  await tap('open');
-  check(keepCheckbox().value == false,
-      'Keep checkbox must reset on each opening');
-  await tap('map-picker-cancel');
+      'Caller keep choice must travel in immediate result');
   readOnly = true;
   mount();
   await settle();
   await tap('open');
-  check(keepCheckbox().onChanged == null && keepCheckbox().value == false,
-      'Readonly keep checkbox must be disabled');
   await tap('map-picker-map-night');
   check(
       previewMap() == 'night' &&
           !completed &&
           find((w) => w.key == const ValueKey('map-picker-dialog')).isNotEmpty,
       'Readonly click must only preview without applying');
+  checkAllPreviews(true);
   await tap('map-picker-cancel');
   check(await pending == null, 'Readonly cancellation result must be null');
   binding.viewport = const Size(360, 640);
@@ -173,14 +226,18 @@ Future<void> main() async {
   await hover('map-picker-map-allWater');
   check(previewMap() == 'allWater' && !completed,
       'Narrow scroll hover preview failed');
+  check(previewDocument().pieces.length == 2,
+      'Six-row narrow preview must retain both existing plants');
   await screenshot('narrow');
   await tap('map-picker-map-allWater');
   final narrow = await pending;
-  check(narrow?.mapId == 'allWater' && narrow?.keepPlants == false,
+  check(narrow?.mapId == 'allWater' && narrow?.keepPlants == true,
       'Narrow immediate result failed');
+  check(jsonEncode(source.toJson()) == before,
+      'Dialog flow must not mutate supplied formation');
   check(errors.isEmpty, errors.map((e) => e.exceptionAsString()).join('\n'));
   stdout.writeln(
-      'PASS immediate map choice, unchecked default, keep checkbox, hover preview, top cancel, readonly and 360px layout');
+      'PASS external keep choice, plants in large/thumbnail previews, bounds filtering, source unchanged, left preview, immediate choice, hover, readonly and 360px layout');
   runApp(const SizedBox.shrink());
   await settle();
   exit(0);

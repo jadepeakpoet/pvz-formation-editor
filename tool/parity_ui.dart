@@ -126,6 +126,22 @@ Future<void> main() async {
     await h.tap(tab);
   }
 
+  Future<void> keepMapPlants(bool value) async {
+    final checkbox =
+        h.find((w) => w.key == const ValueKey('original-map-keep-plants'));
+    if ((checkbox.widget as Checkbox).value != value) {
+      await h.tapElement(checkbox);
+    }
+    h.expect(
+        (h
+                    .find((w) =>
+                        w.key == const ValueKey('original-map-keep-plants'))
+                    .widget as Checkbox)
+                .value ==
+            value,
+        'Map keep-plants option did not adopt requested state');
+  }
+
   Future<void> cell([int row = 0, int col = 0]) async {
     final e = h.find((w) => w is CustomPaint && w.painter is BoardPainter);
     final box = e.renderObject as RenderBox;
@@ -188,6 +204,7 @@ Future<void> main() async {
       await h.run('map.${map.id}', '地图弹窗点击即应用：${map.name}', () async {
         await fresh('选项设置');
         final before = session.document.fingerprint;
+        await keepMapPlants(false);
         await h.tapElement(
             h.find((w) => w.key == const ValueKey('settings-change-map')));
         h.expect(session.document.fingerprint == before,
@@ -207,12 +224,9 @@ Future<void> main() async {
         await cell(5, 0);
         await h.tap('选项设置');
         final before = session.document.fingerprint;
+        await keepMapPlants(keep);
         await h.tapElement(
             h.find((w) => w.key == const ValueKey('settings-change-map')));
-        if (keep) {
-          await h.tapElement(
-              h.find((w) => w.key == const ValueKey('map-picker-keep-plants')));
-        }
         h.expect(session.document.fingerprint == before,
             'Map checkbox must not change source board');
         await h.tapElement(
@@ -226,6 +240,7 @@ Future<void> main() async {
     for (final map in BoardMap.all.where((m) => m.originalIndex != null)) {
       await h.run('map-download.${map.id}', '下载原站地图原文件：${map.name}', () async {
         await fresh('选项设置');
+        await keepMapPlants(false);
         await h.tapElement(
             h.find((w) => w.key == const ValueKey('settings-change-map')));
         await h.tapElement(

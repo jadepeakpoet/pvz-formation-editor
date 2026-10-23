@@ -1,5 +1,8 @@
 /// English translations for the main editor interface.
 const Map<String, String> mainTranslations = {
+  '春哥布局': 'Chun Ge layouts',
+  '曾哥布局': 'Zeng Ge layouts',
+  '更换时保留植物': 'Keep plants when changing map',
   '该版本使用已移除或不支持的地图，无法预览和恢复。':
       'This version uses a removed or unsupported map and cannot be previewed or restored.',
   '正在恢复历史版本': 'Restoring version history',

@@ -198,7 +198,7 @@ Future<void> main() async {
     await h.settle();
   });
   await h.run('current-ui.map-picker',
-      'Both map entries apply immediately with unchecked keep option, cancel and undo preserve data',
+      'External keep option controls plant previews and application from catalog and settings',
       () async {
     final original = session.document;
     final sessionId = session.id;
@@ -215,23 +215,39 @@ Future<void> main() async {
     final depth = session.undoDepth;
     Future<void> open() => h.tapElement(
         h.find((w) => w.key == const ValueKey('original-change-map')));
-    Checkbox keepOption() =>
-        h.find((w) => w.key == const ValueKey('map-picker-keep-plants')).widget
-            as Checkbox;
+    Checkbox keepOption() => h
+        .find((w) => w.key == const ValueKey('original-map-keep-plants'))
+        .widget as Checkbox;
+    BoardPainter preview() =>
+        (h.find((w) => w.key == const ValueKey('map-picker-preview')).widget
+                as CustomPaint)
+            .painter as BoardPainter;
+    h.expect(keepOption().value == false,
+        'Keep option must default unchecked outside dialog');
     await open();
     h.expect(
-        keepOption().value == false &&
+        h
+                .all((w) => w.key == const ValueKey('map-picker-keep-plants'))
+                .isEmpty &&
+            preview().document.pieces.isEmpty &&
             session.document.fingerprint == before &&
             page.classicTab == 2,
-        'Opening chooser must default to clearing, without editing or navigating tabs');
+        'Dialog must inherit unchecked option and show only map without editing');
     await h.tapElement(
         h.find((w) => w.key == const ValueKey('map-picker-cancel')));
+    await h.settle();
     h.expect(
         session.document.fingerprint == before && session.undoDepth == depth,
         'Cancel map dialog changed document');
-    await open();
     await h.tapElement(
-        h.find((w) => w.key == const ValueKey('map-picker-keep-plants')));
+        h.find((w) => w.key == const ValueKey('original-map-keep-plants')));
+    h.expect((page.windowState() as Map)['keepPlantsOnMapChange'] == true,
+        'External option missing from window synchronization');
+    await open();
+    h.expect(
+        preview().document.pieces.length == 2 &&
+            session.document.fingerprint == before,
+        'Checked option must preview retained plants without changing source');
     await h.tapElement(
         h.find((w) => w.key == const ValueKey('map-picker-map-roof')));
     await h.settle();
@@ -249,20 +265,24 @@ Future<void> main() async {
         'Undo map change must restore excluded pieces');
     session.redo();
     await h.settle();
+    h.expect(keepOption().value == true,
+        'Outside option should remain until user changes it');
+    await h.tapElement(
+        h.find((w) => w.key == const ValueKey('original-map-keep-plants')));
     await open();
-    h.expect(
-        keepOption().value == false, 'Keep checkbox must reset on every open');
+    h.expect(preview().document.pieces.isEmpty,
+        'Unchecked option should show no retained plants');
     await h.tapElement(
         h.find((w) => w.key == const ValueKey('map-picker-map-day')));
     await h.settle();
     h.expect(session.document.mapId == 'day' && session.document.pieces.isEmpty,
-        'Default map click should clear plants');
+        'Unchecked map choice should clear plants');
     await open();
     session.execute('map external update',
         session.document.copy(sunValue: session.document.sunValue + 1));
     await h.settle();
-    final changed = session.document.fingerprint;
-    final changedDepth = session.undoDepth;
+    final changed = session.document.fingerprint,
+        changedDepth = session.undoDepth;
     await h.tapElement(
         h.find((w) => w.key == const ValueKey('map-picker-map-night')));
     await h.settle();
@@ -274,23 +294,18 @@ Future<void> main() async {
     page.update();
     await h.settle();
     h.expect(
-        h.all((w) => w.key == const ValueKey('original-lMap')).isEmpty &&
-            h
-                .all((w) => w.key == const ValueKey('original-btnMap-reset'))
-                .isEmpty,
-        'Settings should not retain dropdown or second-step map buttons');
+        keepOption().value == false &&
+            h.all((w) => w.key == const ValueKey('original-lMap')).isEmpty,
+        'Settings must share external option and have no old dropdown');
     await h.tapElement(
         h.find((w) => w.key == const ValueKey('settings-change-map')));
-    h.expect(keepOption().value == false,
-        'Settings must use same unchecked default');
+    h.expect(preview().document.pieces.isEmpty,
+        'Settings preview must use external option');
     await h.tapElement(
         h.find((w) => w.key == const ValueKey('map-picker-map-pool')));
     await h.settle();
-    h.expect(
-        session.document.mapId == 'pool' &&
-            page.classicTab == 5 &&
-            h.all((w) => w.key == const ValueKey('map-picker-dialog')).isEmpty,
-        'Settings map entry must apply directly and keep its settings tab');
+    h.expect(session.document.mapId == 'pool' && page.classicTab == 5,
+        'Settings should apply same map chooser without navigating');
     session.execute('restore map fixture', original);
     page.classicTab = 2;
     page.update();

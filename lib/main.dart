@@ -1263,6 +1263,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
   bool exportBackground = true;
   bool pokerWidth = false;
   String? pendingMapId;
+  bool keepPlantsOnMapChange = false;
   int musicLevel = 0, soundLevel = 0, windowStyle = 1;
   final sunEditor = TextEditingController(text: '9990');
   final documentNameEditor = TextEditingController();
@@ -1488,6 +1489,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
         'batchShovelFilter': batchShovelFilter,
         'windowStyle': windowStyle,
         'pendingMapId': pendingMapId,
+        'keepPlantsOnMapChange': keepPlantsOnMapChange,
         'musicLevel': musicLevel,
         'soundLevel': soundLevel,
         'mirrors': mirrors.map((m) => m.toJson()).toList(),
@@ -1698,6 +1700,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
         batchShovelFilter = value['batchShovelFilter'] as String;
         windowStyle = (value['windowStyle'] as num).toInt();
         pendingMapId = value['pendingMapId'] as String?;
+        keepPlantsOnMapChange = value['keepPlantsOnMapChange'] == true;
         exportFormat = FormationFormat.values.firstWhere(
             (f) => f.name == value['exportFormat'],
             orElse: () => FormationFormat.toolkit);
@@ -2140,6 +2143,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     mirrorPokerWidths.clear();
     mirrorPositions.clear();
     pendingMapId = null;
+    keepPlantsOnMapChange = false;
     windowError = null;
     sunEditor.text = '${s.document.sunValue}';
     transform.value = Matrix4.identity();
@@ -3892,13 +3896,29 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
               ])),
       ]);
 
+  Widget mapChangeControls(Key buttonKey) =>
+      Wrap(crossAxisAlignment: WrapCrossAlignment.center, children: [
+        classicButton('更换地图', () => unawaited(chooseMapFromCatalog()),
+            key: buttonKey),
+        originalCheck(
+            'map-keep-plants',
+            '更换时保留植物',
+            keepPlantsOnMapChange,
+            s.readOnly
+                ? null
+                : (value) => setState(() => keepPlantsOnMapChange = value)),
+      ]);
+
   Future<void> chooseMapFromCatalog() async {
     final target = s;
     final token = documentToken;
     final fingerprint = s.document.fingerprint;
     try {
       final result = await showMapPickerDialog(context,
-          currentMapId: target.document.mapId, readOnly: target.readOnly);
+          currentMapId: target.document.mapId,
+          currentFormation: target.document,
+          keepPlants: keepPlantsOnMapChange,
+          readOnly: target.readOnly);
       if (result == null || !mounted || target.readOnly) return;
       if (!identical(s, target) ||
           token != documentToken ||
@@ -3942,9 +3962,8 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
       Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         const LanguageSelector(),
         const SizedBox(height: 8),
+        mapChangeControls(const ValueKey('settings-change-map')),
         Row(children: [
-          classicButton('更换地图', () => unawaited(chooseMapFromCatalog()),
-              key: const ValueKey('settings-change-map')),
           Expanded(
               child: Text(AppLanguage.text(s.document.map.name),
                   style: const TextStyle(fontSize: 12),
@@ -4406,8 +4425,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
         classicButton('清空', s.readOnly ? null : clearFormation,
             key: const ValueKey('clear-formation'))
       ]),
-      classicButton('更换地图', () => unawaited(chooseMapFromCatalog()),
-          key: const ValueKey('original-change-map')),
+      mapChangeControls(const ValueKey('original-change-map')),
       const SizedBox(height: 5),
       plantingSupportOptions(),
       const SizedBox(height: 8),
@@ -4815,7 +4833,8 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                     size: 19, color: Color(0xff376b50))),
             Expanded(
                 child: Text(
-                    AppLanguage.text(group == '阵型' ? '预制名阵' : '$group布局'),
+                    AppLanguage.text(
+                        group == '阵型' ? '预制名阵' : presetLayoutLabel(group)),
                     style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
@@ -4842,6 +4861,12 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     ]);
   }
 
+  String presetLayoutLabel(String group) => switch (group) {
+        '炮位' => '春哥布局',
+        '无炮' => '曾哥布局',
+        _ => '$group布局',
+      };
+
   Widget presetSelector(String label, List<OriginalPreset> presets) => Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Material(
@@ -4859,7 +4884,9 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                       ? Icons.grass_outlined
                       : Icons.grid_view_rounded,
                   color: const Color(0xff376b50)),
-              title: Text(AppLanguage.text(label == '阵型' ? '阵型选择' : '$label布局'),
+              title: Text(
+                  AppLanguage.text(
+                      label == '阵型' ? '阵型选择' : presetLayoutLabel(label)),
                   style: const TextStyle(
                       fontSize: 13, fontWeight: FontWeight.w600)),
               subtitle: Text(

@@ -7,23 +7,34 @@ import 'board_painter.dart';
 typedef MapPickerChoice = ({String mapId, bool keepPlants});
 
 Future<MapPickerChoice?> showMapPickerDialog(BuildContext context,
-        {required String currentMapId, bool readOnly = false}) =>
+        {required String currentMapId,
+        Formation? currentFormation,
+        bool keepPlants = false,
+        bool readOnly = false}) =>
     showDialog<MapPickerChoice>(
         context: context,
-        builder: (_) =>
-            _MapPickerDialog(currentMapId: currentMapId, readOnly: readOnly));
+        builder: (_) => _MapPickerDialog(
+            currentMapId: currentMapId,
+            currentFormation: currentFormation,
+            keepPlants: keepPlants,
+            readOnly: readOnly));
 
 class _MapPickerDialog extends StatefulWidget {
   final String currentMapId;
+  final Formation? currentFormation;
+  final bool keepPlants;
   final bool readOnly;
-  const _MapPickerDialog({required this.currentMapId, required this.readOnly});
+  const _MapPickerDialog(
+      {required this.currentMapId,
+      this.currentFormation,
+      required this.keepPlants,
+      required this.readOnly});
   @override
   State<_MapPickerDialog> createState() => _MapPickerDialogState();
 }
 
 class _MapPickerDialogState extends State<_MapPickerDialog> {
   late String selectedMapId = widget.currentMapId;
-  bool keepPlants = false;
 
   void previewMap(String id) {
     if (selectedMapId != id) setState(() => selectedMapId = id);
@@ -32,17 +43,27 @@ class _MapPickerDialogState extends State<_MapPickerDialog> {
   void chooseMap(String id) {
     previewMap(id);
     if (!widget.readOnly) {
-      Navigator.of(context).pop((mapId: id, keepPlants: keepPlants));
+      Navigator.of(context).pop((mapId: id, keepPlants: widget.keepPlants));
     }
+  }
+
+  Formation previewFormation(BoardMap map) {
+    final source =
+        widget.currentFormation ?? Formation(mapId: widget.currentMapId);
+    return source.copy(
+        mapId: map.id,
+        display: const {},
+        pieces: widget.keepPlants
+            ? source.pieces.where((piece) => source.fits(piece, map)).toList()
+            : const []);
   }
 
   Widget preview(BoardMap map, {Key? key}) => AspectRatio(
       aspectRatio: 4 / 3,
       child: CustomPaint(
           key: key,
-          painter: BoardPainter(
-              document: Formation(mapId: map.id, display: const {}),
-              helpers: false)));
+          painter:
+              BoardPainter(document: previewFormation(map), helpers: false)));
 
   Widget mapList() => DecoratedBox(
       decoration: BoxDecoration(
@@ -128,20 +149,6 @@ class _MapPickerDialogState extends State<_MapPickerDialog> {
                             onPressed: () => Navigator.of(context).pop(),
                             child: Text(AppLanguage.text('取消'))),
                       ]),
-                      Row(children: [
-                        SizedBox(
-                            width: 24,
-                            height: 32,
-                            child: Checkbox(
-                                key: const ValueKey('map-picker-keep-plants'),
-                                value: keepPlants,
-                                onChanged: widget.readOnly
-                                    ? null
-                                    : (value) =>
-                                        setState(() => keepPlants = value!))),
-                        const SizedBox(width: 6),
-                        Text(AppLanguage.text('保留植物')),
-                      ]),
                       const SizedBox(height: 8),
                       Expanded(child: LayoutBuilder(builder: (_, constraints) {
                         if (constraints.maxWidth < 560) {
@@ -159,14 +166,14 @@ class _MapPickerDialogState extends State<_MapPickerDialog> {
                         return Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              SizedBox(width: 242, child: mapList()),
-                              const SizedBox(width: 16),
                               Expanded(child: selectedPreview()),
+                              const SizedBox(width: 16),
+                              SizedBox(width: 242, child: mapList()),
                             ]);
                       })),
                       const SizedBox(height: 8),
                       Text(
-                          AppLanguage.text(keepPlants
+                          AppLanguage.text(widget.keepPlants
                               ? '保留植物时，超出新地图范围的植物将被移除。'
                               : '未勾选“保留植物”，切换地图时将清空植物。'),
                           style: const TextStyle(
