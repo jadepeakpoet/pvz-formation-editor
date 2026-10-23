@@ -42,3 +42,43 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
+
+# Secrets, signing and local machine configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.mobileprovision
+*.provisionprofile
+/key.properties
+**/key.properties
+**/local.properties
+**/ServiceAccount*.json
+**/service-account*.json
+/.agents/
+/.codex/
+/.aws/
+
+# Game packages and extracted/local reference material
+*.[pP][aA][kK]
+*.[pP][aA][kK].*
+/pak/
+/pak-extracted/
+/extracted/
+/local-reference/
+
+# Private saves, databases and exported artifacts
+*.sqlite
+*.sqlite-*
+*.db
+*.db-*
+*.pvzf.json
+*.pvzsave
+/exports/
+/backups/
+/coverage/

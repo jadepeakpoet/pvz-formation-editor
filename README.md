@@ -1,6 +1,8 @@
 # PVZ Formation Editor · 植物大战僵尸布阵器
 
-作者：**yuexiaomeng**
+[简体中文](README.md) | [English](README.en.md)
+
+作者：**yuexiaomeng** · [作者信息](AUTHORS) · [鸣谢](ACKNOWLEDGMENTS.md)
 
 在存档库的设置或编辑器的“选项设置”中，可切换简体中文 / English；选择会保存，并同步到独立窗口。部分植物与预制阵型名称保留原始名称。
 
@@ -28,8 +30,6 @@ flutter build ios --no-codesign
 ```
 
 macOS/iOS 需要 Xcode 与可工作的 CocoaPods；Android 需要 Android SDK 和与本工程 Gradle 7.6.3 相容的 JDK 17（可在 `android` 目录通过 `JAVA_HOME=/path/to/jdk17 ./gradlew assembleDebug` 构建，避免改动全局配置）；Windows 需要 Flutter 桌面工具链且使用系统 `winsqlite3.dll`；Linux 需要 Flutter GTK 构建依赖、`libsqlite3.so.0` 和用于文件对话框的 `zenity`，以及中文字体。未提供发布签名、安装包或商店发布配置。
-
-当前受管环境的原 Flutter SDK 缓存不可写，验证临时复制到 `/tmp/pvz-flutter-sdk`；**该机器路径不是产品依赖，也未打包进源码**。在正常可写 SDK 上直接使用以上命令即可。
 
 ## 使用
 
@@ -101,3 +101,7 @@ FLUTTER_SDK=/path/to/flutter ./tool/check.sh
 ## 代码职责
 
 `lib/domain`：不可变文档、验证、局部布局与两套编解码；`lib/editor`：命令历史、自动保存会话、坐标及离屏绘制；`lib/storage`：串行 SQLite 仓库与事务/迁移；`lib/platform` 与原生 runner：文件接口；`lib/main.dart`：资料库及响应式编辑 UI。UI 不执行 SQL，绘制器不管理存档。
+
+## 作者与鸣谢
+
+作者及维护者：**yuexiaomeng**。感谢 PopCap Games 的原作、jspvz 网页布阵器的作者与维护者，以及 Flutter、Dart 和本项目使用的开源依赖贡献者。详细来源见 [鸣谢名单](ACKNOWLEDGMENTS.md) 和 [素材说明](docs/assets.md)。未核实的个人姓名不作署名推断。
