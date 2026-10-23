@@ -168,6 +168,7 @@ class GrowthEffect {
 
 class BoardPainter extends CustomPainter {
   // Ten-card bank: original GetShovelButtonRect uses 456 + 153.
+  static const sunValueBounds = Rect.fromLTWH(18, 59, 66, 24);
   static const shovelBankBounds = Rect.fromLTWH(609, 0, 70, 72);
   static Rect seedSlotBounds(int index) {
     if (index < 0 || index >= 10) throw RangeError.range(index, 0, 9, 'index');
@@ -183,7 +184,7 @@ class BoardPainter extends CustomPainter {
   final List<GrowthEffect> growthEffects;
   final Set<(int, int)> selectedCells;
   final String? selectedId;
-  final bool background, helpers;
+  final bool background, helpers, paintSunValue;
   BoardPainter(
       {required this.document,
       this.plantingPreview,
@@ -195,6 +196,7 @@ class BoardPainter extends CustomPainter {
       this.selectedCells = const {},
       this.selectedId,
       this.background = true,
+      this.paintSunValue = true,
       this.helpers = true})
       : super(repaint: OriginalAssets.revision);
   void label(Canvas canvas, String text, Offset center, double fontSize,
@@ -339,7 +341,7 @@ class BoardPainter extends CustomPainter {
         label(canvas, '${i + 1}', Offset(312 + i * 75, 64), 20);
       }
     }
-    if (document.display['阳光'] == true) {
+    if (paintSunValue && document.display['阳光'] == true) {
       final sunlight = TextPainter(
           text: TextSpan(
               text: '${document.sunValue}',

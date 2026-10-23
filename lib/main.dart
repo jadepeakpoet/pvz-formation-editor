@@ -20,6 +20,7 @@ import 'platform/language_selector.dart';
 import 'domain/layouts.dart';
 import 'domain/object_filter.dart';
 import 'editor/board_painter.dart';
+import 'editor/board_sun_editor.dart';
 import 'editor/shovel_targets.dart';
 import 'editor/classic_window.dart';
 import 'editor/original_assets.dart';
@@ -4800,7 +4801,29 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                               fit: BoxFit.fill)),
                   ])))));
 
+  Widget boardSeedSlot(int index) {
+    final returning = seedChooserOpen && index < seedSlots.length;
+    final label = returning
+        ? '${AppLanguage.text('返回')} ${AppLanguage.text(ObjectSpec.byId(seedSlots[index]).name)}'
+        : AppLanguage.text('选择植物');
+    return Positioned.fromRect(
+        rect: BoardPainter.seedSlotBounds(index),
+        child: Semantics(
+            button: true,
+            label: label,
+            child: GestureDetector(
+                key: ValueKey(returning
+                    ? 'board-seed-return-$index'
+                    : 'board-seed-open-$index'),
+                behavior: HitTestBehavior.opaque,
+                onTap: returning
+                    ? (s.readOnly ? null : () => removeSeedSlot(index))
+                    : () => unawaited(toggleSeedChooser(true)),
+                child: const SizedBox.expand())));
+  }
+
   Widget board() {
+    final targetSession = s;
     final doc = gesture &&
             (tool == '放置' || tool == '铲除' || tool == '选择' || tool == '模仿')
         ? s.document.copy(pieces: gesturePieces)
@@ -4864,11 +4887,18 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                           behavior: HitTestBehavior.opaque,
                           onPointerDown: (d) {
                             updatePlantingPointer(d.localPosition);
-                            canvasFocus.requestFocus();
                             if (seedChooserOpen) return;
+                            if (rendered.display['阳光'] == true &&
+                                BoardPainter.sunValueBounds
+                                    .contains(d.localPosition)) return;
+                            canvasFocus.requestFocus();
                             if (rendered.display['卡槽'] == true &&
-                                BoardPainter.shovelBankBounds
-                                    .contains(d.localPosition)) {
+                                (BoardPainter.shovelBankBounds
+                                        .contains(d.localPosition) ||
+                                    List.generate(
+                                            10, BoardPainter.seedSlotBounds)
+                                        .any((rect) =>
+                                            rect.contains(d.localPosition)))) {
                               return;
                             }
                             if (d.buttons == 2) {
@@ -4908,6 +4938,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                                         key: plantingBoardKey,
                                         painter: BoardPainter(
                                             document: rendered,
+                                            paintSunValue: false,
                                             plantingPreview: preview,
                                             plantingSupportPreviews:
                                                 supportPreviews,
@@ -4923,27 +4954,24 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                                             selectedId: selectedId))),
                                 if (rendered.display['卡槽'] == true)
                                   boardShovelBank(),
-                                if (seedChooserOpen &&
-                                    rendered.display['卡槽'] == true)
-                                  for (var i = 0;
-                                      i < rendered.seedSlots.length;
-                                      i++)
-                                    Positioned.fromRect(
-                                        rect: BoardPainter.seedSlotBounds(i),
-                                        child: Semantics(
-                                            button: true,
-                                            label:
-                                                '退回${rendered.imitaterSeedSlots.contains(i) ? '模仿者 · ' : ''}${ObjectSpec.byId(rendered.seedSlots[i]).name}',
-                                            child: GestureDetector(
-                                                key: ValueKey(
-                                                    'board-seed-return-$i'),
-                                                behavior:
-                                                    HitTestBehavior.opaque,
-                                                onTap: s.readOnly
-                                                    ? null
-                                                    : () => removeSeedSlot(i),
-                                                child:
-                                                    const SizedBox.expand()))),
+                                if (rendered.display['阳光'] == true)
+                                  Positioned.fromRect(
+                                      rect: BoardPainter.sunValueBounds,
+                                      child: BoardSunEditor(
+                                          key: ValueKey('board-sun-${s.id}'),
+                                          value: rendered.sunValue,
+                                          readOnly: s.readOnly,
+                                          onChanged: (value) {
+                                            if (!identical(s, targetSession) ||
+                                                targetSession.readOnly) return;
+                                            finishGesture();
+                                            targetSession.execute(
+                                                '修改阳光',
+                                                targetSession.document
+                                                    .copy(sunValue: value));
+                                          })),
+                                if (rendered.display['卡槽'] == true)
+                                  for (var i = 0; i < 10; i++) boardSeedSlot(i),
                                 // Transient cursor feedback must paint above
                                 // both the board and its interactive HUD.
                                 if (!s.readOnly &&

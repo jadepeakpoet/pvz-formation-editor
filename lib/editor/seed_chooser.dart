@@ -114,29 +114,11 @@ class _OriginalSeedChooserState extends State<OriginalSeedChooser> {
                 behavior: HitTestBehavior.opaque,
                 onTap: widget.readOnly ? null : () => toggle(type, mimic),
                 child: ColorFiltered(
+                    // The original chooser dims cards already in the bank,
+                    // retaining their color; grayscale belongs to Imitater art.
                     colorFilter: selected
-                        ? const ColorFilter.matrix([
-                            .2126,
-                            .7152,
-                            .0722,
-                            0,
-                            0,
-                            .2126,
-                            .7152,
-                            .0722,
-                            0,
-                            0,
-                            .2126,
-                            .7152,
-                            .0722,
-                            0,
-                            0,
-                            0,
-                            0,
-                            0,
-                            1,
-                            0
-                          ])
+                        ? const ColorFilter.mode(
+                            Color(0xff808080), BlendMode.modulate)
                         : const ColorFilter.mode(
                             Colors.transparent, BlendMode.dst),
                     child: SizedBox(

@@ -1,5 +1,9 @@
 /// English translations for the main editor interface.
 const Map<String, String> mainTranslations = {
+  '选择植物': 'Choose plants',
+  '编辑阳光': 'Edit sun',
+  '回车保存，Esc 取消': 'Enter to save, Esc to cancel',
+  '请输入 0–99999999 的整数': 'Enter a whole number from 0 to 99999999',
   "植物大战僵尸布阵器": "PVZ Formation Editor",
   "正在打开庭院…": "Opening the garden…",
   "正在加载工具箱…": "Loading toolbox…",

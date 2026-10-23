@@ -231,6 +231,131 @@ Future<void> main() async {
     session.execute('还原选卡夹具', original);
     await h.settle();
   });
+  await h.run('current-ui.top-bank-opens-chooser',
+      'Every top slot opens chooser without modifying formation, including empty slots and readonly',
+      () async {
+    final before = session.document.fingerprint;
+    final depth = session.undoDepth;
+    for (var i = 0; i < 10; i++) {
+      await page.toggleSeedChooser(false);
+      await h.settle();
+      await h
+          .tapElement(h.find((w) => w.key == ValueKey('board-seed-open-$i')));
+      h.expect(
+          page.seedChooserOpen &&
+              session.document.fingerprint == before &&
+              session.undoDepth == depth,
+          'Top slot $i did not open picker without modifying formation');
+    }
+    await page.toggleSeedChooser(false);
+    session.readOnly = true;
+    page.update();
+    await h.settle();
+    await h.tapElement(
+        h.find((w) => w.key == const ValueKey('board-seed-open-9')));
+    h.expect(page.seedChooserOpen && session.document.fingerprint == before,
+        'Readonly picker browsing failed');
+    session.readOnly = false;
+    page.update();
+    await page.toggleSeedChooser(false);
+    await h.settle();
+  });
+  await h.run('current-ui.inline-sun',
+      'Top sun edits inline, validates, supports escape/blur and undo, and is readonly safe',
+      () async {
+    final original = session.document;
+    page.cancelPlanting();
+    await h.settle();
+    await h
+        .tapElement(h.find((w) => w.key == const ValueKey('board-sun-edit')));
+    TextField field() =>
+        h.find((w) => w.key == const ValueKey('board-sun-input')).widget
+            as TextField;
+    h.expect(
+        field().controller!.selection.extentOffset ==
+            '${original.sunValue}'.length,
+        'Sun input should select existing number');
+    await h
+        .tapElement(h.find((w) => w.key == const ValueKey('board-sun-input')));
+    h.expect(
+        h.all((w) => w.key == const ValueKey('board-sun-input')).isNotEmpty,
+        'Clicking inline field must keep it open');
+    await h.screenshot('inline-sun-editing');
+    final depth = session.undoDepth;
+    field().controller!.text = '12345';
+    field().onSubmitted!('12345');
+    await h.settle();
+    h.expect(
+        session.document.sunValue == 12345 && session.undoDepth == depth + 1,
+        'Sun save must be one undo command');
+    session.undo();
+    await h.settle();
+    h.expect(session.document.sunValue == original.sunValue, 'Sun undo failed');
+    session.redo();
+    await h.settle();
+    await h
+        .tapElement(h.find((w) => w.key == const ValueKey('board-sun-edit')));
+    field().controller!.text = '';
+    field().onSubmitted!('');
+    await h.settle();
+    h.expect(
+        session.document.sunValue == 12345 &&
+            h.all((w) => w.key == const ValueKey('board-sun-input')).isNotEmpty,
+        'Empty input must remain editable without changing sun');
+    field().controller!.text = '99999999';
+    field().onSubmitted!('99999999');
+    await h.settle();
+    h.expect(
+        session.document.sunValue == 99999999, 'Maximum sun value rejected');
+    await h
+        .tapElement(h.find((w) => w.key == const ValueKey('board-sun-edit')));
+    field().controller!.text = '42';
+    var time = 0;
+    for (final type in [ui.KeyEventType.down, ui.KeyEventType.up]) {
+      binding.platformDispatcher.onKeyData!(ui.KeyData(
+          timeStamp: Duration(milliseconds: ++time),
+          type: type,
+          physical: PhysicalKeyboardKey.escape.usbHidUsage,
+          logical: LogicalKeyboardKey.escape.keyId,
+          character: null,
+          synthesized: true));
+    }
+    await h.settle();
+    h.expect(
+        session.document.sunValue == 99999999 &&
+            h.all((w) => w.key == const ValueKey('board-sun-input')).isEmpty,
+        'Escape must cancel inline sun edit');
+    await h
+        .tapElement(h.find((w) => w.key == const ValueKey('board-sun-edit')));
+    field().controller!.text = '0';
+    await h.tapElement(
+        h.find((w) => w.key == const ValueKey('board-seed-open-0')));
+    h.expect(session.document.sunValue == 0 && page.seedChooserOpen,
+        'Clicking away must save sun without blocking picker');
+    await page.toggleSeedChooser(false);
+    await h
+        .tapElement(h.find((w) => w.key == const ValueKey('board-sun-edit')));
+    field().controller!.text = '77';
+    session.execute(
+        'external sun update', session.document.copy(sunValue: 555));
+    await h.settle();
+    h.expect(
+        h.all((w) => w.key == const ValueKey('board-sun-input')).isEmpty &&
+            session.document.sunValue == 555,
+        'External update must cancel stale inline input');
+    session.readOnly = true;
+    page.update();
+    await h.settle();
+    await h
+        .tapElement(h.find((w) => w.key == const ValueKey('board-sun-edit')));
+    h.expect(
+        h.all((w) => w.key == const ValueKey('board-sun-input')).isEmpty &&
+            session.document.sunValue == 555,
+        'Readonly sun must not edit');
+    session.readOnly = false;
+    session.execute('restore sun fixture', original);
+    await h.settle();
+  });
   await h.run('current-ui.narrow-window',
       'Actual 390px viewport relayout retains document and opens/closes card preview without overflow',
       () async {

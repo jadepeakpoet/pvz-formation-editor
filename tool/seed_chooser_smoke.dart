@@ -1,6 +1,7 @@
 // Real engine pointer interactions. No native window or original-site pixel claim.
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
@@ -91,15 +92,70 @@ Future<void> main() async {
     image.dispose();
   }
 
+  Future<Uint8List> cardPixels(String cardKey) async {
+    final boundary =
+        key.currentContext!.findRenderObject() as RenderRepaintBoundary;
+    final card =
+        find((w) => w.key == ValueKey(cardKey))!.renderObject as RenderBox;
+    final origin = boundary.globalToLocal(card.localToGlobal(Offset.zero));
+    final image = await boundary.toImage();
+    try {
+      final data =
+          (await image.toByteData(format: ui.ImageByteFormat.rawRgba))!;
+      final pixels = BytesBuilder();
+      for (var y = origin.dy.round();
+          y < (origin.dy + card.size.height).round();
+          y++) {
+        final start = (y * image.width + origin.dx.round()) * 4;
+        pixels.add(data.buffer.asUint8List(start, card.size.width.round() * 4));
+      }
+      return pixels.takeBytes();
+    } finally {
+      image.dispose();
+    }
+  }
+
+  bool samePixels(Uint8List a, Uint8List b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
+  }
+
   try {
     await mount();
     check(find((w) => w is RawImage && w.image != null) != null,
         'Original card artwork loaded');
     await shot('normal');
+    final availablePea = await cardPixels('seed-choice-normal-pea');
     await tap('seed-choice-normal-pea');
     check(doc.value.seedSlots.single == 'pea', 'Normal add');
+    final selectedPea = await cardPixels('seed-choice-normal-pea');
+    var colored = 0, dimmed = 0;
+    for (var i = 0; i < availablePea.length; i += 4) {
+      final r = availablePea[i],
+          g = availablePea[i + 1],
+          b = availablePea[i + 2];
+      if (availablePea[i + 3] > 250 && g > r + 30 && g > b + 30) {
+        if (selectedPea[i + 1] > selectedPea[i] + 12 &&
+            selectedPea[i + 1] > selectedPea[i + 2] + 12) {
+          colored++;
+        }
+        if (selectedPea[i + 1] < g * .6 && selectedPea[i + 1] > g * .4) {
+          dimmed++;
+        }
+      }
+    }
+    check(colored > 100 && dimmed > 100,
+        'Selected card must dim while preserving its original green hue');
+    await shot('selected-color-dimmed');
     await tap('seed-choice-normal-pea');
     check(doc.value.seedSlots.isEmpty, 'Normal second click removes');
+    check(samePixels(availablePea, await cardPixels('seed-choice-normal-pea')),
+        'Deselecting must restore original card pixels');
+    results.add(
+        'selected card retains hue, dims like original chooser, removal restores artwork');
     results.add('normal add and second-click removal');
     await tap('seed-choice-normal-pea');
     await tap('seed-imitater-open');
@@ -122,6 +178,8 @@ Future<void> main() async {
         doc.value.seedSlots.single == 'pea' &&
             doc.value.imitaterSeedSlots.single == 0,
         'Removal shifts gray index');
+    check(samePixels(availablePea, await cardPixels('seed-choice-normal-pea')),
+        'Selecting only Imitater must not dim the ordinary plant card');
     results.add('normal removal preserves and shifts gray index');
     await tap('seed-imitater-open');
     check(
