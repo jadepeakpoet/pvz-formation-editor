@@ -152,7 +152,7 @@ Future<void> main() async {
   final sunBox = h.find((w) => w.key == const ValueKey('original-tSun')).renderObject as RenderBox;
   final sunField = h.find((w) => w.key == const ValueKey('original-tSun')).widget as TextField;
   final sunLabel = h.find((w) => w is Text && w.data == '显示阳光、卡片槽').renderObject as RenderBox;
-  h.expect(sunBox.size.height >= 32 && sunField.textAlignVertical == TextAlignVertical.center &&
+  h.expect(sunBox.size.height >= 32 && sunField.textAlignVertical == TextAlignVertical.center && sunField.expands &&
       (sunBox.localToGlobal(sunBox.size.center(Offset.zero)).dy -
        sunLabel.localToGlobal(sunLabel.size.center(Offset.zero)).dy).abs() < 1,
       'Settings sun field must have comfortable height and align with its label');

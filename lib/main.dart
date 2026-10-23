@@ -1818,14 +1818,19 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
       child: Theme(
           data: Theme.of(context).copyWith(
               colorScheme:
-                  ColorScheme.fromSeed(seedColor: const Color(0xff426f45)),
-              dividerColor: const Color(0xffdce5d3)),
+                  ColorScheme.fromSeed(seedColor: const Color(0xff376b50)),
+              dividerColor: const Color(0xffdce3d7),
+              inputDecorationTheme: Theme.of(context).inputDecorationTheme.copyWith(
+                  filled: true,
+                  fillColor: Colors.white,
+                  enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: Color(0xffdce3d7))),
+                  focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: Color(0xff376b50), width: 2)))),
           child: DecoratedBox(
-              decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [Color(0xfff7f8ee), Color(0xffedf3e5)])),
+              decoration: const BoxDecoration(color: Color(0xfff7f8f3)),
               child: Column(children: [
                 SizedBox(
                     height: 34,
@@ -1839,15 +1844,15 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                                     alignment: Alignment.center,
                                     decoration: BoxDecoration(
                                         color: (i == 0 ? seedChooserOpen : classicTab == i)
-                                            ? const Color(0xffe1ecd6)
-                                            : const Color(0xfff4f5e9),
+                                            ? const Color(0xffd6e5d2)
+                                            : const Color(0xfff7f8f3),
                                         border: Border(
                                             bottom: BorderSide(
                                                 color: (i == 0
                                                         ? seedChooserOpen
                                                         : classicTab == i)
-                                                    ? const Color(0xff628655)
-                                                    : const Color(0xffdce5d3),
+                                                    ? const Color(0xff376b50)
+                                                    : const Color(0xffdce3d7),
                                                 width: (i == 0
                                                         ? seedChooserOpen
                                                         : classicTab == i)
@@ -1856,7 +1861,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                                     child: Text(AppLanguage.text(['卡槽选卡', '懒人布局', '图鉴选卡', '镜像窗口', '载入导出', '选项设置'][i]),
                                         style: TextStyle(
                                             fontSize: 11,
-                                            color: const Color(0xff304b32),
+                                            color: const Color(0xff263f35),
                                             fontWeight: (i == 0
                                                     ? seedChooserOpen
                                                     : classicTab == i)
@@ -3659,7 +3664,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
   Widget buildEditor(BuildContext context) {
     if (widget.toolboxOnly) {
       return Scaffold(
-          backgroundColor: const Color(0xfff3f6eb),
+          backgroundColor: const Color(0xfff7f8f3),
           body: classicToolboxContents());
     }
     if (nativeWindows) {
@@ -3843,14 +3848,14 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                 style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(horizontal: 7),
                     minimumSize: Size.zero,
-                    foregroundColor: const Color(0xff304f36),
+                    foregroundColor: const Color(0xff376b50),
                     side: BorderSide(
                         color: active
-                            ? const Color(0xff70945d)
-                            : const Color(0xffccd9c2)),
+                            ? const Color(0xff376b50)
+                            : const Color(0xffdce3d7)),
                     backgroundColor: active
-                        ? const Color(0xffe1edcf)
-                        : const Color(0xfffbfcf7),
+                        ? const Color(0xffd6e5d2)
+                        : const Color(0xffffffff),
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(7)),
                     textStyle: const TextStyle(fontSize: 12)),
@@ -4212,6 +4217,9 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
               child: TextField(
                   key: const ValueKey('original-tSun'),
                   controller: sunEditor,
+                  expands: true,
+                  minLines: null,
+                  maxLines: null,
                   textAlignVertical: TextAlignVertical.center,
                   style: const TextStyle(fontSize: 12),
                   decoration: const InputDecoration(
@@ -4345,8 +4353,8 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
         const SizedBox(height: 4),
         TextField(
             controller: inputFormation,
-            minLines: 4,
-            maxLines: 6,
+            minLines: 2,
+            maxLines: 3,
             style: const TextStyle(fontSize: 12),
             decoration: InputDecoration(
                 hintText: AppLanguage.text('粘贴 Toolkit 或网页布阵器阵型码'))),
@@ -4375,8 +4383,8 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
             key: const ValueKey('formation-live-output'),
             controller: outputFormation,
             readOnly: true,
-            minLines: 4,
-            maxLines: 6,
+            minLines: 2,
+            maxLines: 3,
             style: const TextStyle(fontSize: 12),
             decoration: InputDecoration(
                 hintText: AppLanguage.text('当前阵型暂不能生成 Toolkit 阵型码'))),

@@ -161,6 +161,56 @@ class GrowthEffect {
       : assert(frame >= 0 && frame < frameCount);
 }
 
+class FogTile {
+  final int row, column, maskFrame, textureFrame;
+  final double opacity;
+  const FogTile(this.row, this.column, this.maskFrame, this.textureFrame, this.opacity);
+  Rect get rect => Rect.fromLTWH(-12 + column * 80.0, 20 + row * 85.0, 210, 190);
+}
+
+/// Source MakeFog/GatherFog geometry is independent of the lawn's row count.
+/// Stable frame choices keep fog from reshuffling during hover or selection.
+class FogGeometry {
+  final Formation document;
+  const FogGeometry(this.document);
+
+  Set<(int, int)> get cleared {
+    final result = <(int, int)>{};
+    final firstColumn = 9 - document.fogColumns;
+    for (final piece in document.pieces) {
+      final rowRadius = piece.type == 'torch' ? 1 : piece.type == 'plantern' ? 2 : 0;
+      if (rowRadius == 0) continue;
+      final colRadius = piece.type == 'torch' ? 1 : 3;
+      final minRow = piece.row - rowRadius, maxRow = piece.row + rowRadius;
+      final minCol = piece.col - colRadius, maxCol = piece.col + colRadius;
+      final firstRow = math.max(0, minRow), lastRow = math.min(9, maxRow);
+      for (var row = firstRow; row <= lastRow; row++) {
+        final corner = row == firstRow && minRow >= 0 || row == lastRow && maxRow < 10;
+        final first = math.max(math.max(0, minCol + (corner ? 1 : 0)), firstColumn);
+        final last = math.min(9, maxCol - (corner ? 1 : 0));
+        for (var col = first; col <= last; col++) {
+          result.add((row, col));
+          if (col == 8) result.add((row, 9));
+        }
+      }
+    }
+    return result;
+  }
+
+  List<FogTile> get tiles {
+    if (document.fogColumns <= 0) return const [];
+    final first = 9 - document.fogColumns.clamp(0, 10);
+    final hidden = cleared;
+    return [
+      for (var col = first; col <= 9; col++)
+        for (var row = 0; row <= 6; row++)
+          if (!hidden.contains((row, col)))
+            FogTile(row, col, (row * 31 + col * 17) & 7,
+                (row * 13 + col * 7 + 3) & 7, col == first ? .78 * .78 : 1),
+    ];
+  }
+}
+
 class BoardPainter extends CustomPainter {
   // Ten-card bank: original GetShovelButtonRect uses 456 + 153.
   static const sunValueBounds = Rect.fromLTWH(18, 59, 66, 24);
@@ -515,25 +565,7 @@ class BoardPainter extends CustomPainter {
       }
     }
     if (document.display['迷雾'] == true && document.fogColumns > 0) {
-      final rect = Rect.fromLTWH(800 - document.fogColumns * 80.0, 80,
-          document.fogColumns * 80.0, 520);
-      final fog = OriginalAssets.image('image/fog_.jpg');
-      if (fog != null) {
-        canvas.saveLayer(rect, Paint()..color = const Color(0xaaffffff));
-        canvas.drawImageRect(
-            fog,
-            Rect.fromLTWH(0, 0, fog.width.toDouble(), fog.height.toDouble()),
-            rect,
-            Paint());
-        canvas.restore();
-      } else {
-        canvas.drawRect(
-            rect,
-            Paint()
-              ..shader = const LinearGradient(
-                      colors: [Color(0x00e6eff0), Color(0xdde6eff0)])
-                  .createShader(rect));
-      }
+      _fog(canvas);
     }
     if (document.display['继续标识'] == true) {
       final banner = OriginalAssets.image('image/ClickToContinue.png');
@@ -591,6 +623,31 @@ class BoardPainter extends CustomPainter {
   }
 
   // These secondary canvases are created automatically by the original site.
+  void _fog(Canvas canvas) {
+    final texture = OriginalAssets.image('image/fog.jpg');
+    final mask = OriginalAssets.image('image/fog_.jpg');
+    if (texture == null || mask == null) return;
+    // The source stores the cloud silhouette in the mask's red channel, not
+    // JPEG alpha. Drawing the mask as ordinary artwork leaves a black sheet.
+    final maskPaint = Paint()
+      ..blendMode = BlendMode.dstIn
+      ..colorFilter = const ColorFilter.matrix([
+        1, 0, 0, 0, 0,
+        0, 1, 0, 0, 0,
+        0, 0, 1, 0, 0,
+        1, 0, 0, 0, 0,
+      ]);
+    for (final tile in FogGeometry(document).tiles) {
+      final rect = tile.rect;
+      canvas.saveLayer(rect, Paint()..color = Colors.white.withOpacity(tile.opacity));
+      canvas.drawImageRect(texture,
+          Rect.fromLTWH(tile.textureFrame * 210.0, 0, 210, 190), rect, Paint());
+      canvas.drawImageRect(mask,
+          Rect.fromLTWH(tile.maskFrame * 210.0, 0, 210, 190), rect, maskPaint);
+      canvas.restore();
+    }
+  }
+
   // Pumpkin/ScaryPot backs track columns only; GloomPuff tracks both axes.
   Piece _addon(Piece master, String type, int layer,
           {int? frameRow, bool noDiscoloration = false}) =>
