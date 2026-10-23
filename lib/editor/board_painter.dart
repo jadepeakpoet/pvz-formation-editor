@@ -178,7 +178,7 @@ class BoardPainter extends CustomPainter {
   final Set<String> shovelTargetIds;
   final List<GrowthEffect> growthEffects;
   final Set<(int, int)> selectedCells;
-  final String? selectedId;
+  final String? selectedId, stateHoverId;
   final bool background, helpers, paintSunValue;
   BoardPainter(
       {required this.document,
@@ -190,6 +190,7 @@ class BoardPainter extends CustomPainter {
       this.growthEffects = const [],
       this.selectedCells = const {},
       this.selectedId,
+      this.stateHoverId,
       this.background = true,
       this.paintSunValue = true,
       this.helpers = true})
@@ -401,9 +402,12 @@ class BoardPainter extends CustomPainter {
       }
     }
     for (final original in document.pieces) {
-      final piece = helpers && shovelTargetIds.contains(original.id)
+      var piece = helpers && shovelTargetIds.contains(original.id)
           ? original.copy(effects: {...original.effects, '高亮'})
           : original;
+      if (helpers && stateHoverId == original.id) {
+        piece = piece.copy(opacity: piece.opacity * .55);
+      }
       final name = OriginalAssets.names[piece.type] ?? piece.type;
       if (name == 'Pumpkin') {
         visualPieces

@@ -2768,8 +2768,11 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
 
   List<Piece> piecesAtPointer(Offset position) {
     final geometry = BoardGeometry(s.document);
+    // Cactus height is a visual state; use its short silhouette for interaction
+    // so an extended stalk cannot steal the plant behind it.
     final pieces = geometry.hitPieces(position)
-        .where((p) => geometry.spriteContains(p, position)).toList();
+        .where((p) => geometry.spriteContains(
+            p.type == 'cactus' ? p.copy(frameRow: 0, frameCol: 0) : p, position)).toList();
     final cell = geometry.hit(position);
     if (pieces.isEmpty && cell != null) pieces.addAll(at(cell));
     return pieces;
@@ -4712,11 +4715,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                   crossAxisSpacing: 0,
                   children: specs.map(classicCard).toList())))),
       if (selected != null)
-        Wrap(children: [
-          Text(AppLanguage.text('已选：${selected!.spec.name}'),
-              style: const TextStyle(fontSize: 11)),
-          classicButton('删除选中对象', s.readOnly ? null : removeSelected)
-        ]),
+        classicButton('删除选中对象', s.readOnly ? null : removeSelected),
     ]);
   }
 
@@ -5431,16 +5430,8 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                                                 : const {},
                                             growthEffects: growthEffects,
                                             selectedCells: batchSelectionMode ? const {} : cells,
-                                            selectedId: selectedId))),
-                                if (stateHover != null)
-                                  Positioned.fromRect(
-                                      rect: BoardGeometry(rendered).pieceBounds(stateHover).inflate(3),
-                                      child: IgnorePointer(child: DecoratedBox(
-                                          key: const ValueKey('plant-state-hover'),
-                                          decoration: BoxDecoration(
-                                              color: const Color(0x18ffdf70),
-                                              border: Border.all(color: const Color(0xdde8c75b), width: 1.5),
-                                              borderRadius: BorderRadius.circular(8))))),
+                                            selectedId: selectedId,
+                                            stateHoverId: stateHover?.id))),
                                 if (rendered.display['卡槽'] == true)
                                   boardShovelBank(),
                                 if (rendered.display['阳光'] == true)

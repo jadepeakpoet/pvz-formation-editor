@@ -272,8 +272,9 @@ Future<void> main() async {
       final before = session.document.fingerprint;
       page.updatePlantingPointer(target);
       await h.settle();
-      h.expect(h.all((w) => w.key == const ValueKey('plant-state-hover')).isNotEmpty &&
-          session.document.fingerprint == before, 'Roof hover must highlight without writing');
+      BoardPainter painter() => (h.find((w) => w is CustomPaint && w.painter is BoardPainter).widget as CustomPaint).painter as BoardPainter;
+      h.expect(painter().stateHoverId == plant.id &&
+          session.document.fingerprint == before, 'Roof hover must fade the plant without writing');
       final region = h.find((w) => w is MouseRegion && w.child is Listener && w.onHover != null).widget as MouseRegion;
       h.expect(region.cursor == SystemMouseCursors.click, 'State hover must show click cursor');
       final box = h.find((w) => w is CustomPaint && w.painter is BoardPainter).renderObject as RenderBox;
@@ -291,8 +292,51 @@ Future<void> main() async {
       h.expect(session.document.fingerprint == after, 'Roof state redo must restore exactly');
       page.updatePlantingPointer(null);
       await h.settle();
-      h.expect(h.all((w) => w.key == const ValueKey('plant-state-hover')).isEmpty,
+      h.expect(painter().stateHoverId == null,
           'Leaving plant must clear state feedback');
+    }
+  });
+  await h.run('cactus.short-state-hit',
+      'Tall cactus uses its short silhouette so the plant behind it remains clickable', () async {
+    await OriginalAssets.ensureHitMasks(['cactus', 'wallnut']);
+    for (final mapId in ['day', 'roof']) {
+      final cactus = Piece(id: 'tall-cactus', type: 'cactus', row: 1, col: 0,
+          layer: 10, frameRow: 2);
+      final nut = Piece(id: 'behind-nut', type: 'wallnut', row: 0, col: 0, layer: 10);
+      session.execute('cactus fixture', Formation(mapId: mapId, pieces: [nut, cactus],
+          display: {'卡槽': false, '阳光': false}));
+      page.tool = '选择';
+      page.update();
+      await h.settle();
+      final geometry = BoardGeometry(session.document);
+      final short = cactus.copy(frameRow: 0, frameCol: 0);
+      final bounds = geometry.pieceBounds(cactus);
+      Offset? target;
+      for (var y = bounds.top; y < bounds.bottom && target == null; y += 2) {
+        for (var x = bounds.left; x < bounds.right; x += 2) {
+          final point = Offset(x, y);
+          if (geometry.spriteContains(cactus, point) &&
+              !geometry.spriteContains(short, point) && geometry.spriteContains(nut, point)) {
+            target = point;
+            break;
+          }
+        }
+      }
+      h.expect(target != null, 'Need overlapping tall cactus and rear nut pixels');
+      final List<Piece> targets = page.piecesAtPointer(target!);
+      h.expect(targets.first.id == nut.id && !targets.any((p) => p.id == cactus.id),
+          'Tall cactus must not capture clicks outside short silhouette');
+      page.updatePlantingPointer(target);
+      await h.settle();
+      final painter = (h.find((w) => w is CustomPaint && w.painter is BoardPainter).widget as CustomPaint).painter as BoardPainter;
+      h.expect(painter.stateHoverId == nut.id &&
+          session.document.pieces.every((p) => p.opacity == 1),
+          'Hover must fade only actual target without persisting opacity');
+      final box = h.find((w) => w is CustomPaint && w.painter is BoardPainter).renderObject as RenderBox;
+      await h.tapAt(box.localToGlobal(target));
+      h.expect(session.document.pieces.firstWhere((p) => p.id == nut.id).frameCol != 0 &&
+          session.document.pieces.firstWhere((p) => p.id == cactus.id).frameRow == 2,
+          'Pointer must cycle rear plant while retaining tall cactus state');
     }
   });
   await h.run('mushroom.awake-default',
