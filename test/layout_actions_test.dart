@@ -60,7 +60,7 @@ void main() {
         result.pieces.length);
   });
 
-  test('smart ladders cover only white pumpkins and preserve existing ladders',
+  test('smart ladders cover land white pumpkins and remove all other ladders',
       () {
     final base = WebsiteCodec.decode(richInput);
     final whiteCells = base.pieces
@@ -74,7 +74,7 @@ void main() {
             .where((p) => p.type == 'ladder')
             .map((p) => (p.row, p.col))
             .toSet(),
-        whiteCells);
+        {(0, 0), (1, 1)});
     expect(
         result.pieces.where((p) => p.type != 'ladder').map((p) => p.toJson()),
         base.pieces.map((p) => p.toJson()));
@@ -87,11 +87,68 @@ void main() {
             .where((p) => p.type == 'ladder')
             .map((p) => (p.row, p.col))
             .toSet(),
-        {...whiteCells, (4, 4)});
-    for (final existing in ordinary.pieces.where((p) => p.type == 'ladder')) {
-      expect(combined.pieces.singleWhere((p) => p.id == existing.id).toJson(),
-          existing.toJson());
-    }
+        {(0, 0), (1, 1)});
+    final retained =
+        ordinary.pieces.singleWhere((p) => p.type == 'ladder' && p.row == 1);
+    expect(combined.pieces.singleWhere((p) => p.id == retained.id).toJson(),
+        retained.toJson());
+    expect(
+        combined.pieces.any((p) => p.type == 'ladder' && p.row == 4), isFalse);
+  });
+
+  test(
+      'smart ladders clean water, bare cells, normal shells and orphan ladders',
+      () {
+    Piece shell(String id, int row, int col, {bool white = true}) => Piece(
+        id: id,
+        type: 'pumpkin',
+        row: row,
+        col: col,
+        layer: 20,
+        effects: white ? {'模仿者'} : {});
+    Piece ladder(String id, int row, int col) =>
+        Piece(id: id, type: 'ladder', row: row, col: col, layer: 25);
+    final base = Formation(mapId: 'pool', pieces: [
+      shell('land', 0, 0),
+      shell('new-land', 4, 4),
+      shell('water', 2, 2),
+      shell('normal', 1, 1, white: false),
+      ladder('keep', 0, 0),
+      ladder('duplicate', 0, 0),
+      ladder('wet', 2, 2),
+      ladder('plain', 1, 1),
+      ladder('orphan', 5, 5),
+    ]);
+    final before = base.toJson();
+    final result = OriginalActions.apply(base, '智能搭梯');
+    final ladders = result.pieces.where((p) => p.type == 'ladder').toList();
+    expect(ladders.map((p) => (p.row, p.col)).toSet(), {(0, 0), (4, 4)});
+    expect(ladders.length, 2);
+    expect(ladders.first.id, 'keep');
+    expect(base.toJson(), before);
+    expect(
+        result.pieces.where((p) => p.type != 'ladder').map((p) => p.toJson()),
+        base.pieces.where((p) => p.type != 'ladder').map((p) => p.toJson()));
+    expect(OriginalActions.apply(result, '智能搭梯').toJson(), result.toJson());
+    final bare = Formation(mapId: 'greenhouseRestricted', pieces: [
+      shell('bare', 0, 4),
+      ladder('bare-ladder', 0, 4),
+      shell('valid', 0, 3),
+    ]);
+    expect(
+        OriginalActions.apply(bare, '智能搭梯')
+            .pieces
+            .where((p) => p.type == 'ladder')
+            .map((p) => (p.row, p.col)),
+        [(0, 3)]);
+    final noTargets = Formation(
+        mapId: 'allWater',
+        pieces: [shell('wet', 0, 0), ladder('wet-ladder', 0, 0)]);
+    expect(
+        OriginalActions.apply(noTargets, '智能搭梯')
+            .pieces
+            .where((p) => p.type == 'ladder'),
+        isEmpty);
   });
 
   test('crushing and bombing preserve original saved container objects', () {

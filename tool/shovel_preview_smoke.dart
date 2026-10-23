@@ -47,7 +47,7 @@ Future<void> main() async {
             col: col,
             layer: ObjectSpec.byId(type).layer,
             effects: white ? {'模仿者'} : {});
-    final stacked = Formation(pieces: [
+    final stacked = Formation(mapId: 'day', pieces: [
       object('pot', 'pot'),
       object('pea', 'pea'),
       object('shell', 'pumpkin', white: true)
@@ -85,7 +85,7 @@ Future<void> main() async {
       throw StateError(
           'Visible sprite above its logical cell must remain shovelable');
     }
-    final mixed = Formation(pieces: [
+    final mixed = Formation(mapId: 'day', pieces: [
       object('white', 'pumpkin', white: true),
       object('ordinary', 'pumpkin', col: 5)
     ]);

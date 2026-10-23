@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'formation.dart';
+import 'original_terrain.dart';
 
 /// Toolbox operations are returned as one document so the editor can undo them.
 class OriginalActions {
@@ -43,17 +44,24 @@ class OriginalActions {
         }
       }
     } else if (action == '智能搭梯') {
-      for (final shell in base.pieces
-          .where((p) => p.type == 'pumpkin' && p.effects.contains('模仿者'))) {
-        if (out.any((p) =>
-            p.type == 'ladder' && p.row == shell.row && p.col == shell.col)) {
-          continue;
-        }
+      final targets = {
+        for (final shell in base.pieces)
+          if (shell.type == 'pumpkin' &&
+              shell.effects.contains('模仿者') &&
+              OriginalTerrain.at(base.map, shell.row, shell.col) == 1)
+            (shell.row, shell.col),
+      };
+      final covered = <(int, int)>{};
+      out.removeWhere((piece) =>
+          piece.type == 'ladder' &&
+          (!targets.contains((piece.row, piece.col)) ||
+              !covered.add((piece.row, piece.col))));
+      for (final cell in targets.difference(covered)) {
         out.add(Piece(
             id: newId(),
             type: 'ladder',
-            row: shell.row,
-            col: shell.col,
+            row: cell.$1,
+            col: cell.$2,
             layer: ObjectSpec.byId('ladder').layer));
       }
     } else if (action == '搭梯') {

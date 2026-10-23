@@ -332,3 +332,10 @@ useFormationPreset 成功应用后清除选择列表状态并回到懒人布局 
 阳光输入框增加局部DefaultTextEditingShortcuts，避免外层棋盘CallbackShortcuts吞掉删除键。专项回归：同样测试旧控件Backspace失败，新控件通过Backspace、Delete、选中文本删除和未提交不改文档；测试使用Linux框架按键映射，macOS原生IME未做真实键盘实测，不将该限制视为已通过。主区选卡开关真实点击、更多菜单另存为/取消、重命名预填/取消/空白禁用/确认/撤销重做及只读权限专项均通过。静态分析无问题，独立审查无阻塞问题，macOS Debug构建成功。
 
 额外document_workflow检查中保存、另存为、原地重命名、历史回退、导入和标签切换通过；workflow.new-blank-auto-archives失败，旧用例期待空白标签flush立即建档，而当前未修改的EditorTabsController.newBlank显式deferInitialSave=true、EditorSession.flush默认不强制建档。此项记录为失败，未更改空白存档语义，未宣称全工作流通过。原生窗口自动化document_windows本轮未运行。
+
+
+## 2026-10-23 — 智能搭梯只保留陆地白南瓜
+
+智能搭梯按OriginalTerrain逐格判断，仅terrain=1且有模仿者南瓜的位置需要梯子；移除水面、裸地、普通南瓜和无南瓜处的既有梯子，合格位置保留首个梯子原属性并清理重复项，缺失则补上。其他对象不变，重复执行不再改变文档。测试原有铲除夹具改为陆地图以保留铲除覆盖含义。
+
+验证：layout_actions_test和original_terrain_test共39项通过，覆盖泳池陆/水、受限庭院裸格、无合格目标清空梯子、有效梯子属性保留、重复项及输入文档不变；shovel_preview_smoke通过，flutter analyze无问题，macOS Debug构建成功。
