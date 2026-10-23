@@ -1,5 +1,6 @@
 /// English translations for the main editor interface.
 const Map<String, String> mainTranslations = {
+  '为陆地第2–6列的南瓜搭梯': 'Place ladders on land pumpkins in columns 2–6',
   '恢复植物默认状态': 'Restore default plant states',
   '植物恢复默认状态': 'Reset plant states',
   '将全部植物恢复为默认状态，可撤销': 'Restore all plants to their default states. Undo is available.',

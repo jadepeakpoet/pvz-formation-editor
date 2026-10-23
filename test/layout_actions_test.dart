@@ -10,6 +10,49 @@ const richInput = '0,0 1 1 0 0 0,21 1 1 0 0 0,1E 1 1 0 0 1,'
     '1E 3 3 0 0 1,17 5 5 0 0 0,21 5 5 0 0 0,1E 5 5 0 0 0';
 
 void main() {
+  test('one-click lily leaves aquatic plants and their existing bases untouched', () {
+    final plants = [
+      for (final entry in ['cattail', 'tangle', 'seashroom'].asMap().entries)
+        Piece(id: entry.value, type: entry.value, row: 2, col: entry.key, layer: 10,
+            frameRow: 1, frameCol: 1, effects: {'模仿者'}),
+    ];
+    final shells = [
+      for (var col = 0; col < 3; col++)
+        Piece(id: 'shell-$col', type: 'pumpkin', row: 2, col: col, layer: 20),
+    ];
+    final existing = Piece(id: 'existing-lily', type: 'lily', row: 2, col: 0,
+        layer: 0, frameCol: 2, effects: {'模仿者'});
+    final base = Formation(mapId: 'pool', pieces: [
+      ...plants, ...shells, existing,
+      Piece(id: 'pea', type: 'pea', row: 3, col: 0, layer: 10),
+      Piece(id: 'cob', type: 'cob', row: 3, col: 2, layer: 10),
+    ]);
+    final result = OriginalActions.apply(base, '荷叶', random: Random(4));
+    for (final original in [...plants, ...shells, existing]) {
+      expect(result.pieces.singleWhere((p) => p.id == original.id).toJson(), original.toJson());
+    }
+    expect(result.pieces.where((p) => p.type == 'lily').map((p) => (p.row, p.col)).toSet(),
+        {(2, 0), (3, 0), (3, 2), (3, 3)});
+    expect(base.pieces.length, 9);
+  });
+
+  test('ordinary ladders target land pumpkins in source columns without requiring nuts', () {
+    final base = Formation(mapId: 'pool', pieces: [
+      for (var col = 0; col < 9; col++)
+        Piece(id: 'shell-$col', type: 'pumpkin', row: 0, col: col, layer: 20),
+      Piece(id: 'water-shell', type: 'pumpkin', row: 2, col: 3, layer: 20),
+      Piece(id: 'bare-nut', type: 'wallnut', row: 1, col: 3, layer: 10),
+      Piece(id: 'ladder', type: 'ladder', row: 0, col: 2, layer: 25, scale: .8),
+    ]);
+    final result = OriginalActions.apply(base, '搭梯');
+    expect(result.pieces.where((p) => p.type == 'ladder').map((p) => (p.row, p.col)).toSet(),
+        {for (var col = 1; col <= 5; col++) (0, col)});
+    expect(result.pieces.singleWhere((p) => p.id == 'ladder').toJson(), base.pieces.last.toJson());
+    expect(result.pieces.where((p) => p.type != 'ladder').map((p) => p.toJson()),
+        base.pieces.where((p) => p.type != 'ladder').map((p) => p.toJson()));
+    expect(OriginalActions.apply(result, '搭梯').toJson(), result.toJson());
+  });
+
   test('original flowerpot action supports planted land cells only', () {
     final base = WebsiteCodec.decode(richInput);
     final result = OriginalActions.apply(base, '花盆', random: Random(7));

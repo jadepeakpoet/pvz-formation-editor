@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'formation.dart';
 import 'original_terrain.dart';
+import 'planting_support.dart';
 
 /// Toolbox operations are returned as one document so the editor can undo them.
 class OriginalActions {
@@ -21,7 +22,13 @@ class OriginalActions {
             if (plant.col + offset < base.map.columns)
               (plant.row, plant.col + offset),
       };
+      final aquaticCells = {
+        for (final plant in base.pieces)
+          if (PlantingSupport.aquaticTypes.contains(plant.type))
+            (plant.row, plant.col),
+      };
       for (final cell in occupied) {
+        if (type == 'lily' && aquaticCells.contains(cell)) continue;
         final water = base.map.waterRows.contains(cell.$1);
         if ((type == 'lily') != water) continue;
         final index = out.indexWhere(
@@ -65,21 +72,20 @@ class OriginalActions {
             layer: ObjectSpec.byId('ladder').layer));
       }
     } else if (action == '搭梯') {
-      for (final plant in base.pieces
-          .where((p) => p.type == 'wallnut' || p.type == 'tallnut')) {
-        if (!base.pieces.any((p) =>
-            p.type == 'pumpkin' && p.row == plant.row && p.col == plant.col)) {
-          continue;
-        }
+      // Source AutoGrow(3): land pumpkins in columns 2–6, with or without
+      // another plant inside. Smart ladders have their own white-shell rules.
+      for (final shell in base.pieces.where((p) => p.type == 'pumpkin')) {
+        if (shell.col < 1 || shell.col > 5 ||
+            OriginalTerrain.at(base.map, shell.row, shell.col) != 1) continue;
         if (out.any((p) =>
-            p.type == 'ladder' && p.row == plant.row && p.col == plant.col)) {
+            p.type == 'ladder' && p.row == shell.row && p.col == shell.col)) {
           continue;
         }
         out.add(Piece(
             id: newId(),
             type: 'ladder',
-            row: plant.row,
-            col: plant.col,
+            row: shell.row,
+            col: shell.col,
             layer: ObjectSpec.byId('ladder').layer));
       }
     } else if (action == '碾花盆' || action == '炸荷叶') {

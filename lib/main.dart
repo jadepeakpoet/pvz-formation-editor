@@ -4500,7 +4500,8 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
               } catch (e) {
                 if (mounted) message(context, e);
               }
-            })
+            }, key: ValueKey('lazy-action-$label'),
+                tooltip: label == '搭梯' ? '为陆地第2–6列的南瓜搭梯' : null)
         ]),
         const Divider(),
         Text(AppLanguage.text('一键模仿'), style: const TextStyle(fontSize: 12)),
