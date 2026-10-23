@@ -777,140 +777,6 @@ Future<void> main() async {
         }
       });
     }
-    for (final filter in [
-      '普通植物',
-      '南瓜',
-      '容器',
-      '梯子',
-      '咖啡豆',
-      '钉耙',
-      '墓碑',
-      '物品及特效',
-      '僵尸'
-    ]) {
-      await h.run('batch-filter.$filter', '原站独立批量铲除范围：$filter', () async {
-        await fresh();
-        final fixture = [
-          for (final col in [0, 1])
-            for (final type in [
-              'lily',
-              'pea',
-              'pumpkin',
-              'coffee',
-              'ladder',
-              'grave',
-              'rake',
-              'zombie',
-              'explosion'
-            ])
-              Piece(
-                  id: 'batch-$col-$type',
-                  type: type,
-                  row: 0,
-                  col: col,
-                  layer: ObjectSpec.byId(type).layer)
-        ];
-        session.execute('Batch mixed selected/unselected fixture',
-            session.document.copy(pieces: fixture));
-        await h.settle();
-        await h.tap('批量选择');
-        await cell();
-        await h.tap('懒人布局');
-        await h.tapElement(
-            h.find((w) => w is Text && (w.data ?? '').startsWith('批量操作 ·')));
-        await h.choose<String>(filter,
-            where: (w) => w.key == const ValueKey('original-rBatchClear'));
-        await h.tap('按类型铲除');
-        final expected = fixture
-            .where((p) =>
-                p.col != 0 ||
-                (!ObjectFilter.matches(p, filter) &&
-                    !(p.type == 'ladder' &&
-                        fixture.any((q) =>
-                            q.col == 0 &&
-                            q.type == 'pumpkin' &&
-                            ObjectFilter.matches(q, filter)))))
-            .map((p) => p.id)
-            .toSet();
-        final actual = session.document.pieces.map((p) => p.id).toSet();
-        h.expect(
-            actual.length == expected.length && actual.containsAll(expected),
-            'Batch filter deleted wrong layers or unselected cells');
-      });
-    }
-    for (final shortcut in [
-      '陆路',
-      '水路',
-      '后置炮',
-      '前置炮',
-      '超前置炮',
-      '底线炮',
-      '水路前场',
-      '水路56列',
-      '重置批量选择'
-    ]) {
-      await h.run('quick.$shortcut', '批量快捷选择：$shortcut', () async {
-        await fresh();
-        await h.tap('懒人布局');
-        await h.tapElement(
-            h.find((w) => w is Text && (w.data ?? '').startsWith('批量操作 ·')));
-        await h.tap(shortcut);
-        final painter = (h
-                .find((w) => w is CustomPaint && w.painter is BoardPainter)
-                .widget as CustomPaint)
-            .painter as BoardPainter;
-        final rows = shortcut.startsWith('水路') ? [2, 3] : [0, 1, 4, 5];
-        final columns = switch (shortcut) {
-          '后置炮' => [3],
-          '前置炮' => [4],
-          '超前置炮' => [6],
-          '底线炮' => [0],
-          '水路前场' => [6, 7, 8],
-          '水路56列' => [4, 5],
-          _ => List.generate(9, (i) => i)
-        };
-        final expected = shortcut == '重置批量选择'
-            ? <(int, int)>{}
-            : {
-                for (final r in rows)
-                  for (final c in columns) (r, c)
-              };
-        h.expect(
-            painter.selectedCells.length == expected.length &&
-                painter.selectedCells.containsAll(expected),
-            'Quick selection coordinates differ from original pool shortcuts');
-      });
-    }
-    for (final label in ['按类型铲除', '铲除全部植物', '批量种植', '批量模仿', '完成批量操作']) {
-      await h.run('batch.$label', '批量操作按钮：$label', () async {
-        await fresh();
-        await seed();
-        if (label == '批量种植') await h.tap('向日葵');
-        await h.tap('批量选择');
-        await cell();
-        await h.tap('懒人布局');
-        await h.tapElement(
-            h.find((w) => w is Text && (w.data ?? '').startsWith('批量操作 ·')));
-        await h.tap(label);
-        if (label == '按类型铲除' || label == '铲除全部植物')
-          h.expect(session.document.pieces.isEmpty,
-              'Batch deletion did not remove selected cell');
-        if (label == '批量种植')
-          h.expect(session.document.pieces.any((p) => p.type == 'sunflower'),
-              'Batch planting did not replace cell');
-        if (label == '批量模仿')
-          h.expect(session.document.pieces.single.effects.contains('模仿者'),
-              'Batch imitation did not apply');
-        if (label == '完成批量操作') {
-          final painter = (h
-                  .find((w) => w is CustomPaint && w.painter is BoardPainter)
-                  .widget as CustomPaint)
-              .painter as BoardPainter;
-          h.expect(
-              painter.selectedCells.isEmpty, 'Finish did not clear selection');
-        }
-      });
-    }
     await h.run('board.clear', '一键清空，不二次确认，支持撤销与重做', () async {
       await fresh();
       await seed();
@@ -1386,7 +1252,7 @@ Future<void> main() async {
               !session.canRedo,
           'Readonly state changed');
       await mount();
-      await h.tap('种植');
+      await h.tap('豌豆射手');
       await cell(0, 1);
       h.expect(
           session.document.fingerprint == before, 'Readonly UI modified board');

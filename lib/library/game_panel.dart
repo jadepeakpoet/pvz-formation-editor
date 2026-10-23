@@ -1,3 +1,4 @@
+import '../widgets/app_dropdown.dart';
 import '../platform/app_language.dart';
 import 'dart:convert';
 import 'dart:io';
@@ -204,7 +205,7 @@ class _GamePanelState extends State<GamePanel> {
                                         '没有发现运行中的植物大战僵尸。\n请先启动原版 1.0.0.1051，再点击刷新。'),
                                     textAlign: TextAlign.center))
                             : ListView(children: [
-                                DropdownButton<int>(
+                                AppDropdown<int>(
                                     value: selected?.pid,
                                     isExpanded: true,
                                     items: games
@@ -258,7 +259,7 @@ class _GamePanelState extends State<GamePanel> {
                                       child: Text(AppLanguage.text('撤销上次覆盖'))),
                                 ]),
                                 if (memoryBackups.isNotEmpty)
-                                  DropdownButton<String>(
+                                  AppDropdown<String>(
                                       value: lastMemoryBackup,
                                       isExpanded: true,
                                       hint:

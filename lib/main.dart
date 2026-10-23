@@ -21,6 +21,8 @@ import 'domain/layouts.dart';
 import 'domain/object_filter.dart';
 import 'editor/board_painter.dart';
 import 'editor/board_sun_editor.dart';
+import 'editor/batch_selection_overlay.dart';
+import 'widgets/app_dropdown.dart';
 import 'editor/rename_dialog.dart';
 import 'editor/map_picker_dialog.dart';
 import 'editor/archive_history_dialog.dart';
@@ -1250,10 +1252,12 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
   final transform = TransformationController();
   final canvasFocus = FocusNode(debugLabel: 'canvas-shortcuts');
   final Set<(int, int)> cells = {};
+  final Set<int> batchRows = {}, batchColumns = {};
+  bool batchSelectionMode = false, batchSelectorsVisible = true;
+  String batchShovelFilter = '普通植物';
   String tool = '放置', category = '植物', search = '', selectedType = 'pea';
   String? selectedId;
   String shovelFilter = '智能';
-  String batchShovelFilter = '普通植物';
   int classicTab = 2;
   final toolboxScrollControllers =
       List.generate(6, (_) => _ToolboxScrollController());
@@ -1264,13 +1268,14 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
   final inputFormation = TextEditingController(),
       outputFormation = TextEditingController();
   bool exportBackground = true;
-  bool pokerWidth = false;
+  bool pokerWidth = true;
   String? pendingMapId;
   final keepPlantsOnMapChangeNotifier = ValueNotifier<bool>(false);
   bool get keepPlantsOnMapChange => keepPlantsOnMapChangeNotifier.value;
   set keepPlantsOnMapChange(bool value) =>
       keepPlantsOnMapChangeNotifier.value = value;
-  int musicLevel = 0, soundLevel = 0, windowStyle = 1;
+  int musicLevel = (OriginalAudio.musicVolume * 4).round(),
+      soundLevel = (OriginalAudio.soundVolume * 4).round(), windowStyle = 1;
   final sunEditor = TextEditingController(text: '9990');
   final documentNameEditor = TextEditingController();
   final documentNameFocus = FocusNode(debugLabel: 'document-name');
@@ -1278,6 +1283,9 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
   EditorSession? documentNameSession;
   Future<void>? pendingDocumentRename;
   double exportRatio = 1;
+  Uint8List? generatedPng;
+  String? generatedPngName;
+  bool generatingPng = false;
   final Map<String, int> selectedPresets = {'阵型': 61, '炮位': 0, '无炮': 0};
   final Set<String> plantingEffects = {};
   bool plantingFlip = false, plantingVertical = false;
@@ -1483,6 +1491,11 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
         'selectedType': selectedType,
         'selectedId': selectedId,
         'cells': cells.map((c) => [c.$1, c.$2]).toList(),
+        'batchRows': batchRows.toList(),
+        'batchColumns': batchColumns.toList(),
+        'batchSelectionMode': batchSelectionMode,
+        'batchSelectorsVisible': batchSelectorsVisible,
+        'batchShovelFilter': batchShovelFilter,
         'effects': plantingEffects.toList(),
         'flip': plantingFlip,
         'vertical': plantingVertical,
@@ -1492,7 +1505,6 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
         'autoLily': autoLily,
         'autoPotMode': autoPotMode,
         'shovelFilter': shovelFilter,
-        'batchShovelFilter': batchShovelFilter,
         'windowStyle': windowStyle,
         'pendingMapId': pendingMapId,
         'keepPlantsOnMapChange': keepPlantsOnMapChange,
@@ -1628,6 +1640,8 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     final changedDocument =
         widget.toolboxOnly && incomingToken != remoteDocumentToken;
     if (changedDocument) {
+      generatedPng = null;
+      generatedPngName = null;
       remoteDocumentToken = incomingToken;
       remoteBaseFingerprint = null;
       windowStateDirty = false;
@@ -1682,7 +1696,12 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
         if (widget.toolboxOnly) {
           seedChooserOpen = value['seedChooserOpen'] == true;
         }
-        tool = value['tool'] as String;
+        tool = value['tool'] == '批选' ? '选择' : value['tool'] as String;
+        batchSelectionMode = value['batchSelectionMode'] == true;
+        batchSelectorsVisible = value['batchSelectorsVisible'] != false;
+        batchRows..clear()..addAll((value['batchRows'] as List? ?? []).cast<int>());
+        batchColumns..clear()..addAll((value['batchColumns'] as List? ?? []).cast<int>());
+        batchShovelFilter = value['batchShovelFilter'] as String? ?? '普通植物';
         category = value['category'] as String;
         selectedType = value['selectedType'] as String;
         selectedId = value['selectedId'] as String?;
@@ -1705,7 +1724,6 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
         shovelFilter = value['shovelFilter'] == '最上层'
             ? '智能'
             : value['shovelFilter'] as String;
-        batchShovelFilter = value['batchShovelFilter'] as String;
         windowStyle = (value['windowStyle'] as num).toInt();
         pendingMapId = value['pendingMapId'] as String?;
         keepPlantsOnMapChange = value['keepPlantsOnMapChange'] == true;
@@ -1741,6 +1759,9 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
       persistPlantingPreferences();
     }
     refreshFormationOutput();
+    if (OriginalAudio.musicVolume != musicLevel / 4) {
+      unawaited(OriginalAudio.setMusicVolume(musicLevel / 4));
+    }
     if (OriginalAudio.soundVolume != soundLevel / 4) {
       unawaited(OriginalAudio.setSoundVolume(soundLevel / 4));
     }
@@ -1779,7 +1800,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                 SizedBox(
                     height: 34,
                     child: Row(children: [
-                      for (var i = 0; i < 6; i++)
+                      for (var i = 1; i < 6; i++)
                         Expanded(
                             child: InkWell(
                                 key: ValueKey('toolbox-tab-$i'),
@@ -1981,7 +2002,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     ]));
   }
 
-  Widget seedChooserButton() => classicButton(seedChooserOpen ? '收起选卡' : '打开选卡',
+  Widget seedChooserButton() => classicButton('卡槽选卡',
       () => unawaited(toggleSeedChooserFromTab()),
       active: seedChooserOpen, key: const ValueKey('board-picker-toggle'));
 
@@ -2098,6 +2119,10 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     });
     refreshFormationOutput();
     unawaited(initializeWindows());
+    if (!widget.toolboxOnly) {
+      unawaited(OriginalAudio.setMusicVolume(musicLevel / 4));
+      unawaited(OriginalAudio.setSoundVolume(soundLevel / 4));
+    }
     s.addListener(update);
     OriginalAssets.revision.addListener(update);
     unawaited(OriginalAssets.ensureLoaded());
@@ -2144,7 +2169,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     visited.clear();
     editingPointer = null;
     selectedId = null;
-    cells.clear();
+    clearBatchSelection();
     hover = null;
     snapshot = null;
     mirrors.clear();
@@ -2153,6 +2178,8 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     mirrorPokerWidths.clear();
     mirrorPositions.clear();
     pendingMapId = null;
+    generatedPng = null;
+    generatedPngName = null;
     keepPlantsOnMapChange = false;
     windowError = null;
     sunEditor.text = '${s.document.sunValue}';
@@ -2581,7 +2608,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
       }
       if (mounted) {
         setState(() {
-          cells.clear();
+          clearBatchSelection();
           selectedId = null;
         });
       }
@@ -2600,7 +2627,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     s.execute('清空阵型', s.document.copy(pieces: []));
     setState(() {
       selectedId = null;
-      cells.clear();
+      clearBatchSelection();
       clearPlantingFeedback();
     });
   }
@@ -2749,13 +2776,6 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     }
     if (cell == null) return;
     hover = cell;
-    if (tool == '批选') {
-      if (!visited.add(cell)) return;
-      setState(() {
-        if (!cells.add(cell)) cells.remove(cell);
-      });
-      return;
-    }
     if (s.readOnly || !visited.add(cell)) return;
     if (tool == '铲除') {
       final ids = shovelTargets(position);
@@ -2792,7 +2812,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
   }
 
   void beginGesture(Offset p) {
-    if (tool == '平移') return;
+    if (tool == '平移' || batchSelectionMode) return;
     canvasFocus.requestFocus();
     visited.clear();
     gestureBefore = s.document;
@@ -2854,6 +2874,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
   }
 
   void batchPlace() {
+    if (s.readOnly || cells.isEmpty) return;
     final spec = ObjectSpec.byId(selectedType);
     final ordered = cells.toList()
       ..sort(
@@ -2913,26 +2934,47 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
   void finishBatchOperations() {
     finishGesture();
     setState(() {
-      cells.clear();
-      if (tool == '批选') tool = '选择';
+      clearBatchSelection();
+      batchSelectionMode = false;
+      tool = '选择';
     });
   }
 
-  void quickSelect(String kind) {
+  void clearBatchSelection() {
+    cells.clear();
+    batchRows.clear();
+    batchColumns.clear();
+  }
+
+  void setSelectionMode(bool batch) {
+    finishGesture();
     setState(() {
+      batchSelectionMode = batch;
+      batchSelectorsVisible = true;
       cells.clear();
-      if (kind == '当前行' || kind == '当前列') {
-        for (var r = 0; r < s.document.map.rows; r++) {
-          for (var c = 0; c < s.document.map.columns; c++) {
-            if (kind == '当前行' && r == (hover?.$1 ?? 0) ||
-                kind == '当前列' && c == (hover?.$2 ?? 0)) cells.add((r, c));
-          }
-        }
-      } else {
-        cells.addAll(OriginalSelection.cells(s.document.map, kind));
+      if (batch) {
+        cells.addAll({for (final r in batchRows) for (final c in batchColumns) (r, c)});
       }
-      tool = '批选';
+      plantingPointer = null;
+      selectedId = null;
     });
+  }
+
+  void updateBatchSelection(Set<int> rows, Set<int> columns) {
+    setState(() {
+      batchRows..clear()..addAll(rows.where((r) => r >= 0 && r < s.document.map.rows));
+      batchColumns..clear()..addAll(columns.where((c) => c >= 0 && c < s.document.map.columns));
+      cells..clear()..addAll({for (final r in batchRows) for (final c in batchColumns) (r, c)});
+    });
+  }
+
+  void quickSelect(String label) {
+    setSelectionMode(true);
+    final selected = label == '重置批量选择'
+        ? <(int, int)>{}
+        : OriginalSelection.cells(s.document.map, label);
+    updateBatchSelection(selected.map((c) => c.$1).toSet(),
+        selected.map((c) => c.$2).toSet());
   }
 
   Future<void> changeMap(BoardMap map) async {
@@ -2942,7 +2984,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
         pieces:
             s.document.pieces.where((p) => s.document.fits(p, map)).toList()));
     setState(() {
-      cells.clear();
+      clearBatchSelection();
       selectedId = null;
       hover = null;
     });
@@ -3332,7 +3374,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                         title: Text(AppLanguage.text('导出棋盘 PNG')),
                         content:
                             Column(mainAxisSize: MainAxisSize.min, children: [
-                          DropdownButton<double>(
+                          AppDropdown<double>(
                               value: factor,
                               items: [1.0, 2.0, 3.0, 4.0]
                                   .map((v) => DropdownMenuItem(
@@ -3393,7 +3435,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
         if (text == null) return;
         final doc = FormationExchange.decode(text);
         await navigateFormation(doc, name: '导入阵型');
-        cells.clear();
+        clearBatchSelection();
         selectedId = null;
         hover = null;
         fit();
@@ -3412,7 +3454,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
         if (value == null) return;
         final doc = FormationExchange.decode(value);
         await navigateFormation(doc, name: '导入阵型');
-        cells.clear();
+        clearBatchSelection();
         selectedId = null;
         hover = null;
         fit();
@@ -3426,7 +3468,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
             name: picked.path?.split('/').last.split('.').first ?? '导入阵图',
             filePath: picked.path,
             fileFormat: FormationExchange.detectFormat(text).name);
-        cells.clear();
+        clearBatchSelection();
         selectedId = null;
         hover = null;
         fit();
@@ -3500,7 +3542,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     editingPointer = null;
     setState(() {
       if (tool == '模仿') plantingEffects.remove('模仿者');
-      cells.clear();
+      clearBatchSelection();
       selectedId = null;
       plantingPointer = null;
       tool = '选择';
@@ -3622,8 +3664,8 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                                                 if (widget.tabBar == null)
                                                   workspaceMoreMenu(),
                                                 if (cells.isNotEmpty ||
-                                                    tool == '批选')
-                                                  classicButton('完成批量操作',
+                                                    batchSelectionMode)
+                                                  classicButton('取消批量选择',
                                                       finishBatchOperations,
                                                       key: const ValueKey(
                                                           'finish-batch-toolbar')),
@@ -3774,16 +3816,16 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                     const SizedBox(width: 6),
                     Text(AppLanguage.text('比例 '),
                         style: const TextStyle(fontSize: 12)),
-                    DropdownButton<double>(
+                    AppDropdown<double>(
                         key: ValueKey('mirror-scale-$i'),
                         value: scale,
                         items: const [
-                          DropdownMenuItem(value: 1, child: Text('1×')),
+                          DropdownMenuItem(value: 1, child: Text('1/1×')),
                           DropdownMenuItem(value: .75, child: Text('3/4×')),
                           DropdownMenuItem(value: 2 / 3, child: Text('2/3×')),
                           DropdownMenuItem(value: .5, child: Text('1/2×')),
-                          DropdownMenuItem(value: 1.5, child: Text('1.5×')),
-                          DropdownMenuItem(value: 2, child: Text('2×'))
+                          DropdownMenuItem(value: 1.5, child: Text('3/2×')),
+                          DropdownMenuItem(value: 2, child: Text('2/1×'))
                         ],
                         onChanged: (v) => setState(() {
                               mirrorScales[i] = v!;
@@ -3907,9 +3949,9 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
               ])),
       ]);
 
-  Widget mapChangeControls(Key buttonKey) =>
+  Widget mapChangeControls(Key buttonKey, {String label = '更换地图'}) =>
       Wrap(crossAxisAlignment: WrapCrossAlignment.center, children: [
-        classicButton('更换地图', () => unawaited(chooseMapFromCatalog()),
+        classicButton(label, () => unawaited(chooseMapFromCatalog()),
             key: buttonKey),
         originalCheck(
             'map-keep-plants',
@@ -4014,7 +4056,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
         const SizedBox(height: 12),
         Row(children: [
           Text(AppLanguage.text('显示迷雾 '), style: const TextStyle(fontSize: 12)),
-          DropdownButton<int>(
+          AppDropdown<int>(
               key: const ValueKey('original-lFog'),
               isDense: true,
               value: s.document.fogColumns,
@@ -4138,6 +4180,24 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
         ]),
       ]);
 
+  Widget pokerWidthOption() => Row(children: [
+        SizedBox(width: 24, height: 32,
+            child: Checkbox(key: const ValueKey('original-cPokerBack'),
+                value: pokerWidth,
+                onChanged: (value) => setState(() => pokerWidth = value!))),
+        Semantics(link: true, child: InkWell(
+            key: const ValueKey('original-link-poker'),
+            onTap: () => unawaited(ProjectFiles.openExternal(
+                Uri.parse('https://tieba.baidu.com/p/5272254427'))),
+            child: Text(AppLanguage.text('植吧扑克'),
+                style: const TextStyle(fontSize: 12, color: Color(0xff1565c0),
+                    decoration: TextDecoration.underline)))),
+        Flexible(child: InkWell(
+            onTap: () => setState(() => pokerWidth = !pokerWidth),
+            child: Text(AppLanguage.text('等宽，否则游戏等宽'),
+                style: const TextStyle(fontSize: 12)))),
+      ]);
+
   void createMirror(double scale) => setState(() {
         mirrors.add(Formation.fromJson(s.document.toJson()));
         mirrorScales.add(scale);
@@ -4150,29 +4210,22 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
   Widget classicContents() {
     if (classicTab == 3) {
       return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(AppLanguage.text('镜像窗口'),
+        Text(AppLanguage.text('创建当前阵型的镜像窗口'),
             style: const TextStyle(fontWeight: FontWeight.bold)),
-        Text(AppLanguage.text('创建当前阵型的镜像，拖动标题移动窗口。'),
+        Text(AppLanguage.text('创建与主窗口当前阵型一样的不同比例镜像，最多同时创建三个。镜像内容只读，主窗口的修改不会影响已创建的镜像；关闭后不保存。可拖动标题移动窗口，并导出 PNG 图片。'),
             style: const TextStyle(fontSize: 12)),
-        originalCheck('cMirrorBack', '显示阵型背景，否则背景透明', exportBackground,
+        originalCheck('cMirrorBack', '显示游戏背景，否则背景透明', exportBackground,
             (v) => setState(() => exportBackground = v)),
-        classicButton('植吧扑克', () async {
-          await ProjectFiles.openExternal(
-              Uri.parse('https://tieba.baidu.com/p/5272254427'));
-        }, key: const ValueKey('original-link-poker')),
-        originalCheck('cPokerBack', '植吧扑克等宽，否则游戏等宽', pokerWidth,
-            (v) => setState(() => pokerWidth = v)),
+        pokerWidthOption(),
         Wrap(children: [
           for (var i = 0; i < 6; i++)
             classicButton(
-                ['原图大小', '3/4大小', '2/3大小', '1/2大小', '1.5倍大小', '2倍大小'][i],
+                ['创建一个1/1比例的镜像窗口', '创建一个3/4比例的镜像窗口', '创建一个2/3比例的镜像窗口', '创建一个1/2比例的镜像窗口', '创建一个3/2比例的镜像窗口', '创建一个2/1比例的镜像窗口'][i],
                 mirrors.length >= 3
                     ? null
                     : () => createMirror([1.0, .75, 2 / 3, .5, 1.5, 2.0][i]),
                 key: ValueKey('original-clone-$i')),
         ]),
-        classicButton(
-            '创建镜像', mirrors.length >= 3 ? null : () => createMirror(.5)),
       ]);
     }
     if (classicTab == 4) {
@@ -4191,14 +4244,14 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
             maxLines: 6,
             style: const TextStyle(fontSize: 12),
             decoration: InputDecoration(
-                hintText: AppLanguage.text('粘贴 Toolkit 或布阵器阵型码，自动识别'))),
+                hintText: AppLanguage.text('粘贴 Toolkit 或网页布阵器阵型码'))),
         Wrap(children: [
           classicButton('载入', () async {
             try {
               final value = inputFormation.text.trim();
               final document = FormationExchange.decode(value);
               await navigateFormation(document, name: '载入阵型');
-              cells.clear();
+              clearBatchSelection();
               selectedId = null;
               fit();
             } catch (e) {
@@ -4246,48 +4299,38 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
         const Divider(),
         Row(children: [
           Text(AppLanguage.text('输出倍率：'), style: const TextStyle(fontSize: 12)),
-          DropdownButton<double>(
+          AppDropdown<double>(
               value: exportRatio,
               items: const [
-                DropdownMenuItem(value: 1, child: Text('1×')),
-                DropdownMenuItem(value: .75, child: Text('0.75×')),
+                DropdownMenuItem(value: 1, child: Text('1/1×')),
+                DropdownMenuItem(value: .75, child: Text('3/4×')),
                 DropdownMenuItem(value: 2 / 3, child: Text('2/3×')),
-                DropdownMenuItem(value: .5, child: Text('0.5×'))
+                DropdownMenuItem(value: .5, child: Text('1/2×'))
               ],
               onChanged: (v) => setState(() => exportRatio = v!)),
-          Checkbox(
-              value: exportBackground,
-              onChanged: (v) => setState(() => exportBackground = v!)),
-          Text(AppLanguage.text('包含背景'), style: const TextStyle(fontSize: 12))
         ]),
-        classicButton('植吧扑克', () async {
-          await ProjectFiles.openExternal(
-              Uri.parse('https://tieba.baidu.com/p/5272254427'));
-        }, key: const ValueKey('original-link-poker')),
-        originalCheck('cPokerBack', '植吧扑克等宽，否则游戏等宽', pokerWidth,
-            (v) => setState(() => pokerWidth = v)),
-        classicButton('导出 PNG 图片', () async {
-          try {
-            final bytes = await exportPng(s.document,
-                multiplier: exportRatio,
-                background: exportBackground,
-                pokerWidth: pokerWidth);
-            await ProjectFiles.save(
-                '${safeName(s.name)}.png', bytes, 'image/png');
-          } catch (e) {
-            if (mounted) message(context, e);
-          }
-        }),
-        const Divider(),
-        Wrap(children: [
-          classicButton('导入阵图文件', () => transfer('import')),
-          classicButton('导出 / 另存阵图', () => transfer('saveAs')),
-          classicButton('保存到原文件', () => transfer('saveFile')),
-          classicButton('撤销文件覆盖', () => transfer('restoreFile')),
-          classicButton('保存到我的存档', s.readOnly ? null : saveArchive),
-          classicButton('另存为新存档', () => saveArchive(saveAs: true)),
-          classicButton('打开存档库', leave)
-        ])
+        originalCheck('exportBackground', '显示游戏背景，否则背景透明', exportBackground,
+            (v) => setState(() => exportBackground = v)),
+        pokerWidthOption(),
+        classicButton(generatingPng ? '正在生成…' : '生成图片',
+            generatingPng ? null : generateExportPreview,
+            key: const ValueKey('formation-generate-image')),
+        if (generatedPng != null) ...[
+          const SizedBox(height: 8),
+          ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 300, maxHeight: 225),
+              child: Image.memory(generatedPng!,
+                  key: const ValueKey('formation-image-preview'),
+                  fit: BoxFit.contain, gaplessPlayback: true)),
+          classicButton('导出图片', () async {
+            try {
+              await ProjectFiles.save('${generatedPngName ?? safeName(s.name)}.png',
+                  generatedPng!, 'image/png');
+            } catch (e) {
+              if (mounted) message(context, e);
+            }
+          }, key: const ValueKey('formation-export-image')),
+        ],
       ]);
     }
     if (classicTab == 5) return classicSettings();
@@ -4310,20 +4353,11 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
               key: const ValueKey('original-help')),
         ]),
         const SizedBox(height: 6),
+        mapChangeControls(const ValueKey('lazy-change-map'), label: '更换底图'),
+        const SizedBox(height: 6),
         presetSelector('阵型', OriginalCatalog.formations),
         presetSelector('炮位', OriginalCatalog.cobLayouts),
         presetSelector('无炮', OriginalCatalog.gloomLayouts),
-        if (cells.isNotEmpty)
-          Row(children: [
-            Expanded(
-                child: Text(AppLanguage.text('已选 ${cells.length} 格'),
-                    style: const TextStyle(fontSize: 12))),
-            classicButton('删除选区', s.readOnly ? null : deleteSelection,
-                key: const ValueKey('delete-batch-selection')),
-            classicButton('完成批量操作', finishBatchOperations,
-                key: const ValueKey('clear-batch-selection')),
-          ]),
-        batchOperations(),
         const Divider(),
         Text(AppLanguage.text('一键布局'), style: const TextStyle(fontSize: 12)),
         Wrap(children: [
@@ -4352,9 +4386,6 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
         ]),
       ]);
     }
-    final specs = ObjectSpec.all
-        .where((p) => p.category == category && p.name.contains(search))
-        .toList();
     const plantOrder = [
       'pea',
       'sunflower',
@@ -4405,25 +4436,39 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
       'spike',
       'cob'
     ];
-    if (category == '植物') {
-      specs.sort((a, b) {
-        final x = plantOrder.indexOf(a.id), y = plantOrder.indexOf(b.id);
-        return (x < 0 ? 999 : x).compareTo(y < 0 ? 999 : y);
-      });
-    }
+    const zombieOrder = ['zombie', 'flag', 'cone', 'pole', 'bucket',
+      'newspaper', 'screen', 'football', 'dancer', 'backup', 'ducky',
+      'snorkel', 'zomboni', 'dolphin', 'jack', 'balloon', 'digger', 'pogo',
+      'yeti', 'bungee', 'ladderZombie', 'catapult', 'gargantuar',
+      'Redeyed_Gargantuar', 'imp'];
+    const propOrder = ['ladder', 'grave', 'rake', 'Stripe', 'crater',
+      'ScaryPot', 'SnowFlakes', 'BungeeTarget', 'Ice'];
+    final ids = category == '植物' ? plantOrder
+        : category == '僵尸' ? zombieOrder
+        : category == '物品效果' ? propOrder : const <String>[];
+    final specs = ids.map(ObjectSpec.byId).toList();
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Wrap(children: [
-        classicButton('单个选择', () => setState(() => tool = '选择'),
-            active: tool == '选择'),
-        classicButton('批量选择', () => setState(() => tool = '批选'),
-            active: tool == '批选'),
-        classicButton(
-            '种植', s.readOnly ? null : () => setState(() => tool = '放置'),
-            active: tool == '放置')
+        for (final batch in [false, true])
+          Row(mainAxisSize: MainAxisSize.min, children: [
+            SizedBox(width: 24, height: 28, child: Radio<bool>(
+                key: ValueKey(batch ? 'original-rHowGrow1' : 'original-rHowGrow0'),
+                value: batch, groupValue: batchSelectionMode,
+                onChanged: (value) => setSelectionMode(value!))),
+            InkWell(onTap: () => setSelectionMode(batch),
+                child: Text(AppLanguage.text(batch ? '批量选择' : '单个选择'),
+                    style: const TextStyle(fontSize: 12))),
+          ]),
+        if (batchSelectionMode)
+          InkWell(onTap: () => setState(() => batchSelectorsVisible = false),
+              child: Text(AppLanguage.text('(点击隐藏行列)'),
+                  style: const TextStyle(fontSize: 12, color: Colors.blue, decoration: TextDecoration.underline))),
       ]),
-      Wrap(crossAxisAlignment: WrapCrossAlignment.center, children: [
+      if (batchSelectionMode) webBatchControls(),
+      if (!batchSelectionMode)
+        Wrap(crossAxisAlignment: WrapCrossAlignment.center, children: [
         Text(AppLanguage.text('铲除范围：'), style: const TextStyle(fontSize: 12)),
-        DropdownButton<String>(
+        AppDropdown<String>(
             value: shovelFilter,
             isDense: true,
             style: const TextStyle(fontSize: 12, color: Colors.black),
@@ -4479,7 +4524,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                                     }
                                     if (entry.key == '模仿者' && tool != '放置') {
                                       selectedId = null;
-                                      cells.clear();
+                                      clearBatchSelection();
                                       tool = plantingEffects.contains('模仿者')
                                           ? '模仿'
                                           : '选择';
@@ -4502,15 +4547,25 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                                   fit: BoxFit.fill)))))
           ])),
       Wrap(children: [
-        for (final cat in ['植物', '僵尸', '物品', '特效'])
-          classicButton(cat, () => setState(() => category = cat),
-              active: category == cat)
+        for (final entry in const {'植物': '植物选卡', '僵尸': '僵尸选卡', '物品效果': '物品效果选卡'}.entries)
+          InkWell(
+              key: ValueKey('catalog-category-${entry.key}'),
+              onTap: () => setState(() => category = category == entry.key ? '' : entry.key),
+              child: Container(
+                  height: 22,
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  decoration: BoxDecoration(
+                      color: entry.key == '植物' ? const Color(0xff008080)
+                          : entry.key == '僵尸' ? const Color(0xff4b4174) : const Color(0xff755800),
+                      border: Border.all(color: category == entry.key ? Colors.black54 : Colors.white70)),
+                  child: Text(AppLanguage.text(entry.value),
+                      style: const TextStyle(color: Colors.white, fontSize: 12))))
       ]),
       Row(children: [
         Text(AppLanguage.text('选择种植时的默认外表 '),
             style: const TextStyle(fontSize: 12)),
         Expanded(
-            child: DropdownButton<int>(
+            child: AppDropdown<int>(
           key: const ValueKey('original-sGrowSelect'),
           value: growMode,
           isDense: true,
@@ -4529,33 +4584,20 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                 ? '默认外表'
                 : '外表 ${plantingFrameRow + 1}-${plantingFrameCol + 1}',
             s.readOnly ? null : chooseAppearance),
-        classicButton(
-            '左右翻转',
-            s.readOnly
-                ? null
-                : () => setState(() {
-                      plantingFlip = !plantingFlip;
-                      if (selected != null) {
-                        changePiece(selected!.copy(flipped: plantingFlip));
-                      }
-                    }),
-            active: plantingFlip),
-        classicButton(
-            '上下翻转',
-            s.readOnly
-                ? null
-                : () => setState(() {
-                      plantingVertical = !plantingVertical;
-                      if (selected != null) {
-                        changePiece(
-                            selected!.copy(flippedVertical: plantingVertical));
-                      }
-                    }),
-            active: plantingVertical)
+        originalCheck('flip-horizontal', '左右翻转', plantingFlip,
+            s.readOnly ? null : (value) => setState(() {
+              plantingFlip = value;
+              if (selected != null) changePiece(selected!.copy(flipped: value));
+            })),
+        originalCheck('flip-vertical', '上下翻转', plantingVertical,
+            s.readOnly ? null : (value) => setState(() {
+              plantingVertical = value;
+              if (selected != null) changePiece(selected!.copy(flippedVertical: value));
+            }))
       ]),
-      Padding(
-          padding: const EdgeInsets.only(left: 4),
-          child: SizedBox(
+      if (category.isNotEmpty)
+      SizedBox(height: 360, width: 300,
+          child: Align(alignment: Alignment.topLeft, child: SizedBox(
               width: 290.25,
               child: GridView.count(
                   crossAxisCount: 8,
@@ -4564,7 +4606,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                   physics: const NeverScrollableScrollPhysics(),
                   mainAxisSpacing: 0,
                   crossAxisSpacing: 0,
-                  children: specs.map(classicCard).toList()))),
+                  children: specs.map(classicCard).toList())))),
       if (selected != null)
         Wrap(children: [
           Text(AppLanguage.text('已选：${selected!.spec.name}'),
@@ -4574,98 +4616,64 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     ]);
   }
 
-  Widget batchOperations() => ExpansionTile(
-        key: const ValueKey('batch-operations'),
-        title: Text(AppLanguage.text('批量操作 · 已选 ${cells.length} 格'),
-            style: const TextStyle(fontSize: 12)),
-        tilePadding: EdgeInsets.zero,
-        children: [
-          if (cells.isNotEmpty || tool == '批选')
-            classicButton('完成批量操作', finishBatchOperations,
-                key: const ValueKey('finish-batch-panel')),
-          Wrap(children: [
-            classicButton('选取格子', () => setState(() => tool = '批选'),
-                active: tool == '批选'),
-            classicButton('当前行', () => quickSelect('当前行')),
-            classicButton('当前列', () => quickSelect('当前列')),
-          ]),
-          DropdownButton<String>(
+  Future<void> generateExportPreview() async {
+    if (generatingPng) return;
+    final target = s;
+    final token = documentToken;
+    final document = target.document;
+    final name = safeName(target.name);
+    final ratio = exportRatio, background = exportBackground, poker = pokerWidth;
+    setState(() => generatingPng = true);
+    try {
+      final bytes = await exportPng(document,
+          multiplier: ratio, background: background, pokerWidth: poker);
+      if (!mounted || !identical(s, target) || documentToken != token) return;
+      setState(() {
+        generatedPng = bytes;
+        generatedPngName = name;
+      });
+    } catch (e) {
+      if (mounted) message(context, '生成图片失败：$e');
+    } finally {
+      if (mounted) setState(() => generatingPng = false);
+    }
+  }
+
+  Widget webBatchControls() => Column(
+      key: const ValueKey('web-batch-controls'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Wrap(children: [
+          for (final label in ['陆路', '水路', '后置炮', '前置炮', '超前置炮',
+            '底线炮', '水路前场', '水路56列', '重置批量选择'])
+            classicButton(label, () => quickSelect(label)),
+        ]),
+        Wrap(crossAxisAlignment: WrapCrossAlignment.center, children: [
+          AppDropdown<String>(
               key: const ValueKey('original-rBatchClear'),
               value: batchShovelFilter,
               isDense: true,
               style: const TextStyle(fontSize: 12, color: Colors.black),
-              items: const [
-                '普通植物',
-                '南瓜',
-                '容器',
-                '梯子',
-                '咖啡豆',
-                '钉耙',
-                '墓碑',
-                '物品及特效',
-                '僵尸'
-              ]
-                  .map((v) => DropdownMenuItem(
-                      value: v,
-                      child:
-                          Text(AppLanguage.text(v == '物品及特效' ? '所有效果、物品' : v))))
-                  .toList(),
-              onChanged: (v) => setState(() => batchShovelFilter = v!)),
-          Wrap(children: [
-            for (final q in [
-              '陆路',
-              '水路',
-              '后置炮',
-              '前置炮',
-              '超前置炮',
-              '底线炮',
-              '水路前场',
-              '水路56列'
-            ])
-              classicButton(q, () => quickSelect(q)),
-            classicButton('重置批量选择', () => setState(cells.clear)),
-          ]),
-          Wrap(children: [
-            classicButton(
-                '删除选区', s.readOnly || cells.isEmpty ? null : deleteSelection,
-                key: const ValueKey('delete-batch-panel')),
-            classicButton(
-                '按类型铲除',
-                s.readOnly || cells.isEmpty
-                    ? null
-                    : () => batchDelete(batchShovelFilter)),
-            classicButton('铲除全部植物',
-                s.readOnly || cells.isEmpty ? null : () => batchDelete('植物')),
-            classicButton(
-                '批量种植', s.readOnly || cells.isEmpty ? null : batchPlace),
-          ]),
-          classicButton(
-              '批量模仿',
-              s.readOnly || cells.isEmpty
-                  ? null
-                  : () {
-                      s.execute(
-                          '批量模仿',
-                          s.document.copy(
-                              pieces: s.document.pieces
-                                  .map((p) => p.spec.category == '植物' &&
-                                          cells.any((c) =>
-                                              c.$1 == p.row &&
-                                              c.$2 >= p.col &&
-                                              c.$2 < p.col + p.spec.width)
-                                      ? p.copy(effects: {
-                                          ...p.effects
-                                              .difference({'阴影', '我是僵尸', '灰烬'}),
-                                          '模仿者'
-                                        })
-                                      : p)
-                                  .toList()));
-                    }),
-        ],
-      );
+              items: const ['普通植物', '南瓜', '容器', '梯子', '咖啡豆', '钉耙',
+                '墓碑', '物品及特效', '僵尸'].map((kind) => DropdownMenuItem(
+                    value: kind, child: Text(AppLanguage.text(kind)))).toList(),
+              onChanged: (value) => setState(() => batchShovelFilter = value!)),
+          classicButton('选定格子指定植物', s.readOnly ? null : () => batchDelete(batchShovelFilter)),
+          classicButton('选定格子所有植物', s.readOnly ? null : () => batchDelete('全部')),
+          classicButton('全都不要给我清空', s.readOnly ? null : clearFormation),
+        ]),
+      ]);
 
-  Future<void> chooseAppearance() async {
+  Future<void> chooseAppearance({bool plantBatch = false}) async {
+    final target = s;
+    final token = documentToken;
+    final fingerprint = target.document.fingerprint;
+    final typeAtOpen = selectedType;
+    bool stillCurrent() => mounted && identical(s, target) &&
+        documentToken == token && s.document.fingerprint == fingerprint &&
+        selectedType == typeAtOpen;
     await Future.wait([OriginalAssets.ensureLoaded(), AppLanguage.load()]);
+    if (!stillCurrent()) return;
     final piece = selected;
     final type = piece?.type ?? selectedType;
     final sprite =
@@ -4735,7 +4743,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                       onPressed: () => Navigator.pop(ctx, (0, 0)),
                       child: Text(AppLanguage.text('默认外表')))
                 ]));
-    if (value == null || !mounted) return;
+    if (value == null || !stillCurrent()) return;
     setState(() {
       plantingFrameRow = value.$1;
       plantingFrameCol = value.$2;
@@ -4743,6 +4751,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     if (piece != null) {
       changePiece(piece.copy(frameRow: value.$1, frameCol: value.$2));
     }
+    if (plantBatch && batchSelectionMode) batchPlace();
   }
 
   Future<void> navigateFormation(Formation document,
@@ -4872,7 +4881,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
       Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
           child: Row(children: [
-            for (final rows in [5, 6, 0])
+            for (final rows in [0, 6, 5])
               Expanded(
                   child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 3),
@@ -4888,14 +4897,16 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                           onSelected: (_) => super.setState(
                               () => presetPickerRows = rows)))),
           ])),
-      if (group == '阵型')
-        Padding(
+      Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: originalCheck(
+            child: SizedBox(height: 32, child: group == '阵型' ? originalCheck(
                 'preset-change-map',
                 '布阵时更换地图',
                 presetChangeMap,
-                (value) => setState(() => presetChangeMap = value))),
+                (value) => setState(() => presetChangeMap = value))
+              : Align(alignment: Alignment.centerLeft,
+                  child: Text(AppLanguage.text('局部布局'),
+                      style: const TextStyle(fontSize: 12, color: Color(0xff63755f)))))),
       Expanded(
           child: LibraryBrowser(
         key: ValueKey('toolbox-preset-list-$group-$presetPickerRows'),
@@ -4959,7 +4970,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
           onTap: s.readOnly
               ? null
               : () async {
-                  if (selectedType == p.id &&
+                  if (!batchSelectionMode && selectedType == p.id &&
                       (tool == '放置' || tool == '模仿' && p.id == 'Imitater')) {
                     cancelPlanting();
                     return;
@@ -4970,7 +4981,9 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                     tool = p.id == 'Imitater' ? '模仿' : '放置';
                   });
                   if (growMode == 0) {
-                    await chooseAppearance();
+                    await chooseAppearance(plantBatch: batchSelectionMode);
+                  } else if (batchSelectionMode) {
+                    batchPlace();
                   }
                 },
           child: Container(
@@ -5021,8 +5034,11 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                   padding: const EdgeInsets.only(right: 4),
                   child: ChoiceChip(
                       label: Text(AppLanguage.text(t)),
-                      selected: tool == t,
-                      onSelected: (v) => setState(() => tool = t))),
+                      selected: t == '批选' ? batchSelectionMode : !batchSelectionMode && tool == t,
+                      onSelected: (v) {
+                        if (t == '批选') { setSelectionMode(true); }
+                        else { setSelectionMode(false); setState(() => tool = t); }
+                      })),
             IconButton(
                 onPressed: fit,
                 tooltip: AppLanguage.text('适应窗口'),
@@ -5036,7 +5052,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                 tooltip: AppLanguage.text('放大'),
                 icon: const Icon(Icons.add)),
             if (tool == '铲除')
-              DropdownButton<String>(
+              AppDropdown<String>(
                   value: shovelFilter,
                   items: ['智能', ...ObjectFilter.options]
                       .map((f) => DropdownMenuItem(
@@ -5156,7 +5172,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     final previewCell = plantingPointer == null
         ? null
         : BoardGeometry(rendered).hit(plantingPointer!);
-    final preview = !s.readOnly &&
+    final preview = !batchSelectionMode && !s.readOnly &&
             tool == '放置' &&
             previewCell != null &&
             ObjectSpec.byId(selectedType).category == '植物' &&
@@ -5218,6 +5234,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                                             rect.contains(d.localPosition)))) {
                               return;
                             }
+                            if (batchSelectionMode) return;
                             if (d.buttons == 2) {
                               resetPlantState(d.localPosition);
                               return;
@@ -5267,7 +5284,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                                                     plantingPointer!)
                                                 : const {},
                                             growthEffects: growthEffects,
-                                            selectedCells: cells,
+                                            selectedCells: batchSelectionMode ? const {} : cells,
                                             selectedId: selectedId))),
                                 if (rendered.display['卡槽'] == true)
                                   boardShovelBank(),
@@ -5289,6 +5306,13 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                                           })),
                                 if (rendered.display['卡槽'] == true)
                                   for (var i = 0; i < 10; i++) boardSeedSlot(i),
+                                if (batchSelectionMode && batchSelectorsVisible)
+                                  Positioned.fill(child: BatchSelectionOverlay(
+                                      document: rendered,
+                                      selectedRows: batchRows,
+                                      selectedColumns: batchColumns,
+                                      onRowsChanged: (rows) => updateBatchSelection(rows, {...batchColumns}),
+                                      onColumnsChanged: (columns) => updateBatchSelection({...batchRows}, columns))),
                                 // Transient cursor feedback must paint above
                                 // both the board and its interactive HUD.
                                 if (!s.readOnly &&
@@ -5386,7 +5410,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
             Text(AppLanguage.text('地图与显示'),
                 style: const TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
-            DropdownButton<String>(
+            AppDropdown<String>(
                 value: s.document.mapId,
                 isExpanded: true,
                 items: BoardMap.all
@@ -5403,7 +5427,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                       }),
             Row(children: [
               Text(AppLanguage.text('迷雾列数：')),
-              DropdownButton<int>(
+              AppDropdown<int>(
                   value: s.document.fogColumns,
                   items: List.generate(
                       11, (i) => DropdownMenuItem(value: i, child: Text('$i'))),
@@ -5492,7 +5516,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                       : () async {
                           {
                             await navigateFormation(preset(p), name: p);
-                            cells.clear();
+                            clearBatchSelection();
                             selectedId = null;
                             fit();
                             set(() {});
@@ -5565,7 +5589,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                     setState(() => scalePreview = null);
                     set(() {});
                   }),
-        DropdownButton<String>(
+        AppDropdown<String>(
             value: p.appearance,
             items: ['默认', '轮廓']
                 .map((v) => DropdownMenuItem(value: v, child: Text(v)))

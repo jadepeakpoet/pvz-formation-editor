@@ -1,3 +1,4 @@
+import '../widgets/app_dropdown.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'app_language.dart';
@@ -73,7 +74,7 @@ class _LanguageSelectorState extends State<LanguageSelector> {
             Text(language == 'zh' ? '语言 / Language' : 'Language'),
             const SizedBox(width: 16),
             Expanded(
-                child: DropdownButton<String>(
+                child: AppDropdown<String>(
                     key: const ValueKey('app-language'),
                     value: language,
                     isExpanded: true,

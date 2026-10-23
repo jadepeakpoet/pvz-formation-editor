@@ -1,3 +1,4 @@
+import '../widgets/app_dropdown.dart';
 import '../platform/app_language.dart';
 import 'package:flutter/material.dart';
 import '../domain/formation.dart';
@@ -903,7 +904,7 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
                           borderSide:
                               const BorderSide(color: Color(0xffdce3d7)))))),
           const SizedBox(width: 12),
-          DropdownButton<String>(
+          AppDropdown<String>(
               key: const ValueKey('library-sort'),
               value: sort,
               underline: const SizedBox(),

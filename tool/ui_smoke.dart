@@ -1,5 +1,5 @@
 // Real pointer smoke for the current editor surface. Specialized suites cover
-// cards, mirrors, presets/navigation, transfer, replacement and batch operations;
+// cards, mirrors, presets/navigation, transfer and replacement;
 // see parity_ui, plant_state, formation_navigation, formation_io and live_output.
 import 'dart:convert';
 import 'dart:io';
@@ -194,6 +194,72 @@ Future<void> main() async {
       }
     }
     session.readOnly = false;
+    page.update();
+    await h.settle();
+  });
+  await h.run('current-ui.lazy-map-entry',
+      'Lazy layouts offer shared map selection without batch operation panel; batch selection remains available',
+      () async {
+    final original = session.document;
+    await page.toggleSeedChooser(false);
+    page.selectToolboxTab(1);
+    session.execute('lazy map fixture', original.copy(mapId: 'pool', pieces: [
+      Piece(id: 'lazy-keep', type: 'pea', row: 0, col: 0, layer: 10),
+      Piece(id: 'lazy-other', type: 'sunflower', row: 1, col: 1, layer: 10),
+    ]));
+    page.keepPlantsOnMapChange = false;
+    page.update();
+    await h.settle();
+    h.expect(h.all((w) => w.key == const ValueKey('batch-operations') ||
+        w is Text && ((w.data ?? '').startsWith('批量操作 ·') ||
+            w.data == '批量种植' || w.data == '批量模仿')).isEmpty,
+        'Lazy layouts still expose batch operations');
+    final before = session.document.fingerprint;
+    await h.tapElement(h.find((w) => w.key == const ValueKey('lazy-change-map')));
+    h.expect(h.all((w) => w.key == const ValueKey('map-picker-dialog')).isNotEmpty,
+        'Lazy map button did not open shared chooser');
+    await h.tapElement(h.find((w) => w.key == const ValueKey('map-picker-keep-plants')));
+    h.expect((page.windowState() as Map)['keepPlantsOnMapChange'] == true,
+        'Lazy picker option did not synchronize');
+    await h.tapElement(h.find((w) => w.key == const ValueKey('map-picker-cancel')));
+    h.expect(session.document.fingerprint == before,
+        'Canceling lazy map choice changed formation');
+    h.expect((h.find((w) => w.key == const ValueKey('original-map-keep-plants'))
+        .widget as Checkbox).value == true, 'Outside option did not follow dialog');
+    await h.tapElement(h.find((w) => w.key == const ValueKey('lazy-change-map')));
+    await h.tapElement(h.find((w) => w.key == const ValueKey('map-picker-map-day')));
+    h.expect(session.document.mapId == 'day' &&
+        session.document.pieces.length == 2 && page.classicTab == 1,
+        'Lazy map selection did not retain plants/current tab');
+    session.undo();
+    await h.settle();
+    h.expect(session.document.fingerprint == before,
+        'Undo lazy map change did not restore source');
+    page.selectedId = 'lazy-keep';
+    page.update();
+    await h.settle();
+    page.deleteSelection();
+    await h.settle();
+    h.expect(session.document.pieces.length == 1 &&
+        session.document.pieces.single.id == 'lazy-other',
+        'Single selection deletion removed the wrong objects');
+    session.undo();
+    await h.settle();
+    h.expect(session.document.fingerprint == before,
+        'Single deletion cannot be undone');
+    page.selectToolboxTab(2);
+    await h.settle();
+    await h.tap('批量选择');
+    page.updateBatchSelection(<int>{0}, <int>{0});
+    page.selectToolboxTab(1);
+    await h.settle();
+    h.expect(page.cells.isNotEmpty, 'Batch selection entry no longer works');
+    await h.tapElement(h.find((w) => w.key == const ValueKey('finish-batch-toolbar')));
+    h.expect(page.cells.isEmpty && page.batchSelectionMode == false &&
+        session.document.fingerprint == before,
+        'Cancel batch selection changed board or retained selected cells');
+    session.execute('restore lazy map fixture', original);
+    page.keepPlantsOnMapChange = false;
     page.update();
     await h.settle();
   });

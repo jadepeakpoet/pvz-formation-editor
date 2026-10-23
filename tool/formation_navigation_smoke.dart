@@ -44,6 +44,16 @@ Future<void> main() async {
     await h.settle();
   }
 
+  Future<void> selectCells(List<(int, int)> coordinates) async {
+    page().selectToolboxTab(2);
+    await h.settle();
+    await h.tap('批量选择');
+    page().updateBatchSelection(
+        coordinates.map((cell) => cell.$1).toSet(),
+        coordinates.map((cell) => cell.$2).toSet());
+    await h.settle();
+  }
+
   await h.run('picker.history',
       'Library-style single click opens current page; back restores name/document',
       () async {
@@ -96,9 +106,34 @@ Future<void> main() async {
         final expected = BoardMap.byId(mapId).rows == 6 ? 6 : 5;
         h.expect((h.find((w) => w.key == ValueKey('preset-rows-$expected'))
             .widget as ChoiceChip).selected, 'Wrong default tab on $mapId');
+        final tabBoxes = [for (final value in [0, 6, 5])
+          h.find((w) => w.key == ValueKey('preset-rows-$value')).renderObject as RenderBox];
+        h.expect(tabBoxes[0].localToGlobal(Offset.zero).dx <
+            tabBoxes[1].localToGlobal(Offset.zero).dx &&
+            tabBoxes[1].localToGlobal(Offset.zero).dx <
+            tabBoxes[2].localToGlobal(Offset.zero).dx,
+            'Preset tabs must be ordered formation / six / five');
+        final hint = h.find((w) => w is Text && w.data == '局部布局');
+        var fixedHint = false;
+        hint.visitAncestorElements((element) {
+          if (element.widget is SizedBox &&
+              (element.widget as SizedBox).height == 32) {
+            fixedHint = true;
+            return false;
+          }
+          return true;
+        });
+        h.expect(fixedHint, 'Partial hint must reserve the same 32px option row');
+        double? browserTop;
         for (final rows in [5, 6]) {
           await h.tapElement(h.find((w) => w.key == ValueKey('preset-rows-$rows')));
-          final browser = h.find((w) => w is LibraryBrowser).widget as LibraryBrowser;
+          final browserElement = h.find((w) => w is LibraryBrowser);
+          final top = (browserElement.renderObject as RenderBox)
+              .localToGlobal(Offset.zero).dy;
+          browserTop ??= top;
+          h.expect((top - browserTop).abs() < .1,
+              'Switching partial row tabs moved the list');
+          final browser = browserElement.widget as LibraryBrowser;
           h.expect(browser.presets.isNotEmpty, 'Empty layout tab');
           for (final preset in browser.presets) {
             final scene = preset.name.startsWith('泳池-') ? 'pool'
@@ -108,7 +143,11 @@ Future<void> main() async {
           }
         }
         await h.tapElement(h.find((w) => w.key == const ValueKey('preset-rows-0')));
-        final full = h.find((w) => w is LibraryBrowser).widget as LibraryBrowser;
+        final fullElement = h.find((w) => w is LibraryBrowser);
+        h.expect(((fullElement.renderObject as RenderBox)
+            .localToGlobal(Offset.zero).dy - browserTop!).abs() < .1,
+            'Full formation option row must not move the list');
+        final full = fullElement.widget as LibraryBrowser;
         h.expect(identical(full.presets, LibraryPresets.all),
             'Third tab should list all full formations');
         await h.tapElement(h.find((w) => w.key == const ValueKey('preset-rows-5')));
@@ -336,23 +375,23 @@ Future<void> main() async {
   await h.run('batch.cancel',
       'Visible cancellation clears selected cells without editing', () async {
     page().selectToolboxTab(1);
-    page().quickSelect('当前行');
+    await selectCells([(0, 0)]);
     await h.settle();
     final fingerprint = tabs.active.document.fingerprint;
-    h.expect(page().cells.isNotEmpty, 'Quick selection did not select cells');
+    h.expect(page().cells.isNotEmpty, 'Row and column selection did not select cells');
     final cancel =
-        h.find((w) => w.key == const ValueKey('clear-batch-selection'));
+        h.find((w) => w.key == const ValueKey('finish-batch-toolbar'));
     await h.tapElement(cancel);
     h.expect(
         page().cells.isEmpty &&
-            page().tool == '选择' &&
+            page().batchSelectionMode == false &&
             tabs.active.document.fingerprint == fingerprint,
         'Visible cancel must clear markers and leave formation unchanged');
   });
   await h.run('batch.save-finish',
       'Successful save clears batch state without adding edit history',
       () async {
-    page().quickSelect('当前行');
+    await selectCells([(0, 0)]);
     await h.settle();
     final fingerprint = tabs.active.document.fingerprint;
     final depth = tabs.active.undoDepth;
@@ -360,15 +399,15 @@ Future<void> main() async {
     await h.settle();
     h.expect(
         page().cells.isEmpty &&
-            page().tool == '选择' &&
+            page().batchSelectionMode == false &&
             tabs.active.document.fingerprint == fingerprint &&
             tabs.active.undoDepth == depth,
         'Successful save retained batch state or changed edit history');
-    page().quickSelect('当前列');
+    await selectCells([(0, 1)]);
     await h.settle();
     await h.tapElement(
         h.find((w) => w.key == const ValueKey('finish-batch-toolbar')));
-    h.expect(page().cells.isEmpty && page().tool == '选择',
+    h.expect(page().cells.isEmpty && page().batchSelectionMode == false,
         'Toolbar finish left batch selection active');
   });
   await h.run('batch.delete-selection',
@@ -386,14 +425,10 @@ Future<void> main() async {
         persistDraft: false, document: original, name: '批量删除测试'));
     await settled();
     page().selectToolboxTab(1);
-    page().quickSelect('当前行');
-    page().cells
-      ..clear()
-      ..addAll([(2, 1), (0, 1)]);
+    await selectCells([(2, 1), (0, 1)]);
     await h.settle();
     final depth = tabs.active.undoDepth;
-    await h.tapElement(
-        h.find((w) => w.key == const ValueKey('delete-batch-selection')));
+    await h.tap('选定格子所有植物');
     h.expect(
         tabs.active.document.pieces.length == 1 &&
             tabs.active.document.pieces.single.id == 'outside',
@@ -412,7 +447,7 @@ Future<void> main() async {
     await tabs.open(EditorSession(repo,
         persistDraft: false, document: original, readOnly: true));
     await settled();
-    page().quickSelect('当前行');
+    await selectCells([(0, 0)]);
     page().deleteSelection();
     h.expect(
         tabs.active.document.fingerprint == original.fingerprint &&

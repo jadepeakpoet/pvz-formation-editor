@@ -212,7 +212,7 @@ class OriginalAssets {
     'iceTrail': 'ice',
   };
   static String cardPath(String type, {bool imitater = false}) =>
-      'assets/original/image/Card/${names[type] ?? type}${imitater ? '_i' : ''}.png';
+      'assets/original/image/Card/${type == 'grave' ? 'Tombstone' : names[type] ?? type}${imitater ? '_i' : ''}.png';
   static ui.Image? image(String path) => images[path];
   static Future<void> ensureLoaded() => _loading ??= _load();
   static Future<void> _load() async {

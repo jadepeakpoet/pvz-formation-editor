@@ -1,5 +1,28 @@
 /// English translations for the main editor interface.
 const Map<String, String> mainTranslations = {
+  '等宽，否则游戏等宽': ' width, otherwise use game width',
+  '生成图片': 'Generate image',
+  '导出图片': 'Export image',
+  '正在生成…': 'Generating…',
+  '生成图片失败：{error}': 'Could not generate image: {error}',
+  '(点击隐藏行列)': '(Hide row and column selectors)',
+
+  '全部行': 'All rows',
+  '局部布局': 'Partial layouts',
+  '全部列': 'All columns',
+  '植物选卡': 'Plants',
+  '僵尸选卡': 'Zombies',
+  '物品效果选卡': 'Items and effects',
+  '创建当前阵型的镜像窗口': 'Create a mirror of the current formation',
+  '创建与主窗口当前阵型一样的不同比例镜像，最多同时创建三个。镜像内容只读，主窗口的修改不会影响已创建的镜像；关闭后不保存。可拖动标题移动窗口，并导出 PNG 图片。':
+      'Create up to three read-only mirrors at different scales. Changes to the main board do not affect existing mirrors. Closed mirrors are not saved. Drag the title to move a window and export it as PNG.',
+  '创建一个{scale}比例的镜像窗口': 'Create a {scale} mirror',
+  '选定格子指定植物': 'Clear selected type in selected cells',
+  '选定格子所有植物': 'Clear everything in selected cells',
+  '全都不要给我清空': 'Clear the entire board',
+
+  '更换底图': 'Change background',
+  '取消批量选择': 'Cancel multiple selection',
   '五行': '5 rows',
   '六行': '6 rows',
   '布阵时更换地图': 'Change map when applying formation',
@@ -123,7 +146,7 @@ const Map<String, String> mainTranslations = {
   "对象属性与扩展工具": "Object properties and extra tools",
   "创建当前阵型的镜像，拖动标题移动窗口。":
       "Create a mirror of this formation. Drag the title to move it.",
-  "显示阵型背景，否则背景透明": "Include formation background",
+  "显示游戏背景，否则背景透明": "Show game background; otherwise transparent",
   "植吧扑克": "Tieba poker size",
   "植吧扑克等宽，否则游戏等宽": "Use poker width instead of game width",
   "原图大小": "Original size",
@@ -136,7 +159,7 @@ const Map<String, String> mainTranslations = {
   "1.载入和导出布阵字符串": "1. Import and export formation codes",
   "“载入”仅在本布阵器上生效，游戏布阵请使用：":
       "Import applies to this editor. To arrange plants in the game, use:",
-  "粘贴 Toolkit 或布阵器阵型码，自动识别": "Paste a Toolkit or editor code (auto-detected)",
+  "粘贴 Toolkit 或网页布阵器阵型码": "Paste a Toolkit or web formation editor code",
   "载入": "Import",
   "清空输入": "Clear input",
   "当前阵型码（随阵图实时更新）": "Current formation code (updates automatically)",

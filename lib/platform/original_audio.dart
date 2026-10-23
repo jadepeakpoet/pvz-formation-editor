@@ -19,7 +19,7 @@ class OriginalAudio {
   static final _soundSources = <String>{};
   static Future<void>? _soundInitializing;
   static bool _loadingSounds = false;
-  static double musicVolume = 0, soundVolume = 0;
+  static double musicVolume = .25, soundVolume = .5;
   static bool _ready = false;
   static Future<void>? _initializing;
 

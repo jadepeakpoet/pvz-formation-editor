@@ -538,25 +538,22 @@ Future<void> main() async {
     await h.settle();
     await h.screenshot('support-checkbox-options');
   });
-  await h.run('batch.width',
-      'Batch two-cell plants receive two supports without duplicates',
+  await h.run('plant.width',
+      'Two-cell planting receives two supports without duplicates',
       () async {
     s.execute('pool', Formation());
     page.autoLily = true;
     page.autoPotMode = 'roof';
     page.selectedType = 'cob';
-    page.cells.clear();
-    page.cells.add((2, 0));
-    page.cells.add((2, 1));
-    page.batchPlace();
+    plant(2, 0);
     h.expect(
         s.document.pieces.length == 3 &&
             has('lily', 2, 0) &&
             has('lily', 2, 1) &&
             has('cob', 2, 0),
-        'Batch supports or occupied-width wrong');
+        'Wide plant supports or occupied-width wrong');
     s.undo();
-    h.expect(s.document.pieces.isEmpty, 'Batch undo left supports');
+    h.expect(s.document.pieces.isEmpty, 'Plant undo left supports');
     s.execute('roof', Formation(mapId: 'roof'));
     plant(0, 0);
     h.expect(has('pot', 0, 0) && has('pot', 0, 1),
