@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:pvz_formation_editor/main.dart' as app;
+import 'package:pvz_formation_editor/domain/formation.dart';
 import 'package:pvz_formation_editor/editor/board_painter.dart';
 import 'package:pvz_formation_editor/editor/editor_session.dart';
 import 'package:pvz_formation_editor/editor/original_assets.dart';
@@ -194,6 +195,83 @@ Future<void> main() async {
     }
     session.readOnly = false;
     page.update();
+    await h.settle();
+  });
+  await h.run('current-ui.map-picker',
+      'Catalog map button previews locally, preserves tab and changes map in one undo command',
+      () async {
+    final original = session.document;
+    final sessionId = session.id;
+    await page.toggleSeedChooser(false);
+    page.classicTab = 2;
+    session.execute(
+        'map dialog fixture',
+        original.copy(mapId: 'pool', pieces: [
+          Piece(id: 'keep-map', type: 'pea', row: 1, col: 1, layer: 10),
+          Piece(id: 'outside-map', type: 'pea', row: 5, col: 2, layer: 10),
+        ]));
+    await h.settle();
+    final before = session.document.fingerprint;
+    final depth = session.undoDepth;
+    Future<void> open() => h.tapElement(
+        h.find((w) => w.key == const ValueKey('original-change-map')));
+    await open();
+    await h.tapElement(
+        h.find((w) => w.key == const ValueKey('map-picker-map-roof')));
+    final painter = (h
+            .find((w) => w.key == const ValueKey('map-picker-preview'))
+            .widget as CustomPaint)
+        .painter as BoardPainter;
+    h.expect(
+        painter.document.mapId == 'roof' &&
+            session.document.fingerprint == before &&
+            page.classicTab == 2,
+        'Map preview must match choice without editing document or opening settings');
+    await h.tapElement(
+        h.find((w) => w.key == const ValueKey('map-picker-cancel')));
+    h.expect(
+        session.document.fingerprint == before && session.undoDepth == depth,
+        'Cancel map dialog changed document');
+    await open();
+    await h.tapElement(
+        h.find((w) => w.key == const ValueKey('map-picker-map-roof')));
+    await h
+        .tapElement(h.find((w) => w.key == const ValueKey('map-picker-keep')));
+    h.expect(
+        session.id == sessionId &&
+            session.document.mapId == 'roof' &&
+            session.document.pieces.single.id == 'keep-map' &&
+            session.undoDepth == depth + 1 &&
+            page.classicTab == 2,
+        'Keep map change must preserve current session and fit pieces in one command');
+    session.undo();
+    await h.settle();
+    h.expect(session.document.fingerprint == before,
+        'Undo map change must restore excluded pieces');
+    session.redo();
+    await h.settle();
+    await open();
+    await h.tapElement(
+        h.find((w) => w.key == const ValueKey('map-picker-map-day')));
+    await h
+        .tapElement(h.find((w) => w.key == const ValueKey('map-picker-reset')));
+    h.expect(session.document.mapId == 'day' && session.document.pieces.isEmpty,
+        'Map reset should clear plants');
+    await open();
+    session.execute('map external update',
+        session.document.copy(sunValue: session.document.sunValue + 1));
+    await h.settle();
+    final changed = session.document.fingerprint;
+    final changedDepth = session.undoDepth;
+    await h.tapElement(
+        h.find((w) => w.key == const ValueKey('map-picker-map-night')));
+    await h
+        .tapElement(h.find((w) => w.key == const ValueKey('map-picker-keep')));
+    h.expect(
+        session.document.fingerprint == changed &&
+            session.undoDepth == changedDepth,
+        'Outdated map dialog must not overwrite a newer document');
+    session.execute('restore map fixture', original);
     await h.settle();
   });
   await h.run('current-ui.toolbox-scroll',

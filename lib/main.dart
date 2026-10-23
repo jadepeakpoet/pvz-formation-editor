@@ -22,6 +22,7 @@ import 'domain/object_filter.dart';
 import 'editor/board_painter.dart';
 import 'editor/board_sun_editor.dart';
 import 'editor/rename_dialog.dart';
+import 'editor/map_picker_dialog.dart';
 import 'editor/shovel_targets.dart';
 import 'editor/classic_window.dart';
 import 'editor/original_assets.dart';
@@ -1554,6 +1555,20 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                     filePath: payload['filePath'] as String?,
                     fileFormat: payload['fileFormat'] as String?,
                     lastFileBackup: payload['lastFileBackup'] as String?);
+              }
+              if (action == 'changeMap') {
+                final payload = arguments['payload'] as Map;
+                if (payload['baseFingerprint'] != s.document.fingerprint) {
+                  queueWindowState();
+                  throw StateError('主画面已更新，请重新选择地图');
+                }
+                final mapId = payload['mapId'];
+                if (mapId is! String ||
+                    !BoardMap.all.any((map) => map.id == mapId) ||
+                    payload['keepPlants'] is! bool) {
+                  throw const FormatException('无效地图选择');
+                }
+                await applyMapSelection(mapId, payload['keepPlants'] as bool);
               }
               if (action == 'usePreset') {
                 final payload = arguments['payload'] as Map;
@@ -3731,16 +3746,47 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
               ])),
       ]);
 
-  Future<void> applySelectedMap(bool keep) async {
+  Future<void> chooseMapFromCatalog() async {
+    final target = s;
+    final token = documentToken;
+    final fingerprint = s.document.fingerprint;
+    try {
+      final result = await showMapPickerDialog(context,
+          currentMapId: target.document.mapId, readOnly: target.readOnly);
+      if (result == null || !mounted || target.readOnly) return;
+      if (!identical(s, target) ||
+          token != documentToken ||
+          fingerprint != s.document.fingerprint) {
+        throw StateError('主画面已更新，请重新选择地图');
+      }
+      await applyMapSelection(result.mapId, result.keepPlants);
+    } catch (error) {
+      if (mounted) message(context, error);
+    }
+  }
+
+  Future<void> applySelectedMap(bool keep) =>
+      applyMapSelection(pendingMapId ?? s.document.mapId, keep);
+
+  Future<void> applyMapSelection(String mapId, bool keep) async {
+    if (s.readOnly) return;
+    if (widget.toolboxOnly) {
+      await WindowBridge.mainAction('changeMap', payload: {
+        'mapId': mapId,
+        'keepPlants': keep,
+        'baseFingerprint': remoteBaseFingerprint,
+      });
+      return;
+    }
     finishGesture();
-    final map = BoardMap.byId(pendingMapId ?? s.document.mapId);
+    final map = BoardMap.byId(mapId);
     final retained =
         s.document.pieces.where((p) => s.document.fits(p, map)).toList();
-    await navigateFormation(
-        s.document.copy(mapId: map.id, pieces: keep ? retained : []));
+    s.execute(
+        '更换地图', s.document.copy(mapId: map.id, pieces: keep ? retained : []));
+    cancelPlanting();
     setState(() {
-      cells.clear();
-      selectedId = null;
+      pendingMapId = map.id;
       hover = null;
     });
     fit();
@@ -4231,7 +4277,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
         classicButton('清空', s.readOnly ? null : clearFormation,
             key: const ValueKey('clear-formation'))
       ]),
-      classicButton('更换地图', () => setState(() => classicTab = 5),
+      classicButton('更换地图', () => unawaited(chooseMapFromCatalog()),
           key: const ValueKey('original-change-map')),
       const SizedBox(height: 5),
       plantingSupportOptions(),

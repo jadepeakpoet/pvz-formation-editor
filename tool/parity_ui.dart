@@ -1051,13 +1051,15 @@ Future<void> main() async {
               'Invalid sun input has no feedback');
       });
     }
-    await h.run('original.change-map', '原站更换地图按钮导航设置', () async {
+    await h.run('original.change-map', '更换地图按钮打开预览弹窗', () async {
       await fresh();
       await h.tapElement(
           h.find((w) => w.key == const ValueKey('original-change-map')));
       h.expect(
-          h.all((w) => w.key == const ValueKey('original-lMap')).isNotEmpty,
-          'Change-map button did not open settings');
+          h.all((w) => w.key == const ValueKey('map-picker-dialog')).isNotEmpty,
+          'Change-map button did not open preview dialog');
+      await h.tapElement(
+          h.find((w) => w.key == const ValueKey('map-picker-cancel')));
     });
     await h.run('original.transfer-clear', '清空输入保留实时输出且无清空输出按钮', () async {
       await fresh();

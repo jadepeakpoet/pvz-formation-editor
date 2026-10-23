@@ -1,5 +1,9 @@
 /// English translations for the main editor interface.
 const Map<String, String> mainTranslations = {
+  '保留植物时，超出新地图范围的植物将被移除。': 'Plants outside the new map bounds will be removed.',
+  '主画面已更新，请重新选择地图': 'The formation changed. Please select the map again.',
+  '地图预览': 'Map preview',
+  '选择地图': 'Choose map',
   '自动垫荷叶 ': 'Auto-place Lily Pads ',
   '水面': 'Water',
   '重命名': 'Rename',
