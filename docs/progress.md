@@ -469,3 +469,9 @@ MainFlutterWindow在主窗口点击、成为key、显式激活和应用重新激
 验证：batch_selection_overlay真实引擎通过整行/列边界像素、交集底色与非交集不染色、39px勾选框/44px边缘命中及五/六行屋顶；导航batch.delete-selection通过区域删除与撤销。flutter analyze无问题，macOS Debug构建成功。
 
 web_catalog_smoke最终通过弹框打开/取消无写、选择即清除、选区/文档改变拒绝、区域/全地图清空及Undo、只读禁用、分组标题和外表框紧凑宽度。测试显式等待弹框退出动画，不把关闭动画期间的旧widget误判为需二次确认。
+
+## 2026-10-24 — 工具箱带主窗口回到前台
+
+共享侧栏被点击、成为key、程序激活或应用重新激活时，将可见主窗口order到当前key侧栏正下方。只调整层叠，不makeKey主窗口，不改变工具箱firstResponder；单独queued标志合并事件，且不会与原主窗口带侧栏的逻辑循环。隐藏、最小化、sheet及modal窗口保持原状态；存档库模式也一致。
+
+验证：sidebar_front_smoke提取生产排序方法，在隔离临时AppKit测试应用中通过主窗口位于侧栏下/第三窗上、key和firstResponder保留、排队合并、隐藏/最小化/non-key保护，并检查click/key/程序激活接线。测试未启动产品副本或读取用户文档；实际物理鼠标操作验收未执行。完整macOS Debug构建成功，flutter analyze无问题。

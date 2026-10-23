@@ -36,6 +36,7 @@ private final class EditorHoverTracker: NSObject {
 // The first click after editing the board must also reach sidebar controls.
 private final class SidebarWindow: NSWindow {
   private(set) var pointerDiagnostics: [[String: Any]] = []
+  var onForegroundRequest: (() -> Void)?
   override func sendEvent(_ event: NSEvent) {
     if event.type == .leftMouseDown && !isKeyWindow && attachedSheet == nil {
       makeKey()
@@ -52,6 +53,7 @@ private final class SidebarWindow: NSWindow {
       if pointerDiagnostics.count > 60 { pointerDiagnostics.removeFirst() }
     }
     super.sendEvent(event)
+    if event.type == .leftMouseDown { onForegroundRequest?() }
   }
 }
 
@@ -104,6 +106,7 @@ class MainFlutterWindow: NSWindow, NSWindowDelegate {
   private var latestToolboxState: [String: Any]?
   private var sidebarLifecycleSyncQueued = false
   private var sidebarFrontQueued = false
+  private var editorFrontQueued = false
 
   override func sendEvent(_ event: NSEvent) {
     super.sendEvent(event)
@@ -111,8 +114,29 @@ class MainFlutterWindow: NSWindow, NSWindowDelegate {
   }
 
   func windowDidBecomeKey(_ notification: Notification) {
-    guard notification.object as? NSWindow === self else { return }
-    queueVisibleSidebarFront()
+    if notification.object as? NSWindow === self {
+      queueVisibleSidebarFront()
+    } else if notification.object as? NSWindow === sidebarWindow {
+      queueVisibleEditorFront()
+    }
+  }
+
+  private func queueVisibleEditorFront() {
+    guard !editorFrontQueued else { return }
+    editorFrontQueued = true
+    DispatchQueue.main.async { [weak self] in
+      guard let self = self else { return }
+      self.editorFrontQueued = false
+      guard NSApp.isActive, !NSApp.isHidden,
+            self.isVisible, !self.isMiniaturized, self.attachedSheet == nil,
+            NSApp.modalWindow == nil,
+            let panel = self.sidebarWindow, panel.isKeyWindow,
+            panel.isVisible, !panel.isMiniaturized,
+            panel.attachedSheet == nil else { return }
+      // Bring the editor alongside the active sidebar without changing its key
+      // window or first responder. Hidden/minimized companions stay untouched.
+      self.order(.below, relativeTo: panel.windowNumber)
+    }
   }
 
   private func queueVisibleSidebarFront() {
@@ -149,6 +173,7 @@ class MainFlutterWindow: NSWindow, NSWindowDelegate {
     if target.isMiniaturized { target.deminiaturize(nil) }
     target.makeKeyAndOrderFront(nil)
     if target === self { queueVisibleSidebarFront() }
+    else if target === sidebarWindow { queueVisibleEditorFront() }
   }
 
   @IBAction func showCurrentHistory(_ sender: Any?) {
@@ -207,6 +232,7 @@ class MainFlutterWindow: NSWindow, NSWindowDelegate {
     queueSidebarLifecycleSync()
     if notification.name == NSApplication.didBecomeActiveNotification {
       queueVisibleSidebarFront()
+      queueVisibleEditorFront()
     }
   }
 
@@ -252,6 +278,7 @@ class MainFlutterWindow: NSWindow, NSWindowDelegate {
     panel.isReleasedWhenClosed = false
     panel.isRestorable = false
     panel.delegate = self
+    panel.onForegroundRequest = { [weak self] in self?.queueVisibleEditorFront() }
     sidebarWindow = panel
     sidebarContainer = container
     sidebarHost = host
