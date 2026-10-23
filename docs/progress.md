@@ -360,3 +360,8 @@ useFormationPreset 成功应用后清除选择列表状态并回到懒人布局 
 MainFlutterWindow在主窗口点击、成为key、显式激活和应用重新激活后合并调度一次侧栏排序。只对已有且可见的工具箱/存档库共享面板执行order(.above,relativeTo:主窗口)，不makeKey、不创建新窗口，不改变模式/位置。隐藏、最小化、原生sheet或应用modal期间不干预。
 
 验证：Swift语法检查、独立代码审查及完整macOS Debug构建通过；使用规定重启脚本正常替换1个旧实例并启动新版。原生事件权限探测CGPreflightPostEventAccess=false，因此未自动发送鼠标事件，窗口层级的真实点击验收未执行，不能视为通过。
+
+
+## 2026-10-23 — 更多按钮样式
+
+更多图标改为Chrome式纵向三点；整个标签行共用与EditorTabStrip一致的Material底色，消除按钮露出主区域背景的色块。真实Flutter工作区视检通过，更多菜单三项仍可打开；flutter analyze无问题，macOS Debug构建并正常替换启动通过。

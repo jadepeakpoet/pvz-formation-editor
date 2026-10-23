@@ -1964,7 +1964,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
       padding: EdgeInsets.zero,
       iconSize: 18,
       enabled: !savingArchive && !renameDialogOpen,
-      icon: const Icon(Icons.more_horiz),
+      icon: const Icon(Icons.more_vert),
       onSelected: (action) {
         if (action == 'rename') {
           unawaited(renameFromMenu());
@@ -1989,12 +1989,14 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                 child: Text(AppLanguage.text('重命名'))),
           ]);
 
-  Widget workspaceTabBar() => SizedBox(
-      height: 28,
-      child: Row(children: [
-        Expanded(child: widget.tabBar!),
-        SizedBox(width: 32, child: workspaceMoreMenu())
-      ]));
+  Widget workspaceTabBar() => Material(
+      color: const Color(0xffe5e9e0),
+      child: SizedBox(
+          height: 28,
+          child: Row(children: [
+            Expanded(child: widget.tabBar!),
+            SizedBox(width: 32, height: 28, child: workspaceMoreMenu())
+          ])));
 
   Widget nativeMainPage() => Scaffold(
       backgroundColor: const Color(0xff748899),
