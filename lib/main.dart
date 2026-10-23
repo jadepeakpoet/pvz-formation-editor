@@ -2934,6 +2934,10 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
   Piece plantingPiece(int row, int col, {bool preview = false}) {
     final spec = ObjectSpec.byId(selectedType);
     var frameRow = plantingFrameRow, frameCol = plantingFrameCol;
+    if (growMode == 1 && (selectedType == 'fume' || selectedType == 'gloom')) {
+      frameRow = 1;
+      frameCol = 0;
+    }
     final data = OriginalAssets
         .sprites[OriginalAssets.names[selectedType] ?? selectedType];
     final layers = (data?['images'] as List? ?? [])

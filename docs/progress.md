@@ -497,3 +497,9 @@ web_catalog_smoke最终通过弹框打开/取消无写、选择即清除、选�
 南瓜预览后片偏高的原因是精灵绘制累计平移37.5px，前片多偏移一次；每个精灵独立保存/恢复画布，南瓜前后片和曾哥喷雾预览均与已种植图像对齐。
 
 验证：plant_state_smoke定向通过cycle/unselected/reset/different和四种屋顶sprite-state-hit（图像位于格子外的真实指针点击、悬停反馈、一次Undo/Redo保持植物/花盆）；addon_preview_smoke通过南瓜/曾哥在草地、五/六行屋顶及翻转的12组像素对比。flutter analyze无问题，macOS Debug构建成功。未进行物理鼠标验收。存档库筛选/排序入口代码仍在，列表或详情页场景待用户澄清，未改动该模块。
+
+## 2026-10-24 — 大喷菇与曾哥默认唤醒
+
+使用默认选择种植大喷菇、忧郁菇时采用素材第二行第一帧（唤醒），预览、单个和批量共用plantingPiece。手动选帧和显式行选项继续按用户选择，已存阵型不迁移。
+
+验证：mushroom.awake-default真实引擎定向回归通过两种植物的预览/单种/批种默认唤醒、手动及显式睡眠状态仍可选、其他植物默认不变；flutter analyze无问题，macOS Debug构建成功。

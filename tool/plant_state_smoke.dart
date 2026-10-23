@@ -295,6 +295,38 @@ Future<void> main() async {
           'Leaving plant must clear state feedback');
     }
   });
+  await h.run('mushroom.awake-default',
+      'Fume and gloom default awake in preview, single and batch planting while explicit frames remain selectable', () async {
+    for (final type in ['fume', 'gloom']) {
+      session.execute('empty fixture', Formation(mapId: 'day'));
+      page.selectedType = type;
+      page.tool = '放置';
+      page.growMode = 1;
+      page.plantingFrameRow = 0;
+      page.plantingFrameCol = 0;
+      final Piece preview = page.plantingPiece(0, 0, preview: true);
+      h.expect(preview.frameRow == 1 && preview.frameCol == 0,
+          '$type preview must default awake');
+      click();
+      h.expect(session.document.pieces.single.frameRow == 1,
+          '$type single planting must default awake');
+      page.updateBatchSelection({1}, {1, 2});
+      page.batchPlace();
+      h.expect(session.document.pieces.length == 3 &&
+          session.document.pieces.every((p) => p.frameRow == 1),
+          '$type batch planting must default awake');
+      page.growMode = 0;
+      final Piece manual = page.plantingPiece(0, 0);
+      h.expect(manual.frameRow == 0, 'Manual sleeping state must remain available');
+      page.growMode = 3;
+      final Piece explicit = page.plantingPiece(0, 0);
+      h.expect(explicit.frameRow == 0, 'Explicit first-row state must remain available');
+    }
+    page.growMode = 1;
+    page.selectedType = 'wallnut';
+    final Piece other = page.plantingPiece(0, 0);
+    h.expect(other.frameRow == 0, 'Other plant defaults must be unchanged');
+  });
   await h.report();
   session.dispose();
   await repo.close();
