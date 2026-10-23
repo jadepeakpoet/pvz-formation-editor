@@ -615,6 +615,9 @@ class BoardPainter extends CustomPainter {
         .any((part) => OriginalAssets.image(part['path'] as String) != null)) {
       return false;
     }
+    // Sprite anchors are local to each part. Preview addons share a canvas,
+    // so translating one part must not offset the next one.
+    canvas.save();
     // The DOM anchors describe the ground position, below the cell centre.
     canvas.translate(0, 37.5);
     final translucent = p.opacity < 1;
@@ -737,6 +740,7 @@ class BoardPainter extends CustomPainter {
           image, source, target, Paint()..filterQuality = FilterQuality.medium);
     }
     if (translucent || tinted) canvas.restore();
+    canvas.restore();
     return true;
   }
 

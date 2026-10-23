@@ -242,6 +242,59 @@ Future<void> main() async {
     await h.settle();
     h.expect(painter().plantingPreview == null, 'Shovel shows plant preview');
   });
+  await h.run('roof.sprite-state-hit',
+      'Roof sprite clicks outside the grid cycle the actual plant with hover feedback and undo', () async {
+    for (final mapId in ['roof', 'moonRoof', 'roof6', 'moonRoof6']) {
+      final plant = Piece(id: 'roof-nut', type: 'wallnut', row: 0, col: 0,
+          layer: ObjectSpec.byId('wallnut').layer);
+      session.execute('roof fixture', Formation(mapId: mapId, pieces: [
+        plant, Piece(id: 'roof-pot', type: 'pot', row: 0, col: 0,
+            layer: ObjectSpec.byId('pot').layer),
+      ], display: {'卡槽': false, '阳光': false}));
+      page.tool = '选择';
+      page.batchSelectionMode = false;
+      page.update();
+      await OriginalAssets.ensureHitMasks(['wallnut', 'pot']);
+      await h.settle();
+      final geometry = BoardGeometry(session.document);
+      final bounds = geometry.pieceBounds(plant);
+      Offset? target;
+      for (var y = bounds.top; y < bounds.bottom && target == null; y += 2) {
+        for (var x = bounds.left; x < bounds.right; x += 2) {
+          final point = Offset(x, y);
+          if (geometry.hit(point) == null && geometry.spriteContains(plant, point)) {
+            target = point;
+            break;
+          }
+        }
+      }
+      h.expect(target != null, '$mapId fixture needs visible pixels outside ground grid');
+      final before = session.document.fingerprint;
+      page.updatePlantingPointer(target);
+      await h.settle();
+      h.expect(h.all((w) => w.key == const ValueKey('plant-state-hover')).isNotEmpty &&
+          session.document.fingerprint == before, 'Roof hover must highlight without writing');
+      final region = h.find((w) => w is MouseRegion && w.child is Listener && w.onHover != null).widget as MouseRegion;
+      h.expect(region.cursor == SystemMouseCursors.click, 'State hover must show click cursor');
+      final box = h.find((w) => w is CustomPaint && w.painter is BoardPainter).renderObject as RenderBox;
+      final depth = session.undoDepth;
+      await h.tapAt(box.localToGlobal(target!));
+      final changed = session.document.pieces.firstWhere((p) => p.id == plant.id);
+      h.expect(changed.frameCol != 0 || changed.frameRow != 0,
+          '$mapId sprite click outside grid did not change plant state');
+      h.expect(session.undoDepth == depth + 1 && session.document.pieces.length == 2,
+          'State click must preserve plant and pot in one undo step');
+      final after = session.document.fingerprint;
+      session.undo();
+      h.expect(session.document.fingerprint == before, 'Roof state undo must restore exactly');
+      session.redo();
+      h.expect(session.document.fingerprint == after, 'Roof state redo must restore exactly');
+      page.updatePlantingPointer(null);
+      await h.settle();
+      h.expect(h.all((w) => w.key == const ValueKey('plant-state-hover')).isEmpty,
+          'Leaving plant must clear state feedback');
+    }
+  });
   await h.report();
   session.dispose();
   await repo.close();

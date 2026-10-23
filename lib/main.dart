@@ -1464,7 +1464,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
       fn();
       refreshFormationOutput();
     });
-    if (tool == '铲除') {
+    if (tool == '铲除' || tool == '选择') {
       unawaited(
           OriginalAssets.ensureHitMasks(s.document.pieces.map((p) => p.type)));
     }
@@ -2753,10 +2753,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
   void resetPlantState(Offset position) {
     if (s.readOnly) return;
     finishGesture();
-    final geometry = BoardGeometry(s.document);
-    final stack = geometry.hitPieces(position);
-    final cell = geometry.hit(position);
-    if (stack.isEmpty && cell != null) stack.addAll(at(cell));
+    final stack = piecesAtPointer(position);
     final plants = stack.where((p) => p.spec.category == '植物');
     if (plants.isEmpty) return;
     final piece = plants.first;
@@ -2767,6 +2764,24 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                 .map((p) =>
                     p.id == piece.id ? p.copy(frameRow: 0, frameCol: 0) : p)
                 .toList()));
+  }
+
+  List<Piece> piecesAtPointer(Offset position) {
+    final geometry = BoardGeometry(s.document);
+    final pieces = geometry.hitPieces(position)
+        .where((p) => geometry.spriteContains(p, position)).toList();
+    final cell = geometry.hit(position);
+    if (pieces.isEmpty && cell != null) pieces.addAll(at(cell));
+    return pieces;
+  }
+
+  bool hasPlantStates(Piece piece) {
+    if (piece.spec.category != '植物') return false;
+    final data = OriginalAssets.sprites[OriginalAssets.names[piece.type] ?? piece.type];
+    final images = (data?['images'] as List? ?? [])
+        .where((image) => !(image['path'] as String).contains('shadow')).toList();
+    return images.isNotEmpty &&
+        (images.last['rows'] as num) * (images.last['cols'] as num) > 1;
   }
 
   bool cyclePlantState(Piece piece) {
@@ -2823,15 +2838,17 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
       return;
     }
     if (tool == '选择') {
-      final stack = geometry.hitPieces(position);
-      if (stack.isEmpty && cell != null) stack.addAll(at(cell));
+      final stack = piecesAtPointer(position);
       if (stack.isEmpty) {
         setState(() => selectedId = null);
         return;
       }
-      if (!s.readOnly && cell != null && visited.add(cell)) {
-        final plant = stack.where((p) => p.spec.category == '植物');
-        if (plant.isNotEmpty) cyclePlantState(plant.first);
+      final plants = stack.where((p) => p.spec.category == '植物');
+      if (!s.readOnly && plants.isNotEmpty) {
+        final plant = plants.first;
+        // A roof sprite may extend above its sloping cell or into another row.
+        // Visit the actual plant's cell, not the ground under the pointer.
+        if (visited.add((plant.row, plant.col))) cyclePlantState(plant);
       }
       final current = stack.indexWhere((p) => p.id == selectedId);
       setState(() {
@@ -5297,6 +5314,13 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                 rendered.map.columns
         ? plantingPiece(previewCell.$1, previewCell.$2, preview: true)
         : null;
+    Piece? stateHover;
+    if (!s.readOnly && !batchSelectionMode && !seedChooserOpen &&
+        tool == '选择' && plantingPointer != null) {
+      final plants = piecesAtPointer(plantingPointer!)
+          .where((p) => p.spec.category == '植物');
+      if (plants.isNotEmpty && hasPlantStates(plants.first)) stateHover = plants.first;
+    }
     final supportPreviews = <Piece>[];
     if (preview != null) {
       // Simulate the actual placement on a copy: previews must follow the
@@ -5330,6 +5354,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                   panEnabled: tool == '平移',
                   scaleEnabled: tool == '平移',
                   child: MouseRegion(
+                      cursor: stateHover != null ? SystemMouseCursors.click : MouseCursor.defer,
                       onEnter: (e) => updatePlantingPointer(e.localPosition),
                       onExit: (_) => updatePlantingPointer(null),
                       onHover: (e) => updatePlantingPointer(e.localPosition),
@@ -5403,6 +5428,15 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                                             growthEffects: growthEffects,
                                             selectedCells: batchSelectionMode ? const {} : cells,
                                             selectedId: selectedId))),
+                                if (stateHover != null)
+                                  Positioned.fromRect(
+                                      rect: BoardGeometry(rendered).pieceBounds(stateHover).inflate(3),
+                                      child: IgnorePointer(child: DecoratedBox(
+                                          key: const ValueKey('plant-state-hover'),
+                                          decoration: BoxDecoration(
+                                              color: const Color(0x18ffdf70),
+                                              border: Border.all(color: const Color(0xdde8c75b), width: 1.5),
+                                              borderRadius: BorderRadius.circular(8))))),
                                 if (rendered.display['卡槽'] == true)
                                   boardShovelBank(),
                                 if (rendered.display['阳光'] == true)
