@@ -75,6 +75,23 @@ Future<void> main() async {
   await settle();
   check(find((w) => w is Checkbox).length == 17,
       'Pool should expose six row, nine column and two all selectors');
+  final target = find((w) => w.key == const ValueKey('batch-row-1-target'))
+      .single
+      .renderObject as RenderBox;
+  check(target.size == const Size(44, 44),
+      'Row checkbox hit area should be 44px');
+  final visual = find((w) => w.key == const ValueKey('batch-row-1'))
+      .single
+      .renderObject as RenderBox;
+  final visualSize =
+      visual.localToGlobal(visual.size.bottomRight(Offset.zero)) -
+          visual.localToGlobal(Offset.zero);
+  check((visualSize.dx - 39).abs() < .01 && (visualSize.dy - 39).abs() < .01,
+      'Checkbox should match the source 3x native size');
+  await tapAt(target.localToGlobal(const Offset(2, 22)));
+  check(rows.contains(1), 'Click near the hit-area edge should select the row');
+  await tap('batch-row-1');
+  check(rows.isEmpty, 'Checkbox should toggle once per click');
   await tap('batch-row-1');
   check(rows.length == 1 && rows.contains(1) && columns.isEmpty,
       'Row selector changed the wrong axis');
@@ -95,7 +112,7 @@ Future<void> main() async {
       'Unselected canvas must pass pointer through without changing axes');
   check(document.fingerprint == before, 'Selection mutated formation');
 
-  // The source draws both axis masks at 50%; overlap is brighter than either.
+  // Only row/column intersections are outlined, without a white fill.
   final geometry = BoardGeometry(document);
   final recorder = ui.PictureRecorder();
   final canvas = Canvas(recorder);
@@ -107,24 +124,28 @@ Future<void> main() async {
   final picture = recorder.endRecording();
   final image = await picture.toImage(800, 600);
   final rgba = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
-  int red(int row, int col) {
-    final point = geometry.cellCenter(row, col) - const Offset(0, 20);
-    return rgba!.getUint8((point.dy.floor() * 800 + point.dx.floor()) * 4);
+  List<int> pixel(Offset point) {
+    final offset = (point.dy.floor() * 800 + point.dx.floor()) * 4;
+    return [for (var i = 0; i < 3; i++) rgba!.getUint8(offset + i)];
   }
 
+  bool black(Offset point) => pixel(point).every((c) => c == 0);
+  final edge = geometry.cellCenter(1, 2) - Offset(0, geometry.cellHeight / 2);
+  final color = pixel(edge);
+  check(color[0] == 255 && color[1] == 213 && color[2] == 79,
+      'Selected cell boundary should be yellow');
   check(
-      red(1, 4) == 128 &&
-          red(3, 2) == 128 &&
-          red(1, 2) == 192 &&
-          red(3, 4) == 0,
-      'Axis masks do not match source white 50% overlap');
+      black(geometry.cellCenter(1, 2)) &&
+          black(geometry.cellCenter(1, 4)) &&
+          black(geometry.cellCenter(3, 2)),
+      'Selection should not cover plant interiors or unselected axes');
   final png = await image.toByteData(format: ui.ImageByteFormat.png);
   await File('/tmp/pvz-batch-selection-mask.png')
       .writeAsBytes(png!.buffer.asUint8List());
   image.dispose();
   picture.dispose();
 
-  for (final mapId in ['day', 'roof', 'day6']) {
+  for (final mapId in ['day', 'roof', 'day6', 'roof6']) {
     update(() {
       document = Formation(mapId: mapId);
       rows = {};
@@ -138,7 +159,7 @@ Future<void> main() async {
   }
   check(errors.isEmpty, errors.map((e) => e.exceptionAsString()).join('\n'));
   stdout.writeln(
-      'PASS row/column toggles, independent all selectors, pointer pass-through, immutable document, source 50% masks and five/six-row/roof geometry');
+      'PASS row/column toggles, independent all selectors, pointer pass-through, immutable document, 39px controls with 44px hit targets, yellow intersection outlines and five/six-row/roof geometry');
   runApp(const SizedBox.shrink());
   await settle();
   exit(0);

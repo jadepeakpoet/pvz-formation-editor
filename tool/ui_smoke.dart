@@ -449,18 +449,18 @@ Future<void> main() async {
     session.execute(
         '选卡夹具', original.copy(seedSlots: [], imitaterSeedSlots: {}));
     final previousTab = page.classicTab;
-    await h.tapElement(h.find((w) => w.key == const ValueKey('toolbox-tab-0')));
+    await h.tapElement(h.find((w) => w.key == const ValueKey('board-picker-toggle')));
     h.expect(
         page.seedChooserOpen &&
             page.classicTab == previousTab &&
             h
                 .all((w) => w.key == const ValueKey('original-seed-chooser'))
                 .isEmpty,
-        'Seed tab must directly open the board chooser without a separate toolbox page');
-    await h.tapElement(h.find((w) => w.key == const ValueKey('toolbox-tab-0')));
+        'Toolbar button must open the board chooser without a separate toolbox page');
+    await h.tapElement(h.find((w) => w.key == const ValueKey('board-picker-toggle')));
     h.expect(!page.seedChooserOpen && page.classicTab == previousTab,
-        'Seed tab must toggle closed without changing toolbox page');
-    await h.tapElement(h.find((w) => w.key == const ValueKey('toolbox-tab-0')));
+        'Toolbar button must toggle closed without changing toolbox page');
+    await h.tapElement(h.find((w) => w.key == const ValueKey('board-picker-toggle')));
     await h.settle();
     final chooser = h.find((w) => w is OriginalSeedChooser);
     final host = chooser.findAncestorWidgetOfExactType<Positioned>()!;
@@ -523,54 +523,37 @@ Future<void> main() async {
     session.execute('还原选卡夹具', original);
     await h.settle();
   });
-  await h.run('current-ui.top-bank-opens-chooser',
-      'Every top slot opens chooser without modifying formation, including empty slots and readonly',
-      () async {
+  await h.run('current-ui.top-bank-passive',
+      'Only toolbar opens seed chooser; all ten top slots remain passive', () async {
+    final original = session.document;
+    session.execute('passive slots fixture', original.copy(seedSlots: ['pea', 'sunflower']));
+    await h.settle();
     final before = session.document.fingerprint;
     final depth = session.undoDepth;
     final previousTab = page.classicTab;
     await page.toggleSeedChooser(false);
     await h.settle();
-    for (final expected in [true, false]) {
-      await h.tapElement(
-          h.find((w) => w.key == const ValueKey('board-picker-toggle')));
-      h.expect(
-          page.seedChooserOpen == expected &&
-              page.classicTab == previousTab &&
-              session.document.fingerprint == before &&
-              session.undoDepth == depth,
-          'Toolbar picker button must toggle without changing document or toolbox tab');
-    }
-    for (var i = 0; i < 10; i++) {
-      await page.toggleSeedChooser(false);
+    final board = h.find((w) => w is CustomPaint && w.painter is BoardPainter)
+        .renderObject as RenderBox;
+    for (final readOnly in [false, true]) {
+      session.readOnly = readOnly;
+      page.update();
       await h.settle();
-      await h
-          .tapElement(h.find((w) => w.key == ValueKey('board-seed-open-$i')));
-      h.expect(
-          page.seedChooserOpen &&
-              session.document.fingerprint == before &&
-              session.undoDepth == depth,
-          'Top slot $i did not open picker without modifying formation');
+      for (var i = 0; i < 10; i++) {
+        await h.tapAt(board.localToGlobal(BoardPainter.seedSlotBounds(i).center));
+        h.expect(!page.seedChooserOpen && session.document.fingerprint == before &&
+            session.undoDepth == depth, 'Top slot $i must not open chooser or edit board');
+      }
+      for (final expected in [true, false]) {
+        await h.tapElement(h.find((w) => w.key == const ValueKey('board-picker-toggle')));
+        h.expect(page.seedChooserOpen == expected && page.classicTab == previousTab &&
+            session.document.fingerprint == before,
+            'Toolbar should remain the seed chooser entry point');
+      }
     }
-    await page.toggleSeedChooser(false);
-    session.readOnly = true;
-    page.update();
-    await h.settle();
-    for (final expected in [true, false]) {
-      await h.tapElement(
-          h.find((w) => w.key == const ValueKey('board-picker-toggle')));
-      h.expect(
-          page.seedChooserOpen == expected &&
-              session.document.fingerprint == before,
-          'Readonly toolbar picker must toggle without document changes');
-    }
-    await h.tapElement(
-        h.find((w) => w.key == const ValueKey('board-seed-open-9')));
-    h.expect(page.seedChooserOpen && session.document.fingerprint == before,
-        'Readonly picker browsing failed');
     session.readOnly = false;
+    session.execute('restore passive slots fixture', original);
     page.update();
-    await page.toggleSeedChooser(false);
     await h.settle();
   });
   await h.run('current-ui.inline-sun',
@@ -686,10 +669,10 @@ Future<void> main() async {
       await h
           .tapElement(h.find((w) => w.key == const ValueKey('board-sun-edit')));
       field().controller!.text = '0';
-      await h.tapElement(
-          h.find((w) => w.key == const ValueKey('board-seed-open-0')));
-      h.expect(session.document.sunValue == 0 && page.seedChooserOpen,
-          'Clicking away must save sun without blocking picker');
+      final bank = h.find((w) => w is CustomPaint && w.painter is BoardPainter).renderObject as RenderBox;
+      await h.tapAt(bank.localToGlobal(BoardPainter.seedSlotBounds(0).center));
+      h.expect(session.document.sunValue == 0 && !page.seedChooserOpen,
+          'Clicking a passive slot must commit sun without opening picker');
       await page.toggleSeedChooser(false);
       await h
           .tapElement(h.find((w) => w.key == const ValueKey('board-sun-edit')));

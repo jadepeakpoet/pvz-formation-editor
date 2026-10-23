@@ -1,5 +1,6 @@
 // ignore_for_file: curly_braces_in_flow_control_structures
 // Compile/run like tool/ui_smoke.dart; output directory: PVZ_PARITY_OUTPUT.
+import 'dart:async';
 import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
@@ -333,7 +334,9 @@ Future<void> main() async {
       await cell();
       final beforeSelectingNewCard = session.document.pieces.first;
       await h.tap('向日葵');
-      await h.tap('默认外表');
+      unawaited(((h.find((w) => w is EditorPage) as StatefulElement).state as dynamic)
+          .chooseAppearance() as Future<void>);
+      await h.settle();
       await h.tap('1-2');
       await h.tap('冰冻');
       await cell(0, 1);
@@ -418,12 +421,16 @@ Future<void> main() async {
       });
     }
     for (var frame = 1; frame <= 3; frame++) {
-      await h.run('appearance.manual.$frame', '手动外表帧 $frame', () async {
+      await h.run('appearance.manual.$frame', '选中植物外表帧API $frame', () async {
         await fresh();
         await seed();
         await h.tap('单个选择');
         await cell();
-        await h.tap('默认外表');
+        ((h.find((w) => w is EditorPage) as StatefulElement).state as dynamic)
+            .selectedId = session.document.pieces.first.id;
+        unawaited(((h.find((w) => w is EditorPage) as StatefulElement).state as dynamic)
+          .chooseAppearance() as Future<void>);
+        await h.settle();
         await h.tap('1-$frame');
         h.expect(session.document.pieces.first.frameCol == frame - 1,
             'Appearance did not update selected object');

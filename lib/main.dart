@@ -4634,11 +4634,6 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
         )),
       ]),
       Wrap(children: [
-        classicButton(
-            plantingFrameRow == 0 && plantingFrameCol == 0
-                ? '默认外表'
-                : '外表 ${plantingFrameRow + 1}-${plantingFrameCol + 1}',
-            s.readOnly ? null : chooseAppearance),
         originalCheck('flip-horizontal', '左右翻转', plantingFlip,
             s.readOnly ? null : (value) => setState(() {
               plantingFlip = value;
@@ -5190,26 +5185,16 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                               fit: BoxFit.fill)),
                   ])))));
 
-  Widget boardSeedSlot(int index) {
-    final returning = seedChooserOpen && index < seedSlots.length;
-    final label = returning
-        ? '${AppLanguage.text('返回')} ${AppLanguage.text(ObjectSpec.byId(seedSlots[index]).name)}'
-        : AppLanguage.text('选择植物');
-    return Positioned.fromRect(
-        rect: BoardPainter.seedSlotBounds(index),
-        child: Semantics(
-            button: true,
-            label: label,
-            child: GestureDetector(
-                key: ValueKey(returning
-                    ? 'board-seed-return-$index'
-                    : 'board-seed-open-$index'),
-                behavior: HitTestBehavior.opaque,
-                onTap: returning
-                    ? (s.readOnly ? null : () => removeSeedSlot(index))
-                    : () => unawaited(toggleSeedChooser(true)),
-                child: const SizedBox.expand())));
-  }
+  Widget boardSeedSlot(int index) => Positioned.fromRect(
+      rect: BoardPainter.seedSlotBounds(index),
+      child: Semantics(
+          button: true,
+          label: '${AppLanguage.text('返回')} ${AppLanguage.text(ObjectSpec.byId(seedSlots[index]).name)}',
+          child: GestureDetector(
+              key: ValueKey('board-seed-return-$index'),
+              behavior: HitTestBehavior.opaque,
+              onTap: s.readOnly ? null : () => removeSeedSlot(index),
+              child: const SizedBox.expand())));
 
   Widget board() {
     final targetSession = s;
@@ -5360,8 +5345,8 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                                                 targetSession.document
                                                     .copy(sunValue: value));
                                           })),
-                                if (rendered.display['卡槽'] == true)
-                                  for (var i = 0; i < 10; i++) boardSeedSlot(i),
+                                if (rendered.display['卡槽'] == true && seedChooserOpen)
+                                  for (var i = 0; i < seedSlots.length; i++) boardSeedSlot(i),
                                 if (batchSelectionMode && batchSelectorsVisible)
                                   Positioned.fill(child: BatchSelectionOverlay(
                                       document: rendered,

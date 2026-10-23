@@ -449,3 +449,13 @@ MainFlutterWindow在主窗口点击、成为key、显式激活和应用重新激
 默认导出目录为Documents/PVZ Formation Editor；旧Documents根目录偏好映射到专用子目录，其它自选保留，不重复套目录。查看设置只解析路径，真正导出/目录选择时才创建；恢复默认显示具体路径。测试均override到临时目录，未在用户文稿中写测试文件。
 
 验证：library_global_actions_smoke在410/1100宽通过全局范围、预制收藏只读、顶部批选、标签路由和金星；旧archive_selection及preset_actions5项通过。export_directory_smoke通过专用目录/旧根映射、自选保持、不套娃、真实临时文件导出及设置保存取消；旧export_settings_smoke通过。最后flutter analyze无问题，macOS Debug构建成功。原生消息和保存选择器使用明确模拟，不等同于原生鼠标或设备验收。
+
+## 2026-10-24 — 批选勾选框与黄色交集边框
+
+对照原站dRC checkbox的scale(3)，行列勾选框由18px改为39px可见尺寸、44px点击区，扩大边缘命中；控制位置限制在画布内，六行屋顶顶部列也可点击。按用户最新偏好取消白色轴遮罩，仅给实际行列交集画黄色格线，使用地图几何路径兼容屋顶斜格，植物内部不覆盖。
+
+移除关闭选卡面板时顶部十卡槽的打开行为，主区域“卡槽选卡”按钮仍可开关；面板打开后已选卡片仍可退卡。图鉴删除独立“默认外表”按钮，保留外表策略下拉和手动选帧弹窗。更新先前仍点击已移除toolbox-tab-0的旧测试入口。
+
+验证：batch_selection_overlay真实引擎通过39px视觉尺寸/44px边缘点击、行列独立/全选、黄色交集像素且无白填充、空白指针穿透、五/六行及两种屋顶；web_catalog_smoke通过行列交集、批种、快捷选择、删除撤销和翻转，确认无独立默认外表按钮，截图视检通过。静态分析无问题，macOS Debug构建成功。
+
+最终current-ui.seed-return-and-geometry、top-bank-passive、inline-sun真实引擎专项全部通过：已选/空卡槽与只读状态均不再打开面板，工具栏开关、正常/模仿退卡及索引撤销、阳光失焦提交保持正确。旧parity手动选帧用例改为直接外表API验证，未运行完整旧parity套件。

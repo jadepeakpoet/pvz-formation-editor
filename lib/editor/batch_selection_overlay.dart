@@ -5,7 +5,7 @@ import '../platform/app_language.dart';
 import 'board_painter.dart';
 
 /// The source site's row/column selectors. Operations use their intersection;
-/// the white masks deliberately show each axis separately, as on the website.
+/// selected intersections use yellow cell outlines without obscuring plants.
 class BatchSelectionOverlay extends StatelessWidget {
   final Formation document;
   final Set<int> selectedRows, selectedColumns;
@@ -23,31 +23,52 @@ class BatchSelectionOverlay extends StatelessWidget {
   Widget selector(String key, String label, Offset center, bool value,
           ValueChanged<bool> onChanged) =>
       Positioned(
-          left: center.dx - 9,
-          top: center.dy - 9,
-          width: 18,
-          height: 18,
+          left: center.dx - 22,
+          top: center.dy - 22,
+          width: 44,
+          height: 44,
           child: Tooltip(
               message: AppLanguage.text(label),
-              child: Checkbox(
-                  key: ValueKey(key),
-                  value: value,
-                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  visualDensity: VisualDensity.compact,
-                  fillColor: MaterialStateProperty.resolveWith((states) =>
-                      states.contains(MaterialState.selected)
-                          ? const Color(0xff1976d2)
-                          : Colors.white),
-                  onChanged: (value) => onChanged(value!))));
+              child: Semantics(
+                  checked: value,
+                  label: AppLanguage.text(label),
+                  onTap: () => onChanged(!value),
+                  child: GestureDetector(
+                      key: ValueKey('$key-target'),
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () => onChanged(!value),
+                      child: Center(
+                          child: ExcludeSemantics(
+                              child: IgnorePointer(
+                                  child: Transform.scale(
+                                      scale: 39 / 18,
+                                      child: SizedBox(
+                                          width: 18,
+                                          height: 18,
+                                          child: Checkbox(
+                                              key: ValueKey(key),
+                                              value: value,
+                                              materialTapTargetSize:
+                                                  MaterialTapTargetSize
+                                                      .shrinkWrap,
+                                              visualDensity:
+                                                  VisualDensity.compact,
+                                              fillColor: MaterialStateProperty.resolveWith(
+                                                  (states) => states.contains(
+                                                          MaterialState.selected)
+                                                      ? const Color(0xff1976d2)
+                                                      : Colors.white),
+                                              onChanged: (value) => onChanged(value!)))))))))));
 
   @override
   Widget build(BuildContext context) {
     final geometry = BoardGeometry(document);
     final rows = document.map.rows, columns = document.map.columns;
     final first = geometry.cellCenter(0, 0);
-    final rowX = first.dx - geometry.cellWidth / 2 - 26;
+    final rowX = (first.dx - geometry.cellWidth / 2 - 26).clamp(22.0, 778.0);
     double columnY(int col) =>
-        geometry.cellCenter(0, col).dy - geometry.cellHeight / 2 - 25;
+        (geometry.cellCenter(0, col).dy - geometry.cellHeight / 2 - 25)
+            .clamp(22.0, 578.0);
     Set<int> toggled(Set<int> values, int value, bool selected) =>
         Set<int>.of(values)
           ..removeWhere((v) => v == value)
@@ -109,22 +130,22 @@ class BatchSelectionMaskPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final geometry = BoardGeometry(document);
-    final paint = Paint()..color = const Color(0x80ffffff);
+    final border = Paint()
+      ..color = const Color(0x99000000)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 4.5;
+    final highlight = Paint()
+      ..color = const Color(0xffffd54f)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.5;
     for (final row in selectedRows) {
       if (row < 0 || row >= document.map.rows) continue;
-      for (var col = 0; col < document.map.columns; col++) {
-        final center = geometry.cellCenter(row, col);
-        canvas.drawRect(
-            Rect.fromLTWH(center.dx - 30, center.dy - 50, 60, 60), paint);
+      for (final col in selectedColumns) {
+        if (col < 0 || col >= document.map.columns) continue;
+        final path = geometry.cellPath(row, col);
+        canvas.drawPath(path, border);
+        canvas.drawPath(path, highlight);
       }
-    }
-    for (final col in selectedColumns) {
-      if (col < 0 || col >= document.map.columns) continue;
-      final center = geometry.cellCenter(0, col);
-      canvas.drawRect(
-          Rect.fromLTWH(
-              center.dx - 30, center.dy - geometry.cellHeight / 2, 60, 600),
-          paint);
     }
   }
 

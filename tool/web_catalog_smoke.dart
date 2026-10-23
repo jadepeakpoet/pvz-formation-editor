@@ -27,6 +27,10 @@ Future<void> main() async {
   await h.settle();
   final dynamic page =
       (h.find((w) => w is app.EditorPage) as StatefulElement).state;
+  h.expect(h.all((w) => w is TextButton && w.child is Text &&
+      (w.child as Text).data == '默认外表').isEmpty,
+      'Catalog must not expose a standalone default-appearance button');
+
   await page.toggleSeedChooser(false);
   page.selectToolboxTab(2);
   await h.settle();
