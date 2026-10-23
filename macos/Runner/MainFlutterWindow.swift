@@ -149,6 +149,13 @@ class MainFlutterWindow: NSWindow, NSWindowDelegate {
     if target === self { queueVisibleSidebarFront() }
   }
 
+  @IBAction func showCurrentHistory(_ sender: Any?) {
+    guard let channel = windowsChannel, attachedSheet == nil,
+          sidebarWindow?.attachedSheet == nil, NSApp.modalWindow == nil else { return }
+    activateWindow(self)
+    channel.invokeMethod("showHistory", arguments: nil)
+  }
+
   private func configureSidebar(_ arguments: [String: Any]) {
     if let path = arguments["dataPath"] as? String, !path.isEmpty { libraryDataPath = path }
     if arguments.keys.contains("activeDraftId") { libraryActiveDraftId = arguments["activeDraftId"] as? String }
@@ -528,6 +535,9 @@ class MainFlutterWindow: NSWindow, NSWindowDelegate {
         window.englishUI = args?["language"] as? String == "en"
         window.title = ""
         window.sidebarWindow?.title = window.sidebarTitle(window.sidebarMode)
+        NSApp.mainMenu?.items.compactMap { $0.submenu }.flatMap { $0.items }
+          .first { $0.action == #selector(MainFlutterWindow.showCurrentHistory(_:)) }?
+          .title = window.englishUI ? "Version History…" : "历史版本…"
         result(nil)
       case "openExternal":
         guard let args = call.arguments as? [String: Any],

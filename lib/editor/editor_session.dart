@@ -295,7 +295,8 @@ class EditorSession extends ChangeNotifier {
 
   /// Adopt an already-persisted change without writing a duplicate version.
   /// Keep the previous document and title available for tab-lifetime undo.
-  Future<void> reloadSavedArchive(ArchiveRecord archive) async {
+  Future<void> reloadSavedArchive(ArchiveRecord archive,
+      {bool forceUndo = false}) async {
     await _tail;
     if (_pending.isNotEmpty) throw StateError('存在未保存的修改，不能替换当前存档');
     if (sourceArchiveId != null && sourceArchiveId != archive.id) {
@@ -304,7 +305,7 @@ class EditorSession extends ChangeNotifier {
     final next = Formation.fromJson(archive.document);
     final changed =
         document.fingerprint != next.fingerprint || name != archive.name;
-    if (changed) {
+    if (changed || forceUndo) {
       _undo.add(EditCommand(document, next, '恢复存档',
           beforeName: name, afterName: archive.name));
       _redo.clear();

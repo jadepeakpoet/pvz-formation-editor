@@ -77,6 +77,7 @@ class WindowBridge {
         case 'editorPointerMoved':
         case 'mainAction':
         case 'libraryOpen':
+        case 'showHistory':
           return _onEvent!(call.method, call.arguments);
         default:
           throw MissingPluginException('Unknown window event: ${call.method}');

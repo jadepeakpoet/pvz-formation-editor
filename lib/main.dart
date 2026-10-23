@@ -23,6 +23,7 @@ import 'editor/board_painter.dart';
 import 'editor/board_sun_editor.dart';
 import 'editor/rename_dialog.dart';
 import 'editor/map_picker_dialog.dart';
+import 'editor/archive_history_dialog.dart';
 import 'editor/shovel_targets.dart';
 import 'editor/classic_window.dart';
 import 'editor/original_assets.dart';
@@ -1531,7 +1532,15 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
               return openLibraryItem(
                   Map<String, dynamic>.from(arguments as Map));
             }
+            if (method == 'showHistory') {
+              unawaited(showCurrentArchiveHistory());
+              return true;
+            }
             if (method == 'mainAction') {
+              if (historyRestoring) {
+                queueWindowState();
+                return false;
+              }
               if ((arguments as Map)['documentToken'] != documentToken) {
                 queueWindowState();
                 return false;
@@ -1616,6 +1625,12 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
         ? Map<String, dynamic>.from(
             jsonDecode(value['documentJson'] as String) as Map)
         : Map<String, dynamic>.from(value['document'] as Map));
+    if (!widget.toolboxOnly &&
+        historyRestoring &&
+        document.fingerprint != s.document.fingerprint) {
+      queueWindowState();
+      return false;
+    }
     if (widget.toolboxOnly &&
         !changedDocument &&
         windowPublishInFlight &&
@@ -1957,16 +1972,20 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
       active: seedChooserOpen, key: const ValueKey('board-picker-toggle'));
 
   bool renameDialogOpen = false;
+  bool historyDialogOpen = false;
+  bool historyRestoring = false;
 
   Widget workspaceMoreMenu() => PopupMenuButton<String>(
       key: const ValueKey('workspace-more'),
       tooltip: AppLanguage.text('更多'),
       padding: EdgeInsets.zero,
       iconSize: 18,
-      enabled: !savingArchive && !renameDialogOpen,
+      enabled: !savingArchive && !renameDialogOpen && !historyDialogOpen,
       icon: const Icon(Icons.more_vert),
       onSelected: (action) {
-        if (action == 'rename') {
+        if (action == 'history') {
+          unawaited(showCurrentArchiveHistory());
+        } else if (action == 'rename') {
           unawaited(renameFromMenu());
         } else {
           unawaited(saveArchive(saveAs: action == 'saveAs'));
@@ -1987,6 +2006,11 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                 key: const ValueKey('workspace-rename'),
                 enabled: !s.readOnly && pendingDocumentRename == null,
                 child: Text(AppLanguage.text('重命名'))),
+            PopupMenuItem(
+                value: 'history',
+                key: const ValueKey('workspace-history'),
+                enabled: s.sourceArchiveId != null,
+                child: Text(AppLanguage.text('历史版本'))),
           ]);
 
   Widget workspaceTabBar() => Material(
@@ -2913,6 +2937,123 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
       await WindowBridge.refreshLibrary();
     } else {
       await fallbackLibraryKey.currentState?.refresh();
+    }
+  }
+
+  Future<void> showCurrentArchiveHistory() async {
+    if (historyDialogOpen ||
+        renameDialogOpen ||
+        savingArchive ||
+        fileOperationBusy ||
+        ModalRoute.of(context)?.isCurrent != true) return;
+    final target = s;
+    final token = documentToken;
+    setState(() => historyDialogOpen = true);
+    try {
+      await finishDocumentRename();
+      finishGesture();
+      await target.flush();
+      if (!mounted || !identical(s, target) || documentToken != token) return;
+      if (target.error != null) throw StateError(target.error!);
+      final archiveId = target.sourceArchiveId;
+      if (archiveId == null) {
+        message(context, '当前存档还没有历史版本');
+        return;
+      }
+      Future<ArchiveHistorySnapshot> load() async {
+        final current = (await target.repository.listArchives())
+            .where((archive) => archive.id == archiveId)
+            .firstOrNull;
+        if (current == null) throw StateError('存档已不存在');
+        return (
+          current: current,
+          versions: await target.repository.listVersions(archiveId)
+        );
+      }
+
+      var snapshot = await load();
+      var editingFingerprint = target.document.fingerprint;
+      var editingName = target.name;
+      if (!mounted || !identical(s, target) || documentToken != token) return;
+      await showArchiveHistoryDialog(context,
+          snapshot: snapshot,
+          onRestore: target.readOnly
+              ? null
+              : (version) async {
+                  if (!mounted ||
+                      !identical(s, target) ||
+                      documentToken != token ||
+                      target.readOnly ||
+                      target.sourceArchiveId != archiveId ||
+                      version.archiveId != archiveId) {
+                    throw StateError('当前存档已切换，请重新打开历史版本');
+                  }
+                  if (historyRestoring) throw StateError('正在恢复历史版本');
+                  historyRestoring = true;
+                  try {
+                    final controller = editingTabs;
+                    if (controller != null && !await controller.flushAll()) {
+                      throw StateError(controller.error ?? '无法保存其他标签页');
+                    }
+                    await target.flush();
+                    if (target.error != null) throw StateError(target.error!);
+                    if (!mounted ||
+                        !identical(s, target) ||
+                        documentToken != token ||
+                        target.readOnly ||
+                        target.document.fingerprint != editingFingerprint ||
+                        target.name != editingName ||
+                        Formation.fromJson(snapshot.current.document)
+                                .fingerprint !=
+                            editingFingerprint ||
+                        snapshot.current.name != editingName) {
+                      throw StateError('存档已更新，请重新打开历史版本');
+                    }
+                    final linked = controller?.allSessions
+                            .where((session) =>
+                                session != target &&
+                                !session.readOnly &&
+                                session.sourceArchiveId == archiveId &&
+                                session.document.fingerprint ==
+                                    editingFingerprint &&
+                                session.name == editingName)
+                            .toList() ??
+                        <EditorSession>[];
+                    final restored = await target.repository
+                        .restoreArchiveVersion(
+                            archiveId: archiveId,
+                            versionId: version.id,
+                            expectedFingerprint:
+                                Formation.fromJson(snapshot.current.document)
+                                    .fingerprint,
+                            expectedName: snapshot.current.name);
+                    await target.reloadSavedArchive(restored, forceUndo: true);
+                    for (final session in linked) {
+                      await session.reloadSavedArchive(restored,
+                          forceUndo: true);
+                    }
+                    if (mounted && identical(s, target)) {
+                      cancelPlanting();
+                      sunEditor.text = '${target.document.sunValue}';
+                      fit();
+                    }
+                    snapshot = (
+                      current: restored,
+                      versions: await target.repository.listVersions(archiveId)
+                    );
+                    editingFingerprint = target.document.fingerprint;
+                    editingName = target.name;
+                    await refreshLibraryView();
+                    return snapshot;
+                  } finally {
+                    historyRestoring = false;
+                    queueWindowState();
+                  }
+                });
+    } catch (error) {
+      if (mounted) message(context, '无法打开历史版本：$error');
+    } finally {
+      if (mounted) setState(() => historyDialogOpen = false);
     }
   }
 

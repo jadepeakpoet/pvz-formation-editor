@@ -1,7 +1,22 @@
 /// English translations for the main editor interface.
 const Map<String, String> mainTranslations = {
+  '正在恢复历史版本': 'Restoring version history',
+  '历史版本不属于当前存档': 'This version belongs to a different formation',
+  '历史版本': 'Version history',
+  '当前版本': 'Current version',
+  '恢复此版本': 'Restore this version',
+  '恢复中…': 'Restoring…',
+  '恢复失败': 'Restore failed',
+  '恢复会新增一个最新版本，原有历史保留。':
+      'Restoring creates a new current version and keeps all history.',
+  '没有更早的历史版本。': 'No earlier versions.',
+  '当前存档还没有历史版本': 'This formation has no saved history yet.',
+  '当前存档已切换，请重新打开历史版本': 'The active formation changed. Reopen version history.',
+  '存档已更新，请重新打开历史版本': 'The formation was updated. Reopen version history.',
+  '无法打开历史版本：{error}': 'Could not open version history: {error}',
   '保留植物': 'Keep plants',
-  '未勾选“保留植物”，切换地图时将清空植物。': 'Plants will be cleared unless Keep plants is checked.',
+  '未勾选“保留植物”，切换地图时将清空植物。':
+      'Plants will be cleared unless Keep plants is checked.',
   '保留植物时，超出新地图范围的植物将被移除。': 'Plants outside the new map bounds will be removed.',
   '主画面已更新，请重新选择地图': 'The formation changed. Please select the map again.',
   '地图预览': 'Map preview',
