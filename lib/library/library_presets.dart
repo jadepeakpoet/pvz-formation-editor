@@ -9,12 +9,20 @@ class LibraryPreset {
       : id = 'original-${_source.index}',
         name = _source.name;
 
-  LibraryPreset.layout(OriginalPreset source, String mapId, String group)
+  LibraryPreset.layout(OriginalPreset source, String group)
       : _source = source,
-        _mapId = mapId,
+        _mapId = layoutMapId(source),
         id = '$group-${source.index}',
         name = source.name;
   String? _mapId;
+
+  /// Partial sources have no map header; their family names define the scene.
+  static String layoutMapId(OriginalPreset source) {
+    if (source.name.startsWith('泳池-')) return 'pool';
+    if (source.name.startsWith('草地-')) return 'day';
+    if (source.name.startsWith('屋顶-')) return 'roof';
+    throw FormatException('Unknown layout scene: ${source.name}');
+  }
 
   /// Decode on first use, retaining the immutable formation for later previews.
   /// Invalid source data is allowed to fail visibly rather than being substituted.

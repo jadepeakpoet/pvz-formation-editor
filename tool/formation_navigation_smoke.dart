@@ -10,6 +10,7 @@ import 'package:pvz_formation_editor/editor/editor_session.dart';
 import 'package:pvz_formation_editor/editor/editor_tabs.dart';
 import 'package:pvz_formation_editor/editor/original_assets.dart';
 import 'package:pvz_formation_editor/library/library_presets.dart';
+import 'package:pvz_formation_editor/library/library_browser.dart';
 import 'package:pvz_formation_editor/storage/formation_repository.dart';
 import 'parity_support.dart';
 
@@ -82,6 +83,83 @@ Future<void> main() async {
             tabs.active.document.fingerprint == original,
         'Back lost original name/document');
   });
+  await h.run('picker.scene-row-tabs',
+      'Partial previews use their own scenes, row defaults and full-formation tab',
+      () async {
+    final original = tabs.active.document;
+    for (final mapId in ['day', 'pool', 'day6', 'day3', 'day1', 'roof']) {
+      tabs.active.execute('test scene', original.copy(mapId: mapId));
+      for (final group in ['炮位', '无炮']) {
+        stdout.writeln('checking layout tabs: $mapId / $group');
+        await page().chooseFormationPreset(group);
+        await h.settle();
+        final expected = BoardMap.byId(mapId).rows == 6 ? 6 : 5;
+        h.expect((h.find((w) => w.key == ValueKey('preset-rows-$expected'))
+            .widget as ChoiceChip).selected, 'Wrong default tab on $mapId');
+        for (final rows in [5, 6]) {
+          await h.tapElement(h.find((w) => w.key == ValueKey('preset-rows-$rows')));
+          final browser = h.find((w) => w is LibraryBrowser).widget as LibraryBrowser;
+          h.expect(browser.presets.isNotEmpty, 'Empty layout tab');
+          for (final preset in browser.presets) {
+            final scene = preset.name.startsWith('泳池-') ? 'pool'
+                : preset.name.startsWith('屋顶-') ? 'roof' : 'day';
+            h.expect(preset.mapId == scene && preset.document.map.rows == rows,
+                'Wrong scene/row for ${preset.name} on $mapId');
+          }
+        }
+        await h.tapElement(h.find((w) => w.key == const ValueKey('preset-rows-0')));
+        final full = h.find((w) => w is LibraryBrowser).widget as LibraryBrowser;
+        h.expect(identical(full.presets, LibraryPresets.all),
+            'Third tab should list all full formations');
+        await h.tapElement(h.find((w) => w.key == const ValueKey('preset-rows-5')));
+        final partial = h.find((w) => w is LibraryBrowser).widget as LibraryBrowser;
+        h.expect(partial.presets.every((p) => p.id.startsWith('$group-')),
+            'Switching back lost partial-layout family');
+      }
+    }
+    await h.screenshot('layout-five-row-tabs');
+    await h.tapElement(h.find((w) => w.key == const ValueKey('preset-rows-6')));
+    await h.screenshot('layout-six-row-tabs');
+    h.expect(tabs.active.document.mapId == 'roof', 'Browsing changed board');
+    tabs.active.execute('restore scene', original);
+  });
+
+  await h.run('picker.change-map-option',
+      'Full presets default to own map and can preserve current scene', () async {
+    final previous = tabs.active;
+    previous.execute('test scene', previous.document.copy(mapId: 'day'));
+    await page().chooseFormationPreset('阵型');
+    await h.settle();
+    Checkbox option() => h.find((w) =>
+        w.key == const ValueKey('original-preset-change-map')).widget as Checkbox;
+    h.expect(option().value == true, 'Change-map option must default enabled');
+    final source = LibraryPresets.all.firstWhere((p) => p.mapId == 'pool' &&
+        p.document.pieces.any((piece) => piece.row == 5));
+    await h.tapElement(h.find((w) =>
+        w.key == const ValueKey('original-preset-change-map')));
+    h.expect((page().windowState() as Map)['presetChangeMap'] == false,
+        'Preset map option missing from window state');
+    await page().useFormationPreset('阵型', source.sourceIndex);
+    await settled();
+    h.expect(tabs.active.document.mapId == 'day' &&
+        tabs.active.document.pieces.every((p) => p.row < 5) &&
+        tabs.active.document.pieces.length == source.document.pieces
+            .where((p) => source.document.fits(p, BoardMap.byId('day'))).length,
+        'Unchecked preset should preserve map and exclude out-of-bounds plants');
+    await tabs.goBack();
+    await settled();
+    await page().chooseFormationPreset('阵型');
+    await h.settle();
+    await h.tapElement(h.find((w) =>
+        w.key == const ValueKey('original-preset-change-map')));
+    await page().useFormationPreset('阵型', source.sourceIndex);
+    await settled();
+    h.expect(tabs.active.document.fingerprint == source.document.fingerprint,
+        'Checked preset should use exact full source and own map');
+    await tabs.goBack();
+    await settled();
+  });
+
   await h.run('picker.layout-return',
       'Cannon and no-cannon selections also return to lazy-layout home',
       () async {
@@ -154,16 +232,20 @@ Future<void> main() async {
     h.expect(identical(tabs.active, previous),
         'Import history did not restore previous entry');
   });
-  await h.run('maps.history',
-      'Map replacement uses history and restores exact page name', () async {
+  await h.run('maps.undo',
+      'Map changes keep the current page and undo restores its document', () async {
     final previous = tabs.active;
-    page().pendingMapId = 'roof';
-    await page().applySelectedMap(false);
+    final original = previous.document.fingerprint;
+    final name = previous.name;
+    await page().applyMapSelection('roof', false);
     await settled();
-    h.expect(tabs.active.document.mapId == 'roof', 'Map replacement failed');
-    await tabs.goBack();
+    h.expect(identical(tabs.active, previous) &&
+        previous.document.mapId == 'roof', 'Map replacement failed');
+    await page().undoEditing();
     await settled();
-    h.expect(identical(tabs.active, previous), 'Map history failed');
+    h.expect(identical(tabs.active, previous) &&
+        previous.document.fingerprint == original && previous.name == name,
+        'Map undo failed');
     page().selectToolboxTab(1);
     await h.settle();
   });

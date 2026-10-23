@@ -1,5 +1,8 @@
 /// English translations for the main editor interface.
 const Map<String, String> mainTranslations = {
+  '五行': '5 rows',
+  '六行': '6 rows',
+  '布阵时更换地图': 'Change map when applying formation',
   '春哥布局': 'Chun Ge layouts',
   '曾哥布局': 'Zeng Ge layouts',
   '更换时保留植物': 'Keep plants when changing map',
@@ -301,6 +304,7 @@ const Map<String, String> mainTranslations = {
   "{group}布局": "{group} layouts",
   "{count} 个名阵，与存档库共用": "{count} preset formations, shared with the library",
   "{count} 个布局": "{count} layouts",
+  "{count} 个局部布局": "{count} partial layouts",
   "删除存档？": "Delete archive?",
   "将同时删除此存档及其历史版本。": "This deletes the archive and all its previous versions.",
   "删除草稿？": "Delete draft?",

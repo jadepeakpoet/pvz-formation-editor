@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show ValueListenable;
 import '../domain/formation.dart';
 import '../platform/app_language.dart';
 import 'board_painter.dart';
@@ -10,24 +11,37 @@ Future<MapPickerChoice?> showMapPickerDialog(BuildContext context,
         {required String currentMapId,
         Formation? currentFormation,
         bool keepPlants = false,
+        ValueListenable<bool>? keepPlantsListenable,
+        ValueChanged<bool>? onKeepPlantsChanged,
         bool readOnly = false}) =>
     showDialog<MapPickerChoice>(
         context: context,
-        builder: (_) => _MapPickerDialog(
-            currentMapId: currentMapId,
-            currentFormation: currentFormation,
-            keepPlants: keepPlants,
-            readOnly: readOnly));
+        builder: (_) {
+          Widget dialog(bool keep) => _MapPickerDialog(
+              currentMapId: currentMapId,
+              currentFormation: currentFormation,
+              keepPlants: keep,
+              onKeepPlantsChanged: onKeepPlantsChanged,
+              readOnly: readOnly);
+          if (keepPlantsListenable != null) {
+            return ValueListenableBuilder<bool>(
+                valueListenable: keepPlantsListenable,
+                builder: (_, keep, __) => dialog(keep));
+          }
+          return dialog(keepPlants);
+        });
 
 class _MapPickerDialog extends StatefulWidget {
   final String currentMapId;
   final Formation? currentFormation;
   final bool keepPlants;
   final bool readOnly;
+  final ValueChanged<bool>? onKeepPlantsChanged;
   const _MapPickerDialog(
       {required this.currentMapId,
       this.currentFormation,
       required this.keepPlants,
+      this.onKeepPlantsChanged,
       required this.readOnly});
   @override
   State<_MapPickerDialog> createState() => _MapPickerDialogState();
@@ -35,6 +49,21 @@ class _MapPickerDialog extends StatefulWidget {
 
 class _MapPickerDialogState extends State<_MapPickerDialog> {
   late String selectedMapId = widget.currentMapId;
+  late bool keepPlants = widget.keepPlants;
+
+  @override
+  void didUpdateWidget(covariant _MapPickerDialog oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.keepPlants != widget.keepPlants) {
+      keepPlants = widget.keepPlants;
+    }
+  }
+
+  void changeKeepPlants(bool value) {
+    if (widget.readOnly) return;
+    setState(() => keepPlants = value);
+    widget.onKeepPlantsChanged?.call(value);
+  }
 
   void previewMap(String id) {
     if (selectedMapId != id) setState(() => selectedMapId = id);
@@ -43,7 +72,7 @@ class _MapPickerDialogState extends State<_MapPickerDialog> {
   void chooseMap(String id) {
     previewMap(id);
     if (!widget.readOnly) {
-      Navigator.of(context).pop((mapId: id, keepPlants: widget.keepPlants));
+      Navigator.of(context).pop((mapId: id, keepPlants: keepPlants));
     }
   }
 
@@ -53,7 +82,7 @@ class _MapPickerDialogState extends State<_MapPickerDialog> {
     return source.copy(
         mapId: map.id,
         display: const {},
-        pieces: widget.keepPlants
+        pieces: keepPlants
             ? source.pieces.where((piece) => source.fits(piece, map)).toList()
             : const []);
   }
@@ -149,6 +178,19 @@ class _MapPickerDialogState extends State<_MapPickerDialog> {
                             onPressed: () => Navigator.of(context).pop(),
                             child: Text(AppLanguage.text('取消'))),
                       ]),
+                      Row(children: [
+                        SizedBox(
+                            width: 24,
+                            height: 32,
+                            child: Checkbox(
+                                key: const ValueKey('map-picker-keep-plants'),
+                                value: keepPlants,
+                                onChanged: widget.readOnly
+                                    ? null
+                                    : (value) => changeKeepPlants(value!))),
+                        const SizedBox(width: 6),
+                        Text(AppLanguage.text('更换时保留植物')),
+                      ]),
                       const SizedBox(height: 8),
                       Expanded(child: LayoutBuilder(builder: (_, constraints) {
                         if (constraints.maxWidth < 560) {
@@ -173,7 +215,7 @@ class _MapPickerDialogState extends State<_MapPickerDialog> {
                       })),
                       const SizedBox(height: 8),
                       Text(
-                          AppLanguage.text(widget.keepPlants
+                          AppLanguage.text(keepPlants
                               ? '保留植物时，超出新地图范围的植物将被移除。'
                               : '未勾选“保留植物”，切换地图时将清空植物。'),
                           style: const TextStyle(

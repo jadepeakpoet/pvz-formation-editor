@@ -1258,12 +1258,18 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
   final toolboxScrollControllers =
       List.generate(6, (_) => _ToolboxScrollController());
   String? pickingPresetGroup;
+  int presetPickerRows = 5;
+  String presetPickerLayoutGroup = '炮位';
+  bool presetChangeMap = true;
   final inputFormation = TextEditingController(),
       outputFormation = TextEditingController();
   bool exportBackground = true;
   bool pokerWidth = false;
   String? pendingMapId;
-  bool keepPlantsOnMapChange = false;
+  final keepPlantsOnMapChangeNotifier = ValueNotifier<bool>(false);
+  bool get keepPlantsOnMapChange => keepPlantsOnMapChangeNotifier.value;
+  set keepPlantsOnMapChange(bool value) =>
+      keepPlantsOnMapChangeNotifier.value = value;
   int musicLevel = 0, soundLevel = 0, windowStyle = 1;
   final sunEditor = TextEditingController(text: '9990');
   final documentNameEditor = TextEditingController();
@@ -1490,6 +1496,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
         'windowStyle': windowStyle,
         'pendingMapId': pendingMapId,
         'keepPlantsOnMapChange': keepPlantsOnMapChange,
+        'presetChangeMap': presetChangeMap,
         'musicLevel': musicLevel,
         'soundLevel': soundLevel,
         'mirrors': mirrors.map((m) => m.toJson()).toList(),
@@ -1585,7 +1592,8 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
               if (action == 'usePreset') {
                 final payload = arguments['payload'] as Map;
                 await useFormationPreset(payload['group'] as String,
-                    (payload['index'] as num).toInt());
+                    (payload['index'] as num).toInt(),
+                    changeMap: payload['changeMap'] as bool?);
               }
               if (action == 'library') await leave();
               if (action == 'seedChooser:open') await toggleSeedChooser(true);
@@ -1701,6 +1709,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
         windowStyle = (value['windowStyle'] as num).toInt();
         pendingMapId = value['pendingMapId'] as String?;
         keepPlantsOnMapChange = value['keepPlantsOnMapChange'] == true;
+        presetChangeMap = value['presetChangeMap'] != false;
         exportFormat = FormationFormat.values.firstWhere(
             (f) => f.name == value['exportFormat'],
             orElse: () => FormationFormat.toolkit);
@@ -2177,6 +2186,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     documentNameSession = null;
     documentNameFocus.dispose();
     documentNameEditor.dispose();
+    keepPlantsOnMapChangeNotifier.dispose();
     libraryRefreshTimer?.cancel();
     clearPlantingFeedback();
     if (!widget.toolboxOnly && nativeWindows) {
@@ -3919,6 +3929,9 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
           currentMapId: target.document.mapId,
           currentFormation: target.document,
           keepPlants: keepPlantsOnMapChange,
+          keepPlantsListenable: keepPlantsOnMapChangeNotifier,
+          onKeepPlantsChanged: (value) =>
+              setState(() => keepPlantsOnMapChange = value),
           readOnly: target.readOnly);
       if (result == null || !mounted || target.readOnly) return;
       if (!identical(s, target) ||
@@ -4777,6 +4790,12 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     super.setState(() {
       classicTab = 1;
       pickingPresetGroup = group;
+      if (group != '阵型') presetPickerLayoutGroup = group;
+      presetPickerRows = group == '阵型'
+          ? 0
+          : s.document.map.rows == 6
+              ? 6
+              : 5;
     });
   }
 
@@ -4786,11 +4805,13 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
           ? OriginalCatalog.gloomLayouts
           : OriginalCatalog.formations;
 
-  Future<void> useFormationPreset(String group, int index) async {
+  Future<void> useFormationPreset(String group, int index,
+      {bool? changeMap}) async {
+    final replaceMap = changeMap ?? presetChangeMap;
     try {
       if (widget.toolboxOnly) {
         await WindowBridge.mainAction('usePreset',
-            payload: {'group': group, 'index': index});
+            payload: {'group': group, 'index': index, 'changeMap': replaceMap});
       } else {
         final source = presetSources(group).firstWhere((p) => p.index == index);
         final decoded = group == '阵型'
@@ -4800,7 +4821,13 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
             : source.decode(mapId: s.document.mapId);
         final document = source.partial
             ? s.document.copy(pieces: [...s.document.pieces, ...decoded.pieces])
-            : decoded;
+            : replaceMap
+                ? decoded
+                : decoded.copy(
+                    mapId: s.document.mapId,
+                    pieces: decoded.pieces
+                        .where((piece) => decoded.fits(piece, s.document.map))
+                        .toList());
         await navigateFormation(document, name: source.name);
       }
       if (mounted) {
@@ -4815,11 +4842,12 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
   }
 
   Widget presetPickerContents() {
-    final group = pickingPresetGroup!;
+    final group = presetPickerRows == 0 ? '阵型' : presetPickerLayoutGroup;
     final choices = group == '阵型'
         ? LibraryPresets.all
         : presetSources(group)
-            .map((p) => LibraryPreset.layout(p, s.document.mapId, group))
+            .map((p) => LibraryPreset.layout(p, group))
+            .where((p) => p.document.map.rows == presetPickerRows)
             .toList();
     return Column(key: const ValueKey('formation-preset-picker'), children: [
       Padding(
@@ -4841,9 +4869,36 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                         fontWeight: FontWeight.w600,
                         color: Color(0xff304b32)))),
           ])),
+      Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          child: Row(children: [
+            for (final rows in [5, 6, 0])
+              Expanded(
+                  child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 3),
+                      child: ChoiceChip(
+                          key: ValueKey('preset-rows-$rows'),
+                          label: Center(
+                              child: Text(AppLanguage.text(rows == 0
+                                  ? '阵型选择'
+                                  : rows == 5
+                                      ? '五行'
+                                      : '六行'))),
+                          selected: presetPickerRows == rows,
+                          onSelected: (_) => super.setState(
+                              () => presetPickerRows = rows)))),
+          ])),
+      if (group == '阵型')
+        Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: originalCheck(
+                'preset-change-map',
+                '布阵时更换地图',
+                presetChangeMap,
+                (value) => setState(() => presetChangeMap = value))),
       Expanded(
           child: LibraryBrowser(
-        key: ValueKey('toolbox-preset-list-$group'),
+        key: ValueKey('toolbox-preset-list-$group-$presetPickerRows'),
         drafts: const [],
         archives: const [],
         presets: choices,
@@ -4892,7 +4947,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                       fontSize: 13, fontWeight: FontWeight.w600)),
               subtitle: Text(
                   AppLanguage.text(
-                      '${presets.length} 个${label == '阵型' ? '名阵，与存档库共用' : '布局'}'),
+                      '${presets.length} 个${label == '阵型' ? '名阵，与存档库共用' : '局部布局'}'),
                   style: const TextStyle(fontSize: 11)),
               trailing: const Icon(Icons.chevron_right, size: 20),
               onTap: () => chooseFormationPreset(label))));

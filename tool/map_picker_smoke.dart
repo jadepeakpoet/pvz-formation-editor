@@ -54,7 +54,8 @@ Future<void> main() async {
   final boundary = GlobalKey();
   Future<MapPickerChoice?>? pending;
   var readOnly = false;
-  var keepPlants = false;
+  final keepPlants = ValueNotifier<bool>(false);
+  var keepChanges = 0;
   var completed = false;
   final source = Formation(mapId: 'pool', sunValue: 1234, pieces: [
     Piece(
@@ -84,8 +85,12 @@ Future<void> main() async {
                           pending = showMapPickerDialog(context,
                               currentMapId: source.mapId,
                               currentFormation: source,
-                              keepPlants: keepPlants,
-                              readOnly: readOnly);
+                              keepPlants: keepPlants.value,
+                              keepPlantsListenable: keepPlants,
+                              onKeepPlantsChanged: (value) {
+                            keepChanges++;
+                            keepPlants.value = value;
+                          }, readOnly: readOnly);
                           pending!.then((_) => completed = true);
                         },
                         child: const Text('Open')))))));
@@ -151,8 +156,12 @@ Future<void> main() async {
   await settle();
   await tap('open');
   check(previewMap() == 'pool', 'Current map must be preselected');
-  check(find((w) => w.key == const ValueKey('map-picker-keep-plants')).isEmpty,
-      'Keep checkbox must live beside caller button, not in dialog');
+  Checkbox keepCheckbox() =>
+      find((w) => w.key == const ValueKey('map-picker-keep-plants'))
+          .single
+          .widget as Checkbox;
+  check(keepCheckbox().value == false && keepCheckbox().onChanged != null,
+      'Keep checkbox must reflect caller false and allow edits');
   checkAllPreviews(false);
   final cancelBox = find((w) => w.key == const ValueKey('map-picker-cancel'))
       .single
@@ -176,8 +185,27 @@ Future<void> main() async {
       'Hover must preview without applying');
   checkAllPreviews(false);
   await screenshot('wide');
+  await tap('map-picker-keep-plants');
+  check(keepPlants.value && keepChanges == 1 && keepCheckbox().value == true,
+      'Internal checkbox must synchronize external state');
+  checkAllPreviews(true);
+  check(previewMap() == 'roof',
+      'Keep synchronization must preserve selected preview');
+  keepPlants.value = false;
+  await settle();
+  check(keepCheckbox().value == false && previewMap() == 'roof',
+      'External notifier update must synchronize checkbox without resetting preview');
+  checkAllPreviews(false);
+  await tap('map-picker-keep-plants');
+  check(keepPlants.value && keepChanges == 2, 'Second internal toggle failed');
   await tap('map-picker-cancel');
-  check(await pending == null, 'Cancel must not return map change');
+  check(await pending == null && keepPlants.value,
+      'Cancel must not apply map or roll back synchronized option');
+  await tap('open');
+  check(keepCheckbox().value == true,
+      'Reopening must inherit synchronized option');
+  await tap('map-picker-cancel');
+  keepPlants.value = false;
   await tap('open');
   await tap('map-picker-map-day');
   final reset = await pending;
@@ -186,7 +214,7 @@ Future<void> main() async {
   await settle();
   check(find((w) => w.key == const ValueKey('map-picker-dialog')).isEmpty,
       'Map click must close dialog without second confirmation');
-  keepPlants = true;
+  keepPlants.value = true;
   mount();
   await settle();
   await tap('open');
@@ -200,6 +228,12 @@ Future<void> main() async {
       'Roof preview must filter sixth row and retain plant appearance');
   checkAllPreviews(true);
   await screenshot('retained');
+  keepPlants.value = false;
+  await settle();
+  checkAllPreviews(false);
+  await tap('map-picker-keep-plants');
+  check(keepPlants.value && keepCheckbox().value == true,
+      'Internal toggle before apply must sync');
   await tap('map-picker-map-roof');
   final keep = await pending;
   check(keep?.mapId == 'roof' && keep?.keepPlants == true,
@@ -208,6 +242,10 @@ Future<void> main() async {
   mount();
   await settle();
   await tap('open');
+  check(keepCheckbox().onChanged == null && keepCheckbox().value == true,
+      'Readonly keep checkbox must reflect synchronized value and be disabled');
+  await tap('map-picker-keep-plants');
+  check(keepPlants.value, 'Readonly checkbox must not mutate external option');
   await tap('map-picker-map-night');
   check(
       previewMap() == 'night' &&
@@ -237,8 +275,9 @@ Future<void> main() async {
       'Dialog flow must not mutate supplied formation');
   check(errors.isEmpty, errors.map((e) => e.exceptionAsString()).join('\n'));
   stdout.writeln(
-      'PASS external keep choice, plants in large/thumbnail previews, bounds filtering, source unchanged, left preview, immediate choice, hover, readonly and 360px layout');
+      'PASS bidirectional keep synchronization, cancel preserves option, live retained previews, bounds filtering, source unchanged, immediate choice, readonly and 360px layout');
   runApp(const SizedBox.shrink());
   await settle();
+  keepPlants.dispose();
   exit(0);
 }

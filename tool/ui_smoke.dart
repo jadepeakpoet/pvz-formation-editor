@@ -226,19 +226,22 @@ Future<void> main() async {
         'Keep option must default unchecked outside dialog');
     await open();
     h.expect(
-        h
-                .all((w) => w.key == const ValueKey('map-picker-keep-plants'))
-                .isEmpty &&
+        (h.find((w) => w.key == const ValueKey('map-picker-keep-plants'))
+                    .widget as Checkbox).value == false &&
             preview().document.pieces.isEmpty &&
             session.document.fingerprint == before &&
             page.classicTab == 2,
         'Dialog must inherit unchecked option and show only map without editing');
-    await h.tapElement(
-        h.find((w) => w.key == const ValueKey('map-picker-cancel')));
+    await h.tapElement(h.find((w) => w.key == const ValueKey('map-picker-keep-plants')));
+    h.expect(preview().document.pieces.length == 2 &&
+        (page.windowState() as Map)['keepPlantsOnMapChange'] == true,
+        'Inside toggle must update preview and outside shared state');
+    await h.tapElement(h.find((w) => w.key == const ValueKey('map-picker-cancel')));
     await h.settle();
-    h.expect(
+    h.expect(keepOption().value == true &&
         session.document.fingerprint == before && session.undoDepth == depth,
-        'Cancel map dialog changed document');
+        'Cancel must retain shared option without changing document');
+    await h.tapElement(h.find((w) => w.key == const ValueKey('original-map-keep-plants')));
     await h.tapElement(
         h.find((w) => w.key == const ValueKey('original-map-keep-plants')));
     h.expect((page.windowState() as Map)['keepPlantsOnMapChange'] == true,
