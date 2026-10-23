@@ -70,10 +70,10 @@ Future<void> main() async {
     h.expect(session.document.pieces.length == 2,
         'Dragging must place exactly two plants');
     final placed = session.document.fingerprint;
-    await h.tap('撤销');
+    await h.tapElement(h.find((w) => w is Icon && w.icon == Icons.undo));
     h.expect(
         session.document.pieces.isEmpty, 'One Undo must remove entire drag');
-    await h.tap('恢复');
+    await h.tapElement(h.find((w) => w is Icon && w.icon == Icons.redo));
     h.expect(session.document.fingerprint == placed,
         'One Redo must restore entire drag exactly');
   });

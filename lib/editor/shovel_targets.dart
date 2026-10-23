@@ -12,21 +12,6 @@ class ShovelTargets {
       unawaited(OriginalAssets.ensureHitMasks(doc.pieces.map((p) => p.type)));
     }
     final geometry = BoardGeometry(doc);
-    final cell = geometry.hit(point);
-    if (cell == null && filter != '智能') return {};
-    final stack = doc.pieces
-        .where((p) =>
-            cell != null &&
-            p.row == cell.$1 &&
-            p.col <= cell.$2 &&
-            cell.$2 < p.col + p.spec.width)
-        .toList()
-      ..sort((a, b) {
-        final layer = b.layer.compareTo(a.layer);
-        return layer != 0
-            ? layer
-            : doc.pieces.indexOf(b).compareTo(doc.pieces.indexOf(a));
-      });
     Set<String> ids;
     if (filter == '智能') {
       final hits = geometry.hitPieces(point);
@@ -58,8 +43,15 @@ class ShovelTargets {
       }
       ids = target == null ? {} : {target.id};
     } else {
-      ids = stack
-          .where((p) => ObjectFilter.matches(p, filter))
+      final cell = geometry.hit(point);
+      if (cell == null) return {};
+      // Category removal returns every matching object; draw order is irrelevant.
+      ids = doc.pieces
+          .where((p) =>
+              p.row == cell.$1 &&
+              p.col <= cell.$2 &&
+              cell.$2 < p.col + p.spec.width &&
+              ObjectFilter.matches(p, filter))
           .map((p) => p.id)
           .toSet();
     }

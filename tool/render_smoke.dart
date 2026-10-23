@@ -14,6 +14,7 @@ import 'package:flutter/material.dart';
 import 'package:pvz_formation_editor/domain/formation.dart';
 import 'package:pvz_formation_editor/editor/board_painter.dart';
 import 'package:pvz_formation_editor/editor/original_assets.dart';
+import 'package:pvz_formation_editor/editor/shovel_targets.dart';
 
 void check(bool condition, String message) {
   if (!condition) throw StateError(message);
@@ -50,6 +51,51 @@ Future<void> main() async {
     check(
         hitGeometry.hitPieces(hitGeometry.cellCenter(1, 2)).single.id == 'low',
         'hit scaled object outside logical cell');
+    for (final map in ['pool', 'roof']) {
+      final pot = Piece(id: 'pot', type: 'pot', row: 1, col: 2, layer: 0);
+      final bare = Formation(mapId: map);
+      final planted = bare.copy(pieces: [pot]);
+      final bareGeometry = BoardGeometry(bare);
+      final plantedGeometry = BoardGeometry(planted);
+      for (final type in ['pea', 'pumpkin', 'coffee', 'ladder']) {
+        for (final col in [2, 3]) {
+          final piece =
+              Piece(id: type, type: type, row: 1, col: col, layer: 10);
+          final expected = col == 2 && ['pea', 'pumpkin'].contains(type)
+              ? const Offset(0, -5)
+              : Offset.zero;
+          check(
+              plantedGeometry.pieceCenter(piece) -
+                      bareGeometry.pieceCenter(piece) ==
+                  expected,
+              '$map/$type/$col pot lift stays local and respects object kind');
+        }
+      }
+      final removed = BoardGeometry(planted.copy(pieces: []));
+      final plant = Piece(id: 'plant', type: 'pea', row: 1, col: 2, layer: 10);
+      check(removed.pieceCenter(plant) == bareGeometry.pieceCenter(plant),
+          'new document does not reuse old pot positions');
+    }
+    final stacked = Formation(pieces: [
+      Piece(id: 'pea', type: 'pea', row: 1, col: 2, layer: 10),
+      Piece(id: 'shell', type: 'pumpkin', row: 1, col: 2, layer: 20),
+      Piece(id: 'ladder', type: 'ladder', row: 1, col: 2, layer: 30),
+      Piece(id: 'cob', type: 'cob', row: 1, col: 1, layer: 10),
+      Piece(id: 'other', type: 'pea', row: 2, col: 2, layer: 10),
+    ]);
+    final stackPoint = BoardGeometry(stacked).cellCenter(1, 2);
+    check(
+        ShovelTargets.at(stacked, stackPoint, '普通植物')
+                .containsAll({'pea', 'cob'}) &&
+            ShovelTargets.at(stacked, stackPoint, '普通植物').length == 2,
+        'category shovel includes spanning plants and excludes other rows');
+    final shellTargets = ShovelTargets.at(stacked, stackPoint, '南瓜');
+    check(
+        shellTargets.length == 2 &&
+            shellTargets.containsAll({'shell', 'ladder'}),
+        'category shovel removes shell attachments');
+    check(ShovelTargets.at(stacked, const Offset(-1, -1), '全部').isEmpty,
+        'category shovel outside the board');
     final empty = Formation(display: const {});
     final bytes = await exportPng(empty, multiplier: 2, background: false);
     final codec = await ui.instantiateImageCodec(bytes);

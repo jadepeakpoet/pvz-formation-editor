@@ -9,6 +9,12 @@ import 'original_assets.dart';
 class BoardGeometry {
   final Formation document;
   BoardGeometry(this.document);
+  // A geometry belongs to one immutable document. Build once per geometry,
+  // rather than scanning every object for each sprite and hit-test candidate.
+  late final Set<(int, int)> _potCells = {
+    for (final piece in document.pieces)
+      if (piece.type == 'pot') (piece.row, piece.col),
+  };
   Size get size => const Size(800, 600);
   double get cellWidth => 720 / document.map.columns;
   double get boardTop => document.map.roof
@@ -41,8 +47,7 @@ class BoardGeometry {
     final sprite = OriginalAssets.sprites[name];
     final kind = OriginalAssets.kinds[name];
     final onPot = (kind == 'Plant' || kind == 'Shell') &&
-        document.pieces.any((base) =>
-            base.type == 'pot' && base.row == p.row && base.col == p.col);
+        _potCells.contains((p.row, p.col));
     final lift = onPot ? const Offset(0, -5) : Offset.zero;
     // The source stores unlifted canvas Y in its protocol. A pot adjusts Plant
     // and Shell CSS top by -5; props (including ladders) keep their own top.
