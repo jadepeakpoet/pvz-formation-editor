@@ -4,6 +4,7 @@ import 'dart:io' show Platform, File;
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'domain/formation.dart';
@@ -14,6 +15,8 @@ import 'domain/archive_bundle.dart';
 import 'domain/original_terrain.dart';
 import 'domain/planting_support.dart';
 import 'platform/planting_preferences.dart';
+import 'platform/app_language.dart';
+import 'platform/language_selector.dart';
 import 'domain/layouts.dart';
 import 'domain/object_filter.dart';
 import 'editor/board_painter.dart';
@@ -52,8 +55,11 @@ Future<void> main() async {
   runApp(_StartupApp(
       label: '正在打开庭院…',
       prepare: () async {
-        await Future.wait(
-            [OriginalAssets.ensureLoaded(), PlantingPreferences.load()]);
+        await Future.wait([
+          OriginalAssets.ensureLoaded(),
+          PlantingPreferences.load(),
+          AppLanguage.load()
+        ]);
         return const FormationApp();
       }));
 }
@@ -64,20 +70,24 @@ Future<void> toolboxMain() async {
   runApp(_StartupApp(
       label: '正在加载工具箱…',
       prepare: () async {
-        await OriginalAssets.ensureLoaded();
+        await Future.wait([OriginalAssets.ensureLoaded(), AppLanguage.load()]);
         final repository = await FormationRepository.open(':memory:');
         final session = EditorSession(repository, persistDraft: false);
-        return MaterialApp(
-            title: '布阵器工具箱',
-            debugShowCheckedModeBanner: false,
-            theme: ThemeData(
-                useMaterial3: true,
-                inputDecorationTheme: const InputDecorationTheme(
-                    border: OutlineInputBorder(), isDense: true)),
-            home: EditorPage(
-                session: session,
-                toolboxOnly: true,
-                continueArchive: (_) async {}));
+        return LanguageScope(
+            builder: () => MaterialApp(
+                locale: Locale(AppLanguage.locale.value),
+                supportedLocales: const [Locale('zh'), Locale('en')],
+                localizationsDelegates: GlobalMaterialLocalizations.delegates,
+                title: AppLanguage.text('布阵器工具箱'),
+                debugShowCheckedModeBanner: false,
+                theme: ThemeData(
+                    useMaterial3: true,
+                    inputDecorationTheme: const InputDecorationTheme(
+                        border: OutlineInputBorder(), isDense: true)),
+                home: EditorPage(
+                    session: session,
+                    toolboxOnly: true,
+                    continueArchive: (_) async {})));
       }));
 }
 
@@ -88,15 +98,19 @@ Future<void> libraryMain() async {
   runApp(_StartupApp(
       label: '正在加载存档库…',
       prepare: () async {
-        await OriginalAssets.ensureLoaded();
-        return MaterialApp(
-          debugShowCheckedModeBanner: false,
-          theme: ThemeData(
-              useMaterial3: true,
-              colorScheme:
-                  ColorScheme.fromSeed(seedColor: const Color(0xff456b4e))),
-          home: const LibraryPage(independent: true, showTitle: false),
-        );
+        await Future.wait([OriginalAssets.ensureLoaded(), AppLanguage.load()]);
+        return LanguageScope(
+            builder: () => MaterialApp(
+                  locale: Locale(AppLanguage.locale.value),
+                  supportedLocales: const [Locale('zh'), Locale('en')],
+                  localizationsDelegates: GlobalMaterialLocalizations.delegates,
+                  debugShowCheckedModeBanner: false,
+                  theme: ThemeData(
+                      useMaterial3: true,
+                      colorScheme: ColorScheme.fromSeed(
+                          seedColor: const Color(0xff456b4e))),
+                  home: const LibraryPage(independent: true, showTitle: false),
+                ));
       }));
 }
 
@@ -126,59 +140,73 @@ class _StartupAppState extends State<_StartupApp> {
       future: prepared,
       builder: (_, state) {
         if (state.hasData) return state.data!;
-        return MaterialApp(
-            debugShowCheckedModeBanner: false,
-            theme: ThemeData(
-                colorScheme:
-                    ColorScheme.fromSeed(seedColor: const Color(0xff456b4e))),
-            home: Scaffold(
-                backgroundColor: const Color(0xfff3f6eb),
-                body: Center(
-                    child: Padding(
-                        padding: const EdgeInsets.all(24),
-                        child:
-                            Column(mainAxisSize: MainAxisSize.min, children: [
-                          const Icon(Icons.grass_rounded,
-                              size: 36, color: Color(0xff456b4e)),
-                          const SizedBox(height: 18),
-                          Text(state.hasError ? '暂时无法打开，请重试' : widget.label,
-                              style: const TextStyle(color: Color(0xff304b32))),
-                          const SizedBox(height: 18),
-                          if (state.hasError)
-                            OutlinedButton(
-                                onPressed: () =>
-                                    setState(() => prepared = prepare()),
-                                child: const Text('重试'))
-                          else
-                            const SizedBox(
-                                width: 24,
-                                height: 24,
-                                child:
-                                    CircularProgressIndicator(strokeWidth: 2)),
-                        ])))));
+        return LanguageScope(
+            builder: () => MaterialApp(
+                locale: Locale(AppLanguage.locale.value),
+                supportedLocales: const [Locale('zh'), Locale('en')],
+                localizationsDelegates: GlobalMaterialLocalizations.delegates,
+                debugShowCheckedModeBanner: false,
+                theme: ThemeData(
+                    colorScheme: ColorScheme.fromSeed(
+                        seedColor: const Color(0xff456b4e))),
+                home: Scaffold(
+                    backgroundColor: const Color(0xfff3f6eb),
+                    body: Center(
+                        child: Padding(
+                            padding: const EdgeInsets.all(24),
+                            child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.grass_rounded,
+                                      size: 36, color: Color(0xff456b4e)),
+                                  const SizedBox(height: 18),
+                                  Text(
+                                      AppLanguage.text(state.hasError
+                                          ? '暂时无法打开，请重试'
+                                          : widget.label),
+                                      style: const TextStyle(
+                                          color: Color(0xff304b32))),
+                                  const SizedBox(height: 18),
+                                  if (state.hasError)
+                                    OutlinedButton(
+                                        onPressed: () => setState(
+                                            () => prepared = prepare()),
+                                        child: Text(AppLanguage.text('重试')))
+                                  else
+                                    const SizedBox(
+                                        width: 24,
+                                        height: 24,
+                                        child: CircularProgressIndicator(
+                                            strokeWidth: 2)),
+                                ]))))));
       });
 }
 
 class FormationApp extends StatelessWidget {
   const FormationApp({super.key});
   @override
-  Widget build(BuildContext context) => MaterialApp(
-      title: '植物大战僵尸布阵器',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-          useMaterial3: true,
-          colorScheme: ColorScheme.fromSeed(
-              seedColor: const Color(0xff456b4e), brightness: Brightness.light),
-          scaffoldBackgroundColor: const Color(0xfff4f5f0),
-          inputDecorationTheme: const InputDecorationTheme(
-              border: OutlineInputBorder(), isDense: true)),
-      home: const LibraryPage());
+  Widget build(BuildContext context) => LanguageScope(
+      builder: () => MaterialApp(
+          locale: Locale(AppLanguage.locale.value),
+          supportedLocales: const [Locale('zh'), Locale('en')],
+          localizationsDelegates: GlobalMaterialLocalizations.delegates,
+          title: AppLanguage.text('植物大战僵尸布阵器'),
+          debugShowCheckedModeBanner: false,
+          theme: ThemeData(
+              useMaterial3: true,
+              colorScheme: ColorScheme.fromSeed(
+                  seedColor: const Color(0xff456b4e),
+                  brightness: Brightness.light),
+              scaffoldBackgroundColor: const Color(0xfff4f5f0),
+              inputDecorationTheme: const InputDecorationTheme(
+                  border: OutlineInputBorder(), isDense: true)),
+          home: const LibraryPage()));
 }
 
 void message(BuildContext context, Object text) {
   if (context.mounted) {
     ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text('$text')));
+        .showSnackBar(SnackBar(content: Text(AppLanguage.text('$text'))));
   }
 }
 
@@ -188,21 +216,22 @@ Future<String?> textPrompt(BuildContext context, String title,
   final result = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-              title: Text(title),
+              title: Text(AppLanguage.text(title)),
               content: SizedBox(
                   width: 560,
                   child: TextField(
                       controller: c,
                       autofocus: true,
                       maxLines: multiline ? 10 : 1,
-                      decoration: const InputDecoration(labelText: '内容'))),
+                      decoration:
+                          InputDecoration(labelText: AppLanguage.text('内容')))),
               actions: [
                 TextButton(
                     onPressed: () => Navigator.pop(ctx),
-                    child: const Text('取消')),
+                    child: Text(AppLanguage.text('取消'))),
                 FilledButton(
                     onPressed: () => Navigator.pop(ctx, c.text),
-                    child: const Text('确定'))
+                    child: Text(AppLanguage.text('确定')))
               ]));
   // Controller is retained until dialog removal has completed.
   Future.delayed(const Duration(seconds: 1), c.dispose);
@@ -212,15 +241,17 @@ Future<String?> textPrompt(BuildContext context, String title,
 Future<bool> confirm(BuildContext context, String title, String body) async =>
     await showDialog<bool>(
         context: context,
-        builder: (ctx) =>
-            AlertDialog(title: Text(title), content: Text(body), actions: [
-              TextButton(
-                  onPressed: () => Navigator.pop(ctx, false),
-                  child: const Text('取消')),
-              FilledButton(
-                  onPressed: () => Navigator.pop(ctx, true),
-                  child: const Text('确认'))
-            ])) ??
+        builder: (ctx) => AlertDialog(
+                title: Text(AppLanguage.text(title)),
+                content: Text(AppLanguage.text(body)),
+                actions: [
+                  TextButton(
+                      onPressed: () => Navigator.pop(ctx, false),
+                      child: Text(AppLanguage.text('取消'))),
+                  FilledButton(
+                      onPressed: () => Navigator.pop(ctx, true),
+                      child: Text(AppLanguage.text('确认')))
+                ])) ??
     false;
 
 Future<FormationFormat?> formationFormatPrompt(
@@ -233,7 +264,7 @@ Future<FormationFormat?> formationFormatPrompt(
             final issues =
                 FormationExchange.exportIssues(document, format: choice);
             return AlertDialog(
-                title: const Text('导出阵图'),
+                title: Text(AppLanguage.text('导出阵图')),
                 content: SizedBox(
                     width: 430,
                     child: Column(mainAxisSize: MainAxisSize.min, children: [
@@ -253,7 +284,8 @@ Future<FormationFormat?> formationFormatPrompt(
                             constraints: const BoxConstraints(maxHeight: 160),
                             child: SingleChildScrollView(
                                 child: Text(
-                                    '该格式无法保存以下内容，请选择其他格式：\n${issues.join('\n')}',
+                                    AppLanguage.text(
+                                        '该格式无法保存以下内容，请选择其他格式：\n${issues.join('\n')}'),
                                     style: const TextStyle(
                                         fontSize: 12,
                                         color: Colors.deepOrange))))
@@ -261,12 +293,12 @@ Future<FormationFormat?> formationFormatPrompt(
                 actions: [
                   TextButton(
                       onPressed: () => Navigator.pop(ctx),
-                      child: const Text('取消')),
+                      child: Text(AppLanguage.text('取消'))),
                   FilledButton(
                       onPressed: issues.isEmpty
                           ? () => Navigator.pop(ctx, choice)
                           : null,
-                      child: const Text('选择保存位置'))
+                      child: Text(AppLanguage.text('选择保存位置')))
                 ]);
           }));
 }
@@ -535,7 +567,7 @@ class _LibraryPageState extends State<LibraryPage> {
       final newTab = await showDialog<bool>(
           context: context,
           builder: (ctx) => AlertDialog(
-                title: const Text('导入 PC 无尽存档（实验）'),
+                title: Text(AppLanguage.text('导入 PC 无尽存档（实验）')),
                 content: SizedBox(
                     width: 500,
                     child: SingleChildScrollView(
@@ -543,11 +575,12 @@ class _LibraryPageState extends State<LibraryPage> {
                             mainAxisSize: MainAxisSize.min,
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                          const Text('仅导入布阵，不恢复完整战斗进度。源 .dat 文件不会被修改。'),
+                          Text(AppLanguage.text(
+                              '仅导入布阵，不恢复完整战斗进度。源 .dat 文件不会被修改。')),
                           const SizedBox(height: 12),
-                          Text('场地：${document.map.name}\n'
+                          Text(AppLanguage.text('场地：${document.map.name}\n'
                               '植物：$plantCount，场地物品：${document.pieces.length - plantCount}，'
-                              '阳光：${document.sunValue}'),
+                              '阳光：${document.sunValue}')),
                           const SizedBox(height: 12),
                           ...imported.warnings.map((warning) => Padding(
                               padding: const EdgeInsets.only(bottom: 8),
@@ -556,13 +589,13 @@ class _LibraryPageState extends State<LibraryPage> {
                 actions: [
                   TextButton(
                       onPressed: () => Navigator.pop(ctx),
-                      child: const Text('取消')),
+                      child: Text(AppLanguage.text('取消'))),
                   OutlinedButton(
                       onPressed: () => Navigator.pop(ctx, false),
-                      child: const Text('导入当前标签')),
+                      child: Text(AppLanguage.text('导入当前标签'))),
                   FilledButton(
                       onPressed: () => Navigator.pop(ctx, true),
-                      child: const Text('导入新标签')),
+                      child: Text(AppLanguage.text('导入新标签'))),
                 ],
               ));
       if (newTab == null || !mounted) return;
@@ -742,11 +775,12 @@ class _LibraryPageState extends State<LibraryPage> {
         final v = await showDialog<ArchiveVersion>(
             context: context,
             builder: (ctx) => SimpleDialog(
-                title: const Text('历史版本与回退'),
+                title: Text(AppLanguage.text('历史版本与回退')),
                 children: versions.isEmpty
                     ? [
-                        const Padding(
-                            padding: EdgeInsets.all(24), child: Text('尚无更新历史'))
+                        Padding(
+                            padding: const EdgeInsets.all(24),
+                            child: Text(AppLanguage.text('尚无更新历史')))
                       ]
                     : versions
                         .asMap()
@@ -754,9 +788,9 @@ class _LibraryPageState extends State<LibraryPage> {
                         .map((entry) => SimpleDialogOption(
                             key: ValueKey('archive-version-${entry.value.id}'),
                             onPressed: () => Navigator.pop(ctx, entry.value),
-                            child: Text(
+                            child: Text(AppLanguage.text(
                                 '回退到第 ${versions.length - entry.key} 版 · ${entry.value.name}\n'
-                                '${date(entry.value.createdAt)}:${entry.value.createdAt.second.toString().padLeft(2, '0')}.${entry.value.createdAt.millisecond.toString().padLeft(3, '0')}')))
+                                '${date(entry.value.createdAt)}:${entry.value.createdAt.second.toString().padLeft(2, '0')}.${entry.value.createdAt.millisecond.toString().padLeft(3, '0')}'))))
                         .toList()));
         if (v != null && mounted) {
           final request = <String, dynamic>{
@@ -907,8 +941,9 @@ class _LibraryPageState extends State<LibraryPage> {
               child: error == null
                   ? const CircularProgressIndicator()
                   : Column(mainAxisSize: MainAxisSize.min, children: [
-                      Text('无法打开存档库：$error'),
-                      FilledButton(onPressed: _open, child: const Text('重试'))
+                      Text(AppLanguage.text('无法打开存档库：$error')),
+                      FilledButton(
+                          onPressed: _open, child: Text(AppLanguage.text('重试')))
                     ])));
     }
     return LibraryBrowser(
@@ -1034,36 +1069,38 @@ Future<(String, String, List<String>, bool)?> archiveDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
           builder: (ctx, set) => AlertDialog(
-                  title: Text(metadata
+                  title: Text(AppLanguage.text(metadata
                       ? '编辑存档信息'
                       : saveAs
                           ? '另存为'
-                          : '保存'),
+                          : '保存')),
                   content: SizedBox(
                       width: 460,
                       child: Column(mainAxisSize: MainAxisSize.min, children: [
                         TextField(
                             key: const ValueKey('archive-name'),
                             controller: n,
-                            decoration: const InputDecoration(labelText: '名称')),
+                            decoration: InputDecoration(
+                                labelText: AppLanguage.text('名称'))),
                         const SizedBox(height: 12),
                         TextField(
                             controller: m,
                             maxLines: 3,
-                            decoration: const InputDecoration(labelText: '备注')),
+                            decoration: InputDecoration(
+                                labelText: AppLanguage.text('备注'))),
                         const SizedBox(height: 12),
                         TextField(
                             controller: t,
-                            decoration:
-                                const InputDecoration(labelText: '标签，以逗号分隔')),
+                            decoration: InputDecoration(
+                                labelText: AppLanguage.text('标签，以逗号分隔'))),
                         if (allowUpdate) ...[
                           RadioListTile<bool>(
-                              title: const Text('另存为新存档'),
+                              title: Text(AppLanguage.text('另存为新存档')),
                               value: false,
                               groupValue: update,
                               onChanged: (v) => set(() => update = false)),
                           RadioListTile<bool>(
-                              title: const Text('更新原存档（保留旧版本）'),
+                              title: Text(AppLanguage.text('更新原存档（保留旧版本）')),
                               value: true,
                               groupValue: update,
                               onChanged: (v) => set(() => update = true))
@@ -1072,7 +1109,7 @@ Future<(String, String, List<String>, bool)?> archiveDialog(
                   actions: [
                     TextButton(
                         onPressed: () => Navigator.pop(ctx),
-                        child: const Text('取消')),
+                        child: Text(AppLanguage.text('取消'))),
                     FilledButton(
                         key: const ValueKey('archive-confirm'),
                         onPressed: () {
@@ -1088,11 +1125,11 @@ Future<(String, String, List<String>, bool)?> archiveDialog(
                             update
                           ));
                         },
-                        child: Text(update
+                        child: Text(AppLanguage.text(update
                             ? '更新存档'
                             : saveAs
                                 ? '另存为'
-                                : '保存'))
+                                : '保存')))
                   ])));
   Future.delayed(const Duration(seconds: 1), () {
     n.dispose();
@@ -1720,7 +1757,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                                                         : classicTab == i)
                                                     ? 3
                                                     : 1))),
-                                    child: Text(['卡槽选卡', '懒人布局', '图鉴选卡', '镜像窗口', '载入导出', '选项设置'][i],
+                                    child: Text(AppLanguage.text(['卡槽选卡', '懒人布局', '图鉴选卡', '镜像窗口', '载入导出', '选项设置'][i]),
                                         style: TextStyle(
                                             fontSize: 11,
                                             color: const Color(0xff304b32),
@@ -1778,12 +1815,13 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                     icon: Icon(
                         mode == 'toolbox' ? Icons.tune : Icons.folder_outlined,
                         size: 14),
-                    label: Text(mode == 'toolbox' ? '工具箱' : '存档库')))));
+                    label: Text(AppLanguage.text(
+                        mode == 'toolbox' ? '工具箱' : '存档库'))))));
   }
 
   Widget fallbackSidebar() => ClassicWindow(
       key: const ValueKey('fallback-sidebar-window'),
-      title: sidebarMode == 'library' ? '存档库' : '布阵器工具箱',
+      title: AppLanguage.text(sidebarMode == 'library' ? '存档库' : '布阵器工具箱'),
       width: 410,
       height: 635,
       dragKey: const ValueKey('toolbox-drag'),
@@ -1884,7 +1922,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                               overflow: TextOverflow.ellipsis))))),
       IconButton(
           key: const ValueKey('document-rename'),
-          tooltip: editingDocumentName ? '保存名称' : '重命名存档',
+          tooltip: AppLanguage.text(editingDocumentName ? '保存名称' : '重命名存档'),
           icon: Icon(editingDocumentName ? Icons.check : Icons.edit_outlined,
               size: 14),
           constraints: const BoxConstraints.tightFor(width: 24, height: 26),
@@ -3041,29 +3079,31 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
             context: context,
             builder: (ctx) => StatefulBuilder(
                 builder: (ctx, set) => AlertDialog(
-                        title: const Text('导出棋盘 PNG'),
+                        title: Text(AppLanguage.text('导出棋盘 PNG')),
                         content:
                             Column(mainAxisSize: MainAxisSize.min, children: [
                           DropdownButton<double>(
                               value: factor,
                               items: [1.0, 2.0, 3.0, 4.0]
                                   .map((v) => DropdownMenuItem(
-                                      value: v, child: Text('${v.toInt()} 倍')))
+                                      value: v,
+                                      child: Text(
+                                          AppLanguage.text('${v.toInt()} 倍'))))
                                   .toList(),
                               onChanged: (v) => set(() => factor = v!)),
                           SwitchListTile(
-                              title: const Text('包含棋盘背景'),
+                              title: Text(AppLanguage.text('包含棋盘背景')),
                               value: background,
                               onChanged: (v) => set(() => background = v))
                         ]),
                         actions: [
                           TextButton(
                               onPressed: () => Navigator.pop(ctx),
-                              child: const Text('取消')),
+                              child: Text(AppLanguage.text('取消'))),
                           FilledButton(
                               onPressed: () =>
                                   Navigator.pop(ctx, (factor, background)),
-                              child: const Text('导出'))
+                              child: Text(AppLanguage.text('导出')))
                         ])));
         if (result == null) return;
         final bytes = await exportPng(s.document,
@@ -3078,7 +3118,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
           await showDialog<void>(
               context: context,
               builder: (ctx) => AlertDialog(
-                      title: const Text('当前阵型不支持 Toolkit 格式'),
+                      title: Text(AppLanguage.text('当前阵型不支持 Toolkit 格式')),
                       content: SizedBox(
                           width: 520,
                           child: SingleChildScrollView(
@@ -3086,7 +3126,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                       actions: [
                         TextButton(
                             onPressed: () => Navigator.pop(ctx),
-                            child: const Text('关闭'))
+                            child: Text(AppLanguage.text('关闭')))
                       ]));
           return;
         }
@@ -3167,7 +3207,9 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                 padding: const EdgeInsets.all(16),
                 child: Column(children: [
                   Row(children: [
-                    const Expanded(child: Text('只读对比 · 左：创建时快照 / 右：当前阵型')),
+                    Expanded(
+                        child:
+                            Text(AppLanguage.text('只读对比 · 左：创建时快照 / 右：当前阵型'))),
                     IconButton(
                         onPressed: () => Navigator.pop(ctx),
                         icon: const Icon(Icons.close))
@@ -3315,8 +3357,10 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                                                       horizontal: 8),
                                               color: const Color(0xffd9e1e7),
                                               child: Row(children: [
-                                                const Text('植物大战僵尸布阵器',
-                                                    style: TextStyle(
+                                                Text(
+                                                    AppLanguage.text(
+                                                        '植物大战僵尸布阵器'),
+                                                    style: const TextStyle(
                                                         fontWeight:
                                                             FontWeight.bold)),
                                                 const SizedBox(width: 16),
@@ -3442,13 +3486,15 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                     textStyle: const TextStyle(fontSize: 12)),
                 onPressed: action,
                 child: icon == null
-                    ? Text(label)
+                    ? Text(AppLanguage.text(label))
                     : Row(mainAxisSize: MainAxisSize.min, children: [
                         Icon(icon, size: 16),
                         const SizedBox(width: 3),
-                        Text(label),
+                        Text(AppLanguage.text(label)),
                       ]))));
-    return tooltip == null ? button : Tooltip(message: tooltip, child: button);
+    return tooltip == null
+        ? button
+        : Tooltip(message: AppLanguage.text(tooltip), child: button);
   }
 
   Widget mirrorWindow(int i) {
@@ -3463,7 +3509,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
         left: mirrorPositions[i].dx,
         top: mirrorPositions[i].dy,
         child: ClassicWindow(
-            title: '镜像 ${i + 1}',
+            title: '${AppLanguage.text('镜像')} ${i + 1}',
             width: width,
             height: height,
             dragKey: ValueKey('mirror-drag-$i'),
@@ -3481,7 +3527,8 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                   height: 34,
                   child: Row(children: [
                     const SizedBox(width: 6),
-                    const Text('比例 ', style: TextStyle(fontSize: 12)),
+                    Text(AppLanguage.text('比例 '),
+                        style: const TextStyle(fontSize: 12)),
                     DropdownButton<double>(
                         key: ValueKey('mirror-scale-$i'),
                         value: scale,
@@ -3505,7 +3552,8 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                         value: mirrorBackgrounds[i],
                         onChanged: (v) =>
                             setState(() => mirrorBackgrounds[i] = v!)),
-                    const Text('背景', style: TextStyle(fontSize: 12)),
+                    Text(AppLanguage.text('背景'),
+                        style: const TextStyle(fontSize: 12)),
                     classicButton('导出镜像 ${i + 1}', () async {
                       try {
                         final bytes = await exportPng(mirrors[i],
@@ -3554,7 +3602,8 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
           persistPlantingPreferences();
         }),
         Row(children: [
-          const Text('自动垫花盆 ', style: TextStyle(fontSize: 12)),
+          Text(AppLanguage.text('自动垫花盆 '),
+              style: const TextStyle(fontSize: 12)),
           Expanded(
               child: DropdownButton<String>(
                   key: const ValueKey('auto-pot-mode'),
@@ -3563,10 +3612,13 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                   value: autoPotMode,
                   style:
                       const TextStyle(fontSize: 12, color: Color(0xff304b32)),
-                  items: const [
-                    DropdownMenuItem(value: 'roof', child: Text('屋顶')),
-                    DropdownMenuItem(value: 'land', child: Text('屋顶及陆地')),
-                    DropdownMenuItem(value: 'off', child: Text('关闭')),
+                  items: [
+                    DropdownMenuItem(
+                        value: 'roof', child: Text(AppLanguage.text('屋顶'))),
+                    DropdownMenuItem(
+                        value: 'land', child: Text(AppLanguage.text('屋顶及陆地'))),
+                    DropdownMenuItem(
+                        value: 'off', child: Text(AppLanguage.text('关闭'))),
                   ],
                   onChanged: (value) {
                     if (value == null) return;
@@ -3587,13 +3639,13 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                 value: checked,
                 onChanged: change == null ? null : (v) => change(v!),
                 visualDensity: VisualDensity.compact)),
-        Text(label, style: const TextStyle(fontSize: 12)),
+        Text(AppLanguage.text(label), style: const TextStyle(fontSize: 12)),
       ]);
 
   Widget originalVolume(
           String prefix, String label, int level, ValueChanged<int> change) =>
       Row(children: [
-        Text(label, style: const TextStyle(fontSize: 12)),
+        Text(AppLanguage.text(label), style: const TextStyle(fontSize: 12)),
         for (var i = 0; i < 5; i++)
           InkWell(
               key: ValueKey('original-$prefix$i'),
@@ -3607,7 +3659,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                         groupValue: level,
                         onChanged: (v) => change(v!),
                         visualDensity: VisualDensity.compact)),
-                Text(['静音', '25%', '50%', '75%', '正常'][i],
+                Text(AppLanguage.text(['静音', '25%', '50%', '75%', '正常'][i]),
                     style: const TextStyle(fontSize: 12)),
               ])),
       ]);
@@ -3629,9 +3681,10 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
 
   Widget classicSettings() =>
       Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const LanguageSelector(),
         const SizedBox(height: 8),
         Row(children: [
-          const Text('更换地图 ', style: TextStyle(fontSize: 12)),
+          Text(AppLanguage.text('更换地图 '), style: const TextStyle(fontSize: 12)),
           Expanded(
               child: DropdownButton<String>(
                   key: const ValueKey('original-lMap'),
@@ -3642,7 +3695,8 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                   items: BoardMap.all
                       .map((m) => DropdownMenuItem(
                           value: m.id,
-                          child: Text(m.name, overflow: TextOverflow.ellipsis)))
+                          child: Text(AppLanguage.text(m.name),
+                              overflow: TextOverflow.ellipsis)))
                       .toList(),
                   onChanged: (v) => setState(() => pendingMapId = v))),
           classicButton('下载地图', () async {
@@ -3666,7 +3720,8 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
           classicButton('仅换地图不换植物', () => applySelectedMap(true),
               key: const ValueKey('original-btnMap-keep'))
         ]),
-        const Text('换不同类型地图不换植物可能会发生坐标不对应', style: TextStyle(fontSize: 12)),
+        Text(AppLanguage.text('换不同类型地图不换植物可能会发生坐标不对应'),
+            style: const TextStyle(fontSize: 12)),
         const SizedBox(height: 14),
         originalVolume('cMusic', '音乐音量 ', musicLevel, (i) {
           setState(() => musicLevel = i);
@@ -3676,13 +3731,14 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
           setState(() => soundLevel = i);
           unawaited(OriginalAudio.setSoundVolume(i / 4).then((_) => update()));
         }),
-        const Text('背景音乐与种植音效', style: TextStyle(fontSize: 12)),
+        Text(AppLanguage.text('背景音乐与种植音效'),
+            style: const TextStyle(fontSize: 12)),
         if (OriginalAudio.soundStatus.value == 'missingAsset' && soundLevel > 0)
-          const Text('种植音效暂不可用',
-              style: TextStyle(fontSize: 11, color: Colors.brown)),
+          Text(AppLanguage.text('种植音效暂不可用'),
+              style: const TextStyle(fontSize: 11, color: Colors.brown)),
         const SizedBox(height: 12),
         Row(children: [
-          const Text('显示迷雾 ', style: TextStyle(fontSize: 12)),
+          Text(AppLanguage.text('显示迷雾 '), style: const TextStyle(fontSize: 12)),
           DropdownButton<int>(
               key: const ValueKey('original-lFog'),
               isDense: true,
@@ -3691,7 +3747,9 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
               items: List.generate(
                   11,
                   (i) => DropdownMenuItem(
-                      value: i, child: Text(i == 0 ? '默认不显示' : '$i列雾'))),
+                      value: i,
+                      child:
+                          Text(AppLanguage.text(i == 0 ? '默认不显示' : '$i列雾')))),
               onChanged: s.readOnly
                   ? null
                   : (v) => s.execute(
@@ -3699,8 +3757,9 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                       s.document.copy(
                           fogColumns: v,
                           display: {...s.document.display, '迷雾': v! > 0}))),
-          const Expanded(
-              child: Text('(建议布好阵之后再选择显示)', style: TextStyle(fontSize: 11))),
+          Expanded(
+              child: Text(AppLanguage.text('(建议布好阵之后再选择显示)'),
+                  style: const TextStyle(fontSize: 11))),
         ]),
         const SizedBox(height: 10),
         originalCheck(
@@ -3798,11 +3857,13 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                           value: i,
                           groupValue: windowStyle,
                           onChanged: (v) => setState(() => windowStyle = v!))),
-                  Text('窗口样式$i', style: const TextStyle(fontSize: 12))
+                  Text(AppLanguage.text('窗口样式$i'),
+                      style: const TextStyle(fontSize: 12))
                 ]))
         ]),
         ExpansionTile(
-            title: const Text('对象属性与扩展工具', style: TextStyle(fontSize: 12)),
+            title: Text(AppLanguage.text('对象属性与扩展工具'),
+                style: const TextStyle(fontSize: 12)),
             children: [SizedBox(height: 500, child: properties())]),
       ]);
 
@@ -3818,8 +3879,10 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
   Widget classicContents() {
     if (classicTab == 3) {
       return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const Text('镜像窗口', style: TextStyle(fontWeight: FontWeight.bold)),
-        const Text('创建当前阵型的镜像，拖动标题移动窗口。', style: TextStyle(fontSize: 12)),
+        Text(AppLanguage.text('镜像窗口'),
+            style: const TextStyle(fontWeight: FontWeight.bold)),
+        Text(AppLanguage.text('创建当前阵型的镜像，拖动标题移动窗口。'),
+            style: const TextStyle(fontSize: 12)),
         originalCheck('cMirrorBack', '显示阵型背景，否则背景透明', exportBackground,
             (v) => setState(() => exportBackground = v)),
         classicButton('植吧扑克', () async {
@@ -3843,8 +3906,9 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     }
     if (classicTab == 4) {
       return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const Text('1.载入和导出布阵字符串'),
-        const Text('“载入”仅在本布阵器上生效，游戏布阵请使用：', style: TextStyle(fontSize: 12)),
+        Text(AppLanguage.text('1.载入和导出布阵字符串')),
+        Text(AppLanguage.text('“载入”仅在本布阵器上生效，游戏布阵请使用：'),
+            style: const TextStyle(fontSize: 12)),
         classicButton('PvZ Toolkit', () async {
           await ProjectFiles.openExternal(
               Uri.parse('https://pvz.lmintlcx.com/'));
@@ -3855,8 +3919,8 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
             minLines: 4,
             maxLines: 6,
             style: const TextStyle(fontSize: 12),
-            decoration:
-                const InputDecoration(hintText: '粘贴 Toolkit 或布阵器阵型码，自动识别')),
+            decoration: InputDecoration(
+                hintText: AppLanguage.text('粘贴 Toolkit 或布阵器阵型码，自动识别'))),
         Wrap(children: [
           classicButton('载入', () async {
             try {
@@ -3873,8 +3937,10 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
           classicButton('清空输入', inputFormation.clear)
         ]),
         const SizedBox(height: 10),
-        const Text('当前阵型码（随阵图实时更新）', style: TextStyle(fontSize: 12)),
-        const Text('PvZ Toolkit 阵型字符串', style: TextStyle(fontSize: 12)),
+        Text(AppLanguage.text('当前阵型码（随阵图实时更新）'),
+            style: const TextStyle(fontSize: 12)),
+        Text(AppLanguage.text('PvZ Toolkit 阵型字符串'),
+            style: const TextStyle(fontSize: 12)),
         const SizedBox(height: 4),
         TextField(
             key: const ValueKey('formation-live-output'),
@@ -3883,13 +3949,13 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
             minLines: 4,
             maxLines: 6,
             style: const TextStyle(fontSize: 12),
-            decoration:
-                const InputDecoration(hintText: '当前阵型暂不能生成 Toolkit 阵型码')),
+            decoration: InputDecoration(
+                hintText: AppLanguage.text('当前阵型暂不能生成 Toolkit 阵型码'))),
         if (outputEncodingError != null) ...[
           classicButton('一键格式化', formatForOutput,
               key: const ValueKey('formation-format')),
-          const Text('后放置优先，清理冲突和不支持的内容；可撤销。',
-              style: TextStyle(fontSize: 11, color: Color(0xff63755f))),
+          Text(AppLanguage.text('后放置优先，清理冲突和不支持的内容；可撤销。'),
+              style: const TextStyle(fontSize: 11, color: Color(0xff63755f))),
           Padding(
               padding: const EdgeInsets.only(top: 4),
               child: Text(outputEncodingError!,
@@ -3908,7 +3974,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
             key: const ValueKey('formation-copy')),
         const Divider(),
         Row(children: [
-          const Text('输出倍率：', style: TextStyle(fontSize: 12)),
+          Text(AppLanguage.text('输出倍率：'), style: const TextStyle(fontSize: 12)),
           DropdownButton<double>(
               value: exportRatio,
               items: const [
@@ -3921,7 +3987,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
           Checkbox(
               value: exportBackground,
               onChanged: (v) => setState(() => exportBackground = v!)),
-          const Text('包含背景', style: TextStyle(fontSize: 12))
+          Text(AppLanguage.text('包含背景'), style: const TextStyle(fontSize: 12))
         ]),
         classicButton('植吧扑克', () async {
           await ProjectFiles.openExternal(
@@ -3957,18 +4023,18 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     if (classicTab == 1) {
       return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
-          const Text('懒人布局'),
+          Text(AppLanguage.text('懒人布局')),
           classicButton(
               '?',
               () => showDialog<void>(
                   context: context,
                   builder: (ctx) => AlertDialog(
-                          content: const Text(
-                              '使用带参数的网址可以直接显示阵型\n比如http://jspvz.com/ArrayDesign/?66显示3C8P阵 '),
+                          content: Text(AppLanguage.text(
+                              '使用带参数的网址可以直接显示阵型\n比如http://jspvz.com/ArrayDesign/?66显示3C8P阵 ')),
                           actions: [
                             TextButton(
                                 onPressed: () => Navigator.pop(ctx),
-                                child: const Text('确定'))
+                                child: Text(AppLanguage.text('确定')))
                           ])),
               key: const ValueKey('original-help')),
         ]),
@@ -3979,7 +4045,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
         if (cells.isNotEmpty)
           Row(children: [
             Expanded(
-                child: Text('已选 ${cells.length} 格',
+                child: Text(AppLanguage.text('已选 ${cells.length} 格'),
                     style: const TextStyle(fontSize: 12))),
             classicButton('删除选区', s.readOnly ? null : deleteSelection,
                 key: const ValueKey('delete-batch-selection')),
@@ -3988,7 +4054,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
           ]),
         batchOperations(),
         const Divider(),
-        const Text('一键布局', style: TextStyle(fontSize: 12)),
+        Text(AppLanguage.text('一键布局'), style: const TextStyle(fontSize: 12)),
         Wrap(children: [
           for (final label in OriginalActions.labels)
             classicButton(label, () async {
@@ -4001,7 +4067,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
             })
         ]),
         const Divider(),
-        const Text('一键模仿', style: TextStyle(fontSize: 12)),
+        Text(AppLanguage.text('一键模仿'), style: const TextStyle(fontSize: 12)),
         Wrap(children: [
           for (final scope in ['南瓜', '荷叶', '花盆', '非紫卡植物', '全部植物'])
             classicButton(scope, () async {
@@ -4085,14 +4151,15 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
             active: tool == '放置')
       ]),
       Wrap(crossAxisAlignment: WrapCrossAlignment.center, children: [
-        const Text('铲除范围：', style: TextStyle(fontSize: 12)),
+        Text(AppLanguage.text('铲除范围：'), style: const TextStyle(fontSize: 12)),
         DropdownButton<String>(
             value: shovelFilter,
             isDense: true,
             style: const TextStyle(fontSize: 12, color: Colors.black),
             items: ['智能', ...ObjectFilter.options]
                 .map((f) => DropdownMenuItem(
-                    value: f, child: Text(f == '全部' ? '本格全部' : f)))
+                    value: f,
+                    child: Text(AppLanguage.text(f == '全部' ? '本格全部' : f))))
                 .toList(),
             onChanged: (v) => setState(() => shovelFilter = v!)),
         classicButton(
@@ -4106,8 +4173,10 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
       const SizedBox(height: 5),
       plantingSupportOptions(),
       const SizedBox(height: 8),
-      const Text('选卡特效：点击特效和卡片在场上进行种植，特效可多选\n模仿者/冰冻/魅惑/高亮/我是僵尸/灰烬/半透明',
-          style: TextStyle(fontSize: 12)),
+      Text(
+          AppLanguage.text(
+              '选卡特效：点击特效和卡片在场上进行种植，特效可多选\n模仿者/冰冻/魅惑/高亮/我是僵尸/灰烬/半透明'),
+          style: const TextStyle(fontSize: 12)),
       SizedBox(
           width: 254,
           child: Row(children: [
@@ -4168,7 +4237,8 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
               active: category == cat)
       ]),
       Row(children: [
-        const Text('选择种植时的默认外表 ', style: TextStyle(fontSize: 12)),
+        Text(AppLanguage.text('选择种植时的默认外表 '),
+            style: const TextStyle(fontSize: 12)),
         Expanded(
             child: DropdownButton<int>(
           key: const ValueKey('original-sGrowSelect'),
@@ -4227,7 +4297,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                   children: specs.map(classicCard).toList()))),
       if (selected != null)
         Wrap(children: [
-          Text('已选：${selected!.spec.name}',
+          Text(AppLanguage.text('已选：${selected!.spec.name}'),
               style: const TextStyle(fontSize: 11)),
           classicButton('删除选中对象', s.readOnly ? null : removeSelected)
         ]),
@@ -4236,7 +4306,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
 
   Widget batchOperations() => ExpansionTile(
         key: const ValueKey('batch-operations'),
-        title: Text('批量操作 · 已选 ${cells.length} 格',
+        title: Text(AppLanguage.text('批量操作 · 已选 ${cells.length} 格'),
             style: const TextStyle(fontSize: 12)),
         tilePadding: EdgeInsets.zero,
         children: [
@@ -4266,7 +4336,9 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                 '僵尸'
               ]
                   .map((v) => DropdownMenuItem(
-                      value: v, child: Text(v == '物品及特效' ? '所有效果、物品' : v)))
+                      value: v,
+                      child:
+                          Text(AppLanguage.text(v == '物品及特效' ? '所有效果、物品' : v))))
                   .toList(),
               onChanged: (v) => setState(() => batchShovelFilter = v!)),
           Wrap(children: [
@@ -4323,7 +4395,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
       );
 
   Future<void> chooseAppearance() async {
-    await OriginalAssets.ensureLoaded();
+    await Future.wait([OriginalAssets.ensureLoaded(), AppLanguage.load()]);
     final piece = selected;
     final type = piece?.type ?? selectedType;
     final sprite =
@@ -4344,7 +4416,8 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     final value = await showDialog<(int, int)>(
         context: context,
         builder: (ctx) => AlertDialog(
-                title: Text('${ObjectSpec.byId(type).name} · 手动选择外表'),
+                title: Text(
+                    AppLanguage.text('${ObjectSpec.byId(type).name} · 手动选择外表')),
                 content: SizedBox(
                     width: 480,
                     height: 320,
@@ -4387,10 +4460,10 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                 actions: [
                   TextButton(
                       onPressed: () => Navigator.pop(ctx),
-                      child: const Text('取消')),
+                      child: Text(AppLanguage.text('取消'))),
                   TextButton(
                       onPressed: () => Navigator.pop(ctx, (0, 0)),
-                      child: const Text('默认外表'))
+                      child: Text(AppLanguage.text('默认外表')))
                 ]));
     if (value == null || !mounted) return;
     setState(() {
@@ -4497,13 +4570,14 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
           child: Row(children: [
             IconButton(
                 key: const ValueKey('preset-picker-back'),
-                tooltip: '返回布局',
+                tooltip: AppLanguage.text('返回布局'),
                 onPressed: () =>
                     super.setState(() => pickingPresetGroup = null),
                 icon: const Icon(Icons.arrow_back,
                     size: 19, color: Color(0xff376b50))),
             Expanded(
-                child: Text(group == '阵型' ? '预制名阵' : '$group布局',
+                child: Text(
+                    AppLanguage.text(group == '阵型' ? '预制名阵' : '$group布局'),
                     style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
@@ -4547,11 +4621,12 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                       ? Icons.grass_outlined
                       : Icons.grid_view_rounded,
                   color: const Color(0xff376b50)),
-              title: Text(label == '阵型' ? '阵型选择' : '$label布局',
+              title: Text(AppLanguage.text(label == '阵型' ? '阵型选择' : '$label布局'),
                   style: const TextStyle(
                       fontSize: 13, fontWeight: FontWeight.w600)),
               subtitle: Text(
-                  '${presets.length} 个${label == '阵型' ? '名阵，与存档库共用' : '布局'}',
+                  AppLanguage.text(
+                      '${presets.length} 个${label == '阵型' ? '名阵，与存档库共用' : '布局'}'),
                   style: const TextStyle(fontSize: 11)),
               trailing: const Icon(Icons.chevron_right, size: 20),
               onTap: () => chooseFormationPreset(label))));
@@ -4608,7 +4683,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
             builder: (ctx, set) => SizedBox(
                 height: MediaQuery.sizeOf(context).height * .75,
                 child: Column(children: [
-                  Text(title),
+                  Text(AppLanguage.text(title)),
                   Expanded(
                       child: AnimatedBuilder(
                           animation: s, builder: (_, __) => content))
@@ -4624,37 +4699,38 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
               Padding(
                   padding: const EdgeInsets.only(right: 4),
                   child: ChoiceChip(
-                      label: Text(t),
+                      label: Text(AppLanguage.text(t)),
                       selected: tool == t,
                       onSelected: (v) => setState(() => tool = t))),
             IconButton(
                 onPressed: fit,
-                tooltip: '适应窗口',
+                tooltip: AppLanguage.text('适应窗口'),
                 icon: const Icon(Icons.fit_screen)),
             IconButton(
                 onPressed: () => zoom(.8),
-                tooltip: '缩小',
+                tooltip: AppLanguage.text('缩小'),
                 icon: const Icon(Icons.remove)),
             IconButton(
                 onPressed: () => zoom(1.25),
-                tooltip: '放大',
+                tooltip: AppLanguage.text('放大'),
                 icon: const Icon(Icons.add)),
             if (tool == '铲除')
               DropdownButton<String>(
                   value: shovelFilter,
                   items: ['智能', ...ObjectFilter.options]
-                      .map((f) =>
-                          DropdownMenuItem(value: f, child: Text('铲除：$f')))
+                      .map((f) => DropdownMenuItem(
+                          value: f, child: Text(AppLanguage.text('铲除：$f'))))
                       .toList(),
                   onChanged: (f) => setState(() => shovelFilter = f!)),
-            if (medium) Text('${cells.length} 格已选'),
+            if (medium) Text(AppLanguage.text('${cells.length} 格已选')),
           ])));
   Widget statusBar() => Container(
       width: double.infinity,
       padding: const EdgeInsets.all(8),
       color: const Color(0xffe7ebe2),
       child: Text(
-          '${s.document.map.name} · ${s.document.pieces.length} 对象 · ${hover == null ? '点击格子' : '行 ${hover!.$1 + 1} / 列 ${hover!.$2 + 1}'} · $tool · ${cells.length} 格\n${tool == '选择' ? '点击植物切换状态；属性面板可精确选层' : tool == '平移' ? '拖动平移，双指缩放' : '单指编辑；切换“平移”后拖动画布'}',
+          AppLanguage.text(
+              '${s.document.map.name} · ${s.document.pieces.length} 对象 · ${hover == null ? '点击格子' : '行 ${hover!.$1 + 1} / 列 ${hover!.$2 + 1}'} · $tool · ${cells.length} 格\n${tool == '选择' ? '点击植物切换状态；属性面板可精确选层' : tool == '平移' ? '拖动平移，双指缩放' : '单指编辑；切换“平移”后拖动画布'}'),
           style: const TextStyle(fontSize: 11)));
   void updateNativePlantingPointer(dynamic arguments) {
     final box = plantingBoardKey.currentContext?.findRenderObject();
@@ -4887,15 +4963,16 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
       builder: (ctx, set) => Container(
           color: Colors.white,
           child: Column(children: [
-            const Padding(
-                padding: EdgeInsets.all(12),
-                child: Text('对象素材',
-                    style: TextStyle(fontWeight: FontWeight.bold))),
+            Padding(
+                padding: const EdgeInsets.all(12),
+                child: Text(AppLanguage.text('对象素材'),
+                    style: const TextStyle(fontWeight: FontWeight.bold))),
             Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8),
                 child: TextField(
-                    decoration: const InputDecoration(
-                        labelText: '搜索对象', prefixIcon: Icon(Icons.search)),
+                    decoration: InputDecoration(
+                        labelText: AppLanguage.text('搜索对象'),
+                        prefixIcon: const Icon(Icons.search)),
                     onChanged: (v) {
                       setState(() => search = v);
                       set(() {});
@@ -4905,7 +4982,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                 child: Wrap(spacing: 4, children: [
                   for (final c in ['植物', '僵尸', '物品', '特效'])
                     ChoiceChip(
-                        label: Text(c),
+                        label: Text(AppLanguage.text(c)),
                         selected: category == c,
                         onSelected: (_) {
                           setState(() => category = c);
@@ -4928,9 +5005,10 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                                 child: Text(p.name.substring(0, 1),
                                     style: const TextStyle(
                                         fontSize: 13, color: Colors.black87))),
-                            title: Text(p.name),
-                            subtitle:
-                                p.width > 1 ? Text('占 ${p.width} 格') : null,
+                            title: Text(AppLanguage.text(p.name)),
+                            subtitle: p.width > 1
+                                ? Text(AppLanguage.text('占 ${p.width} 格'))
+                                : null,
                             onTap: s.readOnly
                                 ? null
                                 : () {
@@ -4941,15 +5019,17 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                                     set(() {});
                                   }))
                         .toList())),
-            const Padding(
-                padding: EdgeInsets.all(8),
-                child: Text('可自由叠放；没有强制游戏种植限制。',
-                    style: TextStyle(fontSize: 11, color: Colors.black54)))
+            Padding(
+                padding: const EdgeInsets.all(8),
+                child: Text(AppLanguage.text('可自由叠放；没有强制游戏种植限制。'),
+                    style:
+                        const TextStyle(fontSize: 11, color: Colors.black54)))
           ])));
   Widget properties() => StatefulBuilder(
       builder: (ctx, set) =>
           ListView(padding: const EdgeInsets.all(12), children: [
-            const Text('地图与显示', style: TextStyle(fontWeight: FontWeight.bold)),
+            Text(AppLanguage.text('地图与显示'),
+                style: const TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             DropdownButton<String>(
                 value: s.document.mapId,
@@ -4957,7 +5037,8 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                 items: BoardMap.all
                     .map((m) => DropdownMenuItem(
                         value: m.id,
-                        child: Text('${m.name} ${m.rows}×${m.columns}')))
+                        child: Text(
+                            '${AppLanguage.text(m.name)} ${m.rows}×${m.columns}')))
                     .toList(),
                 onChanged: s.readOnly
                     ? null
@@ -4966,7 +5047,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                         set(() {});
                       }),
             Row(children: [
-              const Text('迷雾列数：'),
+              Text(AppLanguage.text('迷雾列数：')),
               DropdownButton<int>(
                   value: s.document.fogColumns,
                   items: List.generate(
@@ -5011,28 +5092,28 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                         s.execute('修改阳光', s.document.copy(sunValue: value));
                         set(() {});
                       },
-                child: Text('阳光数值：${s.document.sunValue}')),
+                child: Text(AppLanguage.text('阳光数值：${s.document.sunValue}'))),
             const Divider(),
-            const Text('选中对象与图层',
-                style: TextStyle(fontWeight: FontWeight.bold)),
+            Text(AppLanguage.text('选中对象与图层'),
+                style: const TextStyle(fontWeight: FontWeight.bold)),
             if (selected == null)
-              const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 12),
-                  child: Text('使用“选择”点击对象；同格可逐层选择。')),
+              Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  child: Text(AppLanguage.text('使用“选择”点击对象；同格可逐层选择。'))),
             if (selected != null) ...pieceProperties(selected!, set),
             if (hover != null)
               ...at(hover!).map((p) => ListTile(
                   dense: true,
                   selected: p.id == selectedId,
-                  title: Text(p.spec.name),
-                  subtitle:
-                      Text('层 ${p.layer} · 行 ${p.row + 1} 列 ${p.col + 1}'),
+                  title: Text(AppLanguage.text(p.spec.name)),
+                  subtitle: Text(AppLanguage.text(
+                      '层 ${p.layer} · 行 ${p.row + 1} 列 ${p.col + 1}')),
                   onTap: () {
                     setState(() => selectedId = p.id);
                     set(() {});
                   })),
             const Divider(),
-            const Text('本地示例（新增设计）'),
+            Text(AppLanguage.text('本地示例（新增设计）')),
             for (final name in LocalLayouts.stamps.keys)
               TextButton(
                   onPressed: s.readOnly
@@ -5048,7 +5129,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                             message(context, e);
                           }
                         },
-                  child: Text('在当前格插入$name')),
+                  child: Text(AppLanguage.text('在当前格插入$name'))),
             for (final p in ['泳池练习', '草地练习'])
               TextButton(
                   onPressed: s.readOnly
@@ -5085,14 +5166,14 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                           s.execute('一键填充', s.document.copy(pieces: out));
                         }
                       },
-                child: const Text('当前对象填满棋盘')),
-            const Text('效果、外表与卡槽自动保存到当前存档。',
-                style: TextStyle(fontSize: 11, color: Colors.black54)),
+                child: Text(AppLanguage.text('当前对象填满棋盘'))),
+            Text(AppLanguage.text('效果、外表与卡槽自动保存到当前存档。'),
+                style: const TextStyle(fontSize: 11, color: Colors.black54)),
           ]));
   List<Widget> pieceProperties(Piece p, StateSetter set) => [
-        Text('${p.spec.name} · 占 ${p.spec.width} 格'),
+        Text(AppLanguage.text('${p.spec.name} · 占 ${p.spec.width} 格')),
         SwitchListTile(
-            title: const Text('水平翻转'),
+            title: Text(AppLanguage.text('水平翻转')),
             value: p.flipped,
             onChanged: s.readOnly
                 ? null
@@ -5101,7 +5182,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                     set(() {});
                   }),
         SwitchListTile(
-            title: const Text('上下翻转'),
+            title: Text(AppLanguage.text('上下翻转')),
             value: p.flippedVertical,
             onChanged: s.readOnly
                 ? null
@@ -5109,7 +5190,8 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                     changePiece(p.copy(flippedVertical: v));
                     set(() {});
                   }),
-        Text('缩放 ${(scalePreview ?? p.scale).toStringAsFixed(2)}'),
+        Text(AppLanguage.text(
+            '缩放 ${(scalePreview ?? p.scale).toStringAsFixed(2)}')),
         Slider(
             value: scalePreview ?? p.scale,
             min: .25,
@@ -5143,7 +5225,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
             spacing: 4,
             children: Piece.allowedEffects
                 .map((e) => FilterChip(
-                    label: Text(e),
+                    label: Text(AppLanguage.text(e)),
                     selected: p.effects.contains(e),
                     onSelected: s.readOnly
                         ? null
@@ -5163,7 +5245,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                       set(() {});
                     },
               icon: const Icon(Icons.arrow_downward)),
-          Text('层 ${p.layer}'),
+          Text(AppLanguage.text('层 ${p.layer}')),
           IconButton(
               onPressed: s.readOnly || p.layer >= 1000
                   ? null
@@ -5179,7 +5261,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                       removeSelected();
                       set(() {});
                     },
-              tooltip: '删除这一层',
+              tooltip: AppLanguage.text('删除这一层'),
               icon: const Icon(Icons.delete_outline))
         ]),
       ];

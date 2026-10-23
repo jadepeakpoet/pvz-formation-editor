@@ -60,7 +60,13 @@ class MainFlutterWindow: NSWindow, NSWindowDelegate {
   // CFBundleName later; document names are displayed inside the editor instead.
   override var title: String {
     get { super.title }
-    set { super.title = "植物大战僵尸布阵器" }
+    set { super.title = englishUI ? "PVZ Formation Editor" : "植物大战僵尸布阵器" }
+  }
+
+  private var englishUI = false
+  private func sidebarTitle(_ mode: String) -> String {
+    if englishUI { return mode == "library" ? "Library" : "Formation Toolbox" }
+    return mode == "library" ? "存档库" : "布阵器工具箱"
   }
 
   private(set) var lifecycleChannel: FlutterMethodChannel?
@@ -180,7 +186,7 @@ class MainFlutterWindow: NSWindow, NSWindowDelegate {
     host.autoresizingMask = [.width, .height]
     container.view.addSubview(host)
     let panel = SidebarWindow(contentRect: container.view.bounds, styleMask: [.titled, .closable, .miniaturizable], backing: .buffered, defer: false)
-    panel.title = sidebarMode == "library" ? "存档库" : "布阵器工具箱"
+    panel.title = sidebarTitle(sidebarMode)
     panel.contentViewController = container
     panel.collectionBehavior = [.fullScreenNone]
     panel.standardWindowButton(.zoomButton)?.isEnabled = false
@@ -220,7 +226,7 @@ class MainFlutterWindow: NSWindow, NSWindowDelegate {
       return true
     }
     sidebarMode = mode
-    panel.title = mode == "library" ? "存档库" : "布阵器工具箱"
+    panel.title = sidebarTitle(mode)
     host.subviews.forEach { $0.removeFromSuperview() }
     if controller.parent == nil { container.addChild(controller) }
     panel.contentMinSize = NSSize(width: 1, height: 1)
@@ -483,6 +489,12 @@ class MainFlutterWindow: NSWindow, NSWindowDelegate {
     sharedFileHandler = { [weak self] call, result in
       guard let window = self else { result(FlutterError(code: "closed", message: "窗口已关闭", details: nil)); return }
       switch call.method {
+      case "setLanguage":
+        let args = call.arguments as? [String: Any]
+        window.englishUI = args?["language"] as? String == "en"
+        window.title = ""
+        window.sidebarWindow?.title = window.sidebarTitle(window.sidebarMode)
+        result(nil)
       case "openExternal":
         guard let args = call.arguments as? [String: Any],
               let raw = args["url"] as? String,

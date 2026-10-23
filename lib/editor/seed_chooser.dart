@@ -1,3 +1,4 @@
+import '../platform/app_language.dart';
 import 'package:flutter/material.dart';
 import '../domain/formation.dart';
 import '../domain/website_codec.dart';
@@ -102,9 +103,11 @@ class _OriginalSeedChooserState extends State<OriginalSeedChooser> {
     return Semantics(
         button: true,
         selected: selected,
-        label: '${mimic ? '模仿者 · ' : ''}${ObjectSpec.byId(type).name}',
+        label:
+            '${mimic ? AppLanguage.text('模仿者 · ') : ''}${AppLanguage.text(ObjectSpec.byId(type).name)}',
         child: Tooltip(
-            message: '${mimic ? '模仿者 · ' : ''}${ObjectSpec.byId(type).name}',
+            message:
+                '${mimic ? AppLanguage.text('模仿者 · ') : ''}${AppLanguage.text(ObjectSpec.byId(type).name)}',
             child: GestureDetector(
                 key:
                     ValueKey('seed-choice-${mimic ? 'mimic' : 'normal'}-$type'),
@@ -264,7 +267,7 @@ class _OriginalSeedChooserState extends State<OriginalSeedChooser> {
             height: 28,
             child: IconButton(
                 key: const ValueKey('seed-mimic-back'),
-                tooltip: '返回',
+                tooltip: AppLanguage.text('返回'),
                 padding: EdgeInsets.zero,
                 iconSize: 18,
                 color: const Color(0xffd7a41b),
@@ -336,9 +339,9 @@ class _OriginalSeedChooserState extends State<OriginalSeedChooser> {
               width: 50,
               height: 70,
               child: Tooltip(
-                  message: doc.imitaterSeedSlots.isNotEmpty
+                  message: AppLanguage.text(doc.imitaterSeedSlots.isNotEmpty
                       ? '已选择一张模仿者，请点击顶部卡片退回'
-                      : '模仿者',
+                      : '模仿者'),
                   child: GestureDetector(
                       key: const ValueKey('seed-imitater-open'),
                       behavior: HitTestBehavior.opaque,

@@ -1,3 +1,4 @@
+import '../platform/app_language.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../storage/formation_repository.dart';
@@ -524,7 +525,7 @@ class EditorTabStrip extends StatelessWidget {
                       child: IconButton(
                           key: ValueKey(
                               back ? 'editor-go-back' : 'editor-go-forward'),
-                          tooltip: back ? '后退' : '前进',
+                          tooltip: AppLanguage.text(back ? '后退' : '前进'),
                           padding: EdgeInsets.zero,
                           iconSize: 17,
                           onPressed: controller.busy ||
@@ -573,7 +574,7 @@ class EditorTabStrip extends StatelessWidget {
                                                 const EdgeInsets.only(left: 9),
                                             child: Tooltip(
                                                 message:
-                                                    '${session.name} · ${session.readOnly ? '只读预览' : session.saveState}',
+                                                    '${session.name} · ${AppLanguage.text(session.readOnly ? '只读预览' : session.saveState)}',
                                                 child: Row(children: [
                                                   if (session.readOnly) ...[
                                                     const Icon(
@@ -615,7 +616,8 @@ class EditorTabStrip extends StatelessWidget {
                                         key: ValueKey(
                                             'editor-close-tab-${session.id}'),
                                         padding: EdgeInsets.zero,
-                                        tooltip: '关闭“${session.name}”',
+                                        tooltip: AppLanguage.text(
+                                            '关闭“${session.name}”'),
                                         iconSize: 13,
                                         onPressed: controller.busy
                                             ? null
@@ -628,7 +630,7 @@ class EditorTabStrip extends StatelessWidget {
                     width: 32,
                     child: IconButton(
                         key: const ValueKey('editor-new-tab'),
-                        tooltip: '新建标签页',
+                        tooltip: AppLanguage.text('新建标签页'),
                         padding: EdgeInsets.zero,
                         iconSize: 18,
                         onPressed: controller.busy

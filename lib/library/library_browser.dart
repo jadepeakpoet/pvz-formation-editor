@@ -1,3 +1,4 @@
+import '../platform/app_language.dart';
 import 'package:flutter/material.dart';
 import '../domain/formation.dart';
 import 'library_presets.dart';
@@ -111,8 +112,8 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
       await widget.onExportArchives!(List.unmodifiable(archives));
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('导出失败：$error')));
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(AppLanguage.text('导出失败：$error'))));
       }
     } finally {
       if (mounted) setState(() => exportingArchives = false);
@@ -142,36 +143,38 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
                 TextButton(
                     key: const ValueKey('library-select-archives'),
                     onPressed: () => setState(() => selectingArchives = true),
-                    child: const Text('批量选择')),
+                    child: Text(AppLanguage.text('批量选择'))),
                 TextButton(
                     key: const ValueKey('library-export-all'),
                     onPressed: exportingArchives || widget.archives.isEmpty
                         ? null
                         : () => exportArchives(widget.archives),
-                    child: const Text('导出全部')),
+                    child: Text(AppLanguage.text('导出全部'))),
               ] else ...[
                 Text(
-                    '已选 ${chosen.length}${hiddenCount > 0 ? '（含 $hiddenCount 个筛选外存档）' : ''}',
+                    AppLanguage.text(
+                        '已选 ${chosen.length}${hiddenCount > 0 ? '（含 $hiddenCount 个筛选外存档）' : ''}'),
                     key: const ValueKey('library-selected-count'),
                     style: const TextStyle(fontSize: 12)),
                 TextButton(
                     key: const ValueKey('library-select-all'),
                     onPressed: () => setState(() =>
                         selectedArchiveIds.addAll(visible.map((a) => a.id))),
-                    child: const Text('全选当前结果')),
+                    child: Text(AppLanguage.text('全选当前结果'))),
                 TextButton(
                     key: const ValueKey('library-export-selected'),
                     onPressed: exportingArchives || chosen.isEmpty
                         ? null
                         : () => exportArchives(chosen),
-                    child: Text(exportingArchives ? '正在导出…' : '导出已选')),
+                    child: Text(AppLanguage.text(
+                        exportingArchives ? '正在导出…' : '导出已选'))),
                 TextButton(
                     key: const ValueKey('library-selection-cancel'),
                     onPressed: () => setState(() {
                           selectingArchives = false;
                           selectedArchiveIds.clear();
                         }),
-                    child: const Text('取消')),
+                    child: Text(AppLanguage.text('取消'))),
               ]
             ]));
   }
@@ -253,7 +256,8 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
         tilePadding: const EdgeInsets.symmetric(horizontal: 12),
         dense: true,
         title: Text(
-            tagFilter == null ? '标签 · ${tags.length}' : '标签 · $tagFilter',
+            AppLanguage.text(
+                tagFilter == null ? '标签 · ${tags.length}' : '标签 · $tagFilter'),
             style: const TextStyle(fontSize: 12)),
         children: [
           ConstrainedBox(
@@ -276,8 +280,8 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
                               selected: tagFilter == tag,
                               select: () => openTag(tag)),
                         if (tags.isEmpty)
-                          const Text('在存档详情中设置标签即可分类。',
-                              style: TextStyle(fontSize: 11)),
+                          Text(AppLanguage.text('在存档详情中设置标签即可分类。'),
+                              style: const TextStyle(fontSize: 11)),
                       ]))))
         ]);
   }
@@ -290,8 +294,9 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
   }
 
   String get filterSummary => [
-        if (tagFilter != null) '标签：$tagFilter',
-        if (mapFilter.isNotEmpty) BoardMap.byId(mapFilter).name,
+        if (tagFilter != null) AppLanguage.text('标签：$tagFilter'),
+        if (mapFilter.isNotEmpty)
+          AppLanguage.text(BoardMap.byId(mapFilter).name),
         if (cannonFilter != null) cannonLabel(cannonFilter!),
       ].join(' · ');
   void clearFilters() => setState(() {
@@ -308,7 +313,7 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
       ChoiceChip(
           key: ValueKey(key),
           label: Row(mainAxisSize: MainAxisSize.min, children: [
-            Text(label, style: const TextStyle(fontSize: 11)),
+            Text(AppLanguage.text(label), style: const TextStyle(fontSize: 11)),
             if (count != null) ...[
               const SizedBox(width: 6),
               Container(
@@ -319,7 +324,7 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
                           ? const Color(0xffc2d6bc)
                           : const Color(0xffe7ecdf),
                       borderRadius: BorderRadius.circular(5)),
-                  child: Text('$count阵',
+                  child: Text(AppLanguage.text('$count阵'),
                       style: const TextStyle(
                           fontSize: 9, color: Color(0xff5d7054))))
             ]
@@ -333,7 +338,8 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
           selectedColor: const Color(0xffd6e5d2),
           backgroundColor: const Color(0xfff7f8f3),
           side: BorderSide(color: selected ? green : const Color(0xffdce3d7)));
-  String cannonLabel(int count) => count == 0 ? '无炮' : '$count炮';
+  String cannonLabel(int count) =>
+      AppLanguage.text(count == 0 ? '无炮' : '$count炮');
   Future<void> showFilters() async {
     if (filterDialogOpen) return;
     filterDialogOpen = true;
@@ -403,16 +409,17 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
                                         const Icon(Icons.tune,
                                             size: 19, color: green),
                                         const SizedBox(width: 8),
-                                        const Expanded(
-                                            child: Text('筛选阵型',
-                                                style: TextStyle(
+                                        Expanded(
+                                            child: Text(
+                                                AppLanguage.text('筛选阵型'),
+                                                style: const TextStyle(
                                                     fontSize: 18,
                                                     fontWeight: FontWeight.w600,
                                                     color: ink))),
                                         IconButton(
                                             key: const ValueKey(
                                                 'library-filter-close'),
-                                            tooltip: '关闭',
+                                            tooltip: AppLanguage.text('关闭'),
                                             onPressed: () =>
                                                 Navigator.pop(dialogContext),
                                             icon: const Icon(Icons.close,
@@ -428,8 +435,8 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
                                               crossAxisAlignment:
                                                   CrossAxisAlignment.start,
                                               children: [
-                                                const Text('场地',
-                                                    style: TextStyle(
+                                                Text(AppLanguage.text('场地'),
+                                                    style: const TextStyle(
                                                         fontSize: 13,
                                                         fontWeight:
                                                             FontWeight.w600,
@@ -458,8 +465,8 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
                                                                 .length)
                                                     ]),
                                                 const SizedBox(height: 20),
-                                                const Text('炮数',
-                                                    style: TextStyle(
+                                                Text(AppLanguage.text('炮数'),
+                                                    style: const TextStyle(
                                                         fontSize: 13,
                                                         fontWeight:
                                                             FontWeight.w600,
@@ -487,9 +494,10 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
                                                                 .length)
                                                     ]),
                                                 const SizedBox(height: 14),
-                                                const Text(
-                                                    '炮数按实际玉米加农炮数量统计；浅色徽标表示匹配的阵型数量。',
-                                                    style: TextStyle(
+                                                Text(
+                                                    AppLanguage.text(
+                                                        '炮数按实际玉米加农炮数量统计；浅色徽标表示匹配的阵型数量。'),
+                                                    style: const TextStyle(
                                                         fontSize: 11,
                                                         height: 1.6,
                                                         color:
@@ -508,7 +516,9 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
                                             Padding(
                                                 padding: const EdgeInsets.only(
                                                     left: 4, bottom: 8),
-                                                child: Text('匹配 $count 个阵型',
+                                                child: Text(
+                                                    AppLanguage.text(
+                                                        '匹配 $count 个阵型'),
                                                     key: const ValueKey(
                                                         'library-filter-count'),
                                                     style: const TextStyle(
@@ -524,7 +534,8 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
                                                         selectedMap = '';
                                                         selectedCannon = null;
                                                       }),
-                                                  child: const Text('重置')),
+                                                  child: Text(
+                                                      AppLanguage.text('重置'))),
                                               const Spacer(),
                                               TextButton(
                                                   key: const ValueKey(
@@ -532,7 +543,8 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
                                                   onPressed: () =>
                                                       Navigator.pop(
                                                           dialogContext),
-                                                  child: const Text('取消')),
+                                                  child: Text(
+                                                      AppLanguage.text('取消'))),
                                               const SizedBox(width: 8),
                                               FilledButton(
                                                   key: const ValueKey(
@@ -545,7 +557,8 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
                                                         selectedMap,
                                                         selectedCannon
                                                       )),
-                                                  child: const Text('确定'))
+                                                  child: Text(
+                                                      AppLanguage.text('确定')))
                                             ])
                                           ]))
                                 ]))));
@@ -571,10 +584,13 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
                 padding: const EdgeInsets.symmetric(horizontal: 4)),
             onPressed: showFilters,
             icon: const Icon(Icons.tune, size: 16),
-            label: const Text('筛选', style: TextStyle(fontSize: 12))),
+            label: Text(AppLanguage.text('筛选'),
+                style: const TextStyle(fontSize: 12))),
         const SizedBox(width: 6),
         Expanded(
-            child: Text(filterSummary.isEmpty ? '场地 · 炮数' : filterSummary,
+            child: Text(
+                AppLanguage.text(
+                    filterSummary.isEmpty ? '场地 · 炮数' : filterSummary),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
@@ -589,7 +605,8 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
                   minimumSize: const Size(0, 26),
                   padding: const EdgeInsets.symmetric(horizontal: 4)),
               onPressed: clearFilters,
-              child: const Text('清除筛选', style: TextStyle(fontSize: 11)))
+              child: Text(AppLanguage.text('清除筛选'),
+                  style: const TextStyle(fontSize: 11)))
       ]));
 
   List<_Entry> get filtered {
@@ -645,8 +662,8 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
       }
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('名阵操作失败：$error')));
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(AppLanguage.text('名阵操作失败：$error'))));
       }
     } finally {
       if (value == 'copy' && mounted) setState(() => addingPreset = null);
@@ -714,13 +731,13 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
             enabled: e.preset == null ||
                 widget.onPresetAction != null ||
                 (item.key == 'copy' && widget.onAddPreset != null),
-            child: Text(item.value)))
+            child: Text(AppLanguage.text(item.value))))
         .toList();
   }
 
   PopupMenuButton<String> menu(_Entry e) => PopupMenuButton<String>(
       key: ValueKey('library-menu-${e.id}'),
-      tooltip: '更多操作',
+      tooltip: AppLanguage.text('更多操作'),
       onSelected: (value) => action(value, e),
       itemBuilder: (_) => menuItems(e));
   Future<void> contextMenu(_Entry e, Offset position) async {
@@ -747,8 +764,8 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
               const Icon(Icons.grass_rounded, color: green, size: 28),
               if (!compact) ...[
                 const SizedBox(width: 9),
-                const Text('阵型收藏',
-                    style: TextStyle(
+                Text(AppLanguage.text('阵型收藏'),
+                    style: const TextStyle(
                         fontSize: 13, fontWeight: FontWeight.w700, color: ink))
               ]
             ])),
@@ -760,7 +777,7 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
           Padding(
               padding: const EdgeInsets.only(bottom: 8),
               child: Tooltip(
-                  message: item.$1,
+                  message: AppLanguage.text(item.$1),
                   child: Material(
                       color: section == item.$1
                           ? const Color(0xffd6e5d2)
@@ -781,7 +798,7 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
                                 if (!compact) ...[
                                   const SizedBox(width: 6),
                                   Expanded(
-                                      child: Text(item.$1,
+                                      child: Text(AppLanguage.text(item.$1),
                                           style: const TextStyle(
                                               color: ink, fontSize: 12))),
                                   Text('${item.$3}',
@@ -791,10 +808,10 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
                               ])))))),
         const Spacer(),
         if (!compact)
-          const Padding(
-              padding: EdgeInsets.all(10),
-              child: Text('自动保存修改\n历史版本可回退',
-                  style: TextStyle(
+          Padding(
+              padding: const EdgeInsets.all(10),
+              child: Text(AppLanguage.text('自动保存修改\n历史版本可回退'),
+                  style: const TextStyle(
                       fontSize: 12, height: 1.8, color: Color(0xff6a7a6b))))
       ]));
   Widget header() => Padding(
@@ -806,17 +823,17 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               if (widget.showTitle)
-                const Text('存档库',
-                    style: TextStyle(
+                Text(AppLanguage.text('存档库'),
+                    style: const TextStyle(
                         fontSize: 20, fontWeight: FontWeight.w700, color: ink)),
               FilledButton.icon(
                   key: const ValueKey('library-new'),
                   onPressed: widget.onNew,
                   icon: const Icon(Icons.add, size: 18),
-                  label: const Text('新建阵型')),
+                  label: Text(AppLanguage.text('新建阵型'))),
               PopupMenuButton<String>(
                   key: const ValueKey('library-import'),
-                  tooltip: '导入',
+                  tooltip: AppLanguage.text('导入'),
                   onSelected: (v) {
                     if (v == 'game-save') {
                       widget.onImportGameSave?.call();
@@ -827,34 +844,36 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
                     }
                   },
                   itemBuilder: (_) => [
-                        const PopupMenuItem(
-                            value: 'project', child: Text('导入项目文件')),
-                        const PopupMenuItem(
-                            value: 'string', child: Text('导入阵型字符串')),
+                        PopupMenuItem(
+                            value: 'project',
+                            child: Text(AppLanguage.text('导入项目文件'))),
+                        PopupMenuItem(
+                            value: 'string',
+                            child: Text(AppLanguage.text('导入阵型字符串'))),
                         if (widget.onImportGameSave != null)
-                          const PopupMenuItem(
-                              key: ValueKey('library-import-game-save'),
+                          PopupMenuItem(
+                              key: const ValueKey('library-import-game-save'),
                               value: 'game-save',
-                              child: Text('导入PC无尽存档（实验）')),
+                              child: Text(AppLanguage.text('导入PC无尽存档（实验）'))),
                       ],
-                  child: const Padding(
-                      padding: EdgeInsets.all(8),
+                  child: Padding(
+                      padding: const EdgeInsets.all(8),
                       child: Row(mainAxisSize: MainAxisSize.min, children: [
-                        Icon(Icons.file_download_outlined, size: 19),
-                        SizedBox(width: 6),
-                        Text('导入'),
-                        Icon(Icons.arrow_drop_down, size: 18)
+                        const Icon(Icons.file_download_outlined, size: 19),
+                        const SizedBox(width: 6),
+                        Text(AppLanguage.text('导入')),
+                        const Icon(Icons.arrow_drop_down, size: 18)
                       ]))),
               if (widget.onGameTools != null)
                 TextButton.icon(
                     key: const ValueKey('library-game-tools'),
                     onPressed: () => widget.onGameTools!(null),
                     icon: const Icon(Icons.sports_esports_outlined, size: 17),
-                    label: const Text('游戏存档')),
+                    label: Text(AppLanguage.text('游戏存档'))),
               if (widget.onSettings != null) settingsButton(),
               IconButton(
                   key: const ValueKey('library-refresh'),
-                  tooltip: '刷新存档库',
+                  tooltip: AppLanguage.text('刷新存档库'),
                   onPressed: refreshing ? null : refresh,
                   icon: refreshing
                       ? const SizedBox(
@@ -864,8 +883,8 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
                       : const Icon(Icons.refresh, size: 21))
             ]),
         const SizedBox(height: 5),
-        const Text('整理你的布阵灵感，随时接着上一次创作。',
-            style: TextStyle(color: Color(0xff6a786c), fontSize: 13)),
+        Text(AppLanguage.text('整理你的布阵灵感，随时接着上一次创作。'),
+            style: const TextStyle(color: Color(0xff6a786c), fontSize: 13)),
         const SizedBox(height: 12),
         Row(children: [
           Expanded(
@@ -874,7 +893,7 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
                   key: const ValueKey('library-search'),
                   onChanged: (v) => setState(() => query = v),
                   decoration: InputDecoration(
-                      hintText: '搜索名称、备注或标签',
+                      hintText: AppLanguage.text('搜索名称、备注或标签'),
                       prefixIcon: const Icon(Icons.search, size: 21),
                       isDense: true,
                       filled: true,
@@ -891,7 +910,9 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
               items: ['最近修改', '名称', '收藏优先']
                   .map((s) => DropdownMenuItem(
                       value: s,
-                      child: Text(section == '预制名阵' && s == '最近修改' ? '原站顺序' : s,
+                      child: Text(
+                          AppLanguage.text(
+                              section == '预制名阵' && s == '最近修改' ? '原站顺序' : s),
                           style: const TextStyle(fontSize: 13))))
                   .toList(),
               onChanged: (v) => setState(() => sort = v!))
@@ -902,7 +923,7 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
         if (widget.error != null)
           Padding(
               padding: const EdgeInsets.only(top: 12),
-              child: Text(widget.error!,
+              child: Text(AppLanguage.text(widget.error!),
                   key: const ValueKey('library-error'),
                   style: const TextStyle(color: Colors.red)))
       ]));
@@ -918,7 +939,7 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
                 color: const Color(0xff8da28a)),
             const SizedBox(height: 16),
             Text(
-                cannonFilter != null
+                AppLanguage.text(cannonFilter != null
                     ? '没有符合筛选条件的阵型'
                     : mapFilter.isNotEmpty
                         ? '此场地下暂无阵型'
@@ -926,13 +947,13 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
                             ? '没有找到匹配的阵型'
                             : section == '收藏'
                                 ? '把喜欢的阵型留在这里'
-                                : '你的阵型故事，从这里开始',
+                                : '你的阵型故事，从这里开始'),
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                     fontSize: 17, fontWeight: FontWeight.w600, color: ink)),
             const SizedBox(height: 8),
             Text(
-                cannonFilter != null
+                AppLanguage.text(cannonFilter != null
                     ? '试试其他场地或炮数，也可以清除筛选。'
                     : mapFilter.isNotEmpty
                         ? '换一个场地，或清除场地筛选查看全部阵型。'
@@ -940,7 +961,7 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
                             ? '试试其他名称、备注或标签。'
                             : section == '收藏'
                                 ? '在存档详情中点亮星标，方便下次找到。'
-                                : '新建阵型或导入已有作品，开始整理你的布阵。',
+                                : '新建阵型或导入已有作品，开始整理你的布阵。'),
                 textAlign: TextAlign.center,
                 style: const TextStyle(color: Color(0xff6a786c), height: 1.6)),
             const SizedBox(height: 12),
@@ -948,12 +969,12 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
               TextButton(
                   key: const ValueKey('library-clear-map-filter'),
                   onPressed: () => setState(() => mapFilter = ''),
-                  child: const Text('清除场地筛选')),
+                  child: Text(AppLanguage.text('清除场地筛选'))),
             if (cannonFilter != null)
               TextButton(
                   key: const ValueKey('library-clear-cannon-filter'),
                   onPressed: () => setState(() => cannonFilter = null),
-                  child: const Text('清除炮数筛选')),
+                  child: Text(AppLanguage.text('清除炮数筛选'))),
             if (query.trim().isNotEmpty)
               TextButton(
                   key: const ValueKey('library-clear-search'),
@@ -961,12 +982,12 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
                     searchController.clear();
                     setState(() => query = '');
                   },
-                  child: const Text('清除搜索'))
+                  child: Text(AppLanguage.text('清除搜索')))
             else if (mapFilter.isEmpty && cannonFilter == null)
               OutlinedButton.icon(
                   onPressed: widget.onNew,
                   icon: const Icon(Icons.add),
-                  label: const Text('新建阵型'))
+                  label: Text(AppLanguage.text('新建阵型')))
           ])));
   Widget tile(_Entry e, {bool active = false, bool narrow = false}) => Padding(
       padding: const EdgeInsets.only(bottom: 9),
@@ -1024,12 +1045,16 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
                                   fontWeight: FontWeight.w600, color: ink)),
                           const SizedBox(height: 6),
                           Text(
-                              '${narrow ? '' : '${e.preset != null ? '预制名阵' : '存档'} · '}${e.formation?.map.name ?? '未知场景'} · ${cannonLabel(e.cannonCount)}',
+                              AppLanguage.text(
+                                  '${narrow ? '' : '${AppLanguage.text(e.preset != null ? '预制名阵' : '存档')} · '}${AppLanguage.text(e.formation?.map.name ?? '未知场景')} · ${cannonLabel(e.cannonCount)}'),
                               style: const TextStyle(
                                   fontSize: 12, color: Color(0xff6a786c))),
                           if (!narrow) ...[
                             const SizedBox(height: 5),
-                            Text(e.preset != null ? '原站经典布局' : date(e.updated),
+                            Text(
+                                AppLanguage.text(e.preset != null
+                                    ? '原站经典布局'
+                                    : date(e.updated)),
                                 style: const TextStyle(
                                     fontSize: 11, color: Color(0xff899286)))
                           ]
@@ -1060,13 +1085,16 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
                   children: [
                     Row(children: [
                       Expanded(
-                          child: Text(e.preset != null ? '预制名阵' : '存档详情',
+                          child: Text(
+                              AppLanguage.text(
+                                  e.preset != null ? '预制名阵' : '存档详情'),
                               style: const TextStyle(
                                   color: Color(0xff72816f), fontSize: 12))),
                       if (e.archive != null || e.preset != null)
                         IconButton(
                             key: const ValueKey('library-favorite'),
-                            tooltip: e.favorite ? '取消收藏' : '收藏',
+                            tooltip:
+                                AppLanguage.text(e.favorite ? '取消收藏' : '收藏'),
                             onPressed: e.preset != null &&
                                     widget.onPresetAction == null
                                 ? null
@@ -1101,14 +1129,15 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
                             color: ink)),
                     const SizedBox(height: 10),
                     Text(
-                        '${e.formation?.map.name ?? '未知场景'} · ${cannonLabel(e.cannonCount)} · ${e.formation?.pieces.length ?? 0} 个对象',
+                        AppLanguage.text(
+                            '${AppLanguage.text(e.formation?.map.name ?? '未知场景')} · ${cannonLabel(e.cannonCount)} · ${e.formation?.pieces.length ?? 0} 个对象'),
                         style: const TextStyle(
                             fontSize: 13, color: Color(0xff63755f))),
                     const SizedBox(height: 6),
                     Text(
-                        e.preset != null
+                        AppLanguage.text(e.preset != null
                             ? '原站经典布阵 · 完整阵型'
-                            : '修改于 ${date(e.updated)}',
+                            : '修改于 ${date(e.updated)}'),
                         style: const TextStyle(
                             fontSize: 11, color: Color(0xff85917e))),
                     if (widget.onGameTools != null && e.formation != null)
@@ -1117,11 +1146,11 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
                           onPressed: () => widget.onGameTools!(e.formation),
                           icon: const Icon(Icons.sports_esports_outlined,
                               size: 16),
-                          label: const Text('应用到游戏')),
+                          label: Text(AppLanguage.text('应用到游戏'))),
                     const SizedBox(height: 12),
                     if (e.preset != null) ...[
-                      const Text('使用模板会创建可编辑副本。也可以直接收藏模板或加入我的存档。',
-                          style: TextStyle(
+                      Text(AppLanguage.text('使用模板会创建可编辑副本。也可以直接收藏模板或加入我的存档。'),
+                          style: const TextStyle(
                               fontSize: 12,
                               height: 1.6,
                               color: Color(0xff71806c))),
@@ -1134,7 +1163,7 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
                                   ? null
                                   : () => action('open-current', e),
                               icon: const Icon(Icons.edit_outlined, size: 18),
-                              label: const Text('当前标签页使用模板'))),
+                              label: Text(AppLanguage.text('当前标签页使用模板')))),
                       const SizedBox(height: 8),
                       SizedBox(
                           width: double.infinity,
@@ -1144,14 +1173,14 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
                                   ? null
                                   : () => action('open-tab', e),
                               icon: const Icon(Icons.tab_outlined, size: 18),
-                              label: const Text('新标签页使用模板'))),
+                              label: Text(AppLanguage.text('新标签页使用模板')))),
                       TextButton.icon(
                           key: const ValueKey('library-copy-code'),
                           onPressed: widget.onPresetAction == null
                               ? null
                               : () => action('copy-code', e),
                           icon: const Icon(Icons.copy, size: 16),
-                          label: const Text('复制 Toolkit 阵型码')),
+                          label: Text(AppLanguage.text('复制 Toolkit 阵型码'))),
                       const SizedBox(height: 6),
                       SizedBox(
                           width: double.infinity,
@@ -1163,16 +1192,19 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
                                   ? null
                                   : () => action('copy', e),
                               icon: const Icon(Icons.add, size: 16),
-                              label: Text(
-                                  addingPreset == e.id ? '正在加入…' : '加入我的存档'))),
+                              label: Text(AppLanguage.text(
+                                  addingPreset == e.id ? '正在加入…' : '加入我的存档')))),
                     ] else if (e.archive != null) ...[
-                      const Text('备注',
-                          style: TextStyle(
+                      Text(AppLanguage.text('备注'),
+                          style: const TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
                               color: ink)),
                       const SizedBox(height: 7),
-                      Text(e.note.isEmpty ? '还没有备注，添加一些布阵思路吧。' : e.note,
+                      Text(
+                          e.note.isEmpty
+                              ? AppLanguage.text('还没有备注，添加一些布阵思路吧。')
+                              : e.note,
                           style: const TextStyle(
                               fontSize: 13,
                               height: 1.6,
@@ -1196,11 +1228,11 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
                           key: const ValueKey('library-edit-tags'),
                           onPressed: () => action('tags', e),
                           icon: const Icon(Icons.label_outline, size: 16),
-                          label: const Text('设置标签')),
+                          label: Text(AppLanguage.text('设置标签'))),
                       TextButton(
                           key: const ValueKey('library-edit-metadata'),
                           onPressed: () => action('metadata', e),
-                          child: const Text('编辑名称、备注与标签')),
+                          child: Text(AppLanguage.text('编辑名称、备注与标签'))),
                       const SizedBox(height: 12),
                       SizedBox(
                           width: double.infinity,
@@ -1208,7 +1240,7 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
                               key: const ValueKey('library-open-current'),
                               onPressed: () => widget.onOpenArchive(e.archive!),
                               icon: const Icon(Icons.edit_outlined, size: 18),
-                              label: const Text('当前标签页打开'))),
+                              label: Text(AppLanguage.text('当前标签页打开')))),
                       if (widget.onOpenArchiveTab != null) ...[
                         const SizedBox(height: 8),
                         SizedBox(
@@ -1218,29 +1250,31 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
                                 onPressed: () =>
                                     widget.onOpenArchiveTab!(e.archive!),
                                 icon: const Icon(Icons.tab_outlined, size: 18),
-                                label: const Text('新标签页打开'))),
+                                label: Text(AppLanguage.text('新标签页打开')))),
                       ],
                       TextButton.icon(
                           key: const ValueKey('library-copy-code'),
                           onPressed: () => action('copy-code', e),
                           icon: const Icon(Icons.copy, size: 16),
-                          label: const Text('复制 Toolkit 阵型码')),
+                          label: Text(AppLanguage.text('复制 Toolkit 阵型码'))),
                       const SizedBox(height: 10),
-                      const Text('保存可更新原存档并保留历史；另存为可创建独立副本。',
-                          style: TextStyle(
+                      Text(AppLanguage.text('保存可更新原存档并保留历史；另存为可创建独立副本。'),
+                          style: const TextStyle(
                               fontSize: 11,
                               height: 1.6,
                               color: Color(0xff85917e)))
                     ]
                   ])));
   List<PopupMenuEntry<String>> importItems() => [
-        const PopupMenuItem(value: 'project', child: Text('导入项目文件')),
-        const PopupMenuItem(value: 'string', child: Text('导入阵型字符串')),
+        PopupMenuItem(
+            value: 'project', child: Text(AppLanguage.text('导入项目文件'))),
+        PopupMenuItem(
+            value: 'string', child: Text(AppLanguage.text('导入阵型字符串'))),
         if (widget.onImportGameSave != null)
-          const PopupMenuItem(
-              key: ValueKey('library-import-game-save'),
+          PopupMenuItem(
+              key: const ValueKey('library-import-game-save'),
               value: 'game-save',
-              child: Text('导入PC无尽存档（实验）')),
+              child: Text(AppLanguage.text('导入PC无尽存档（实验）'))),
       ];
   void importSelected(String value) {
     if (value == 'game-save') {
@@ -1265,7 +1299,7 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
         ])
           Expanded(
               child: Tooltip(
-                  message: category.$1,
+                  message: AppLanguage.text(category.$1),
                   child: InkWell(
                       key: ValueKey('library-section-${category.$1}'),
                       onTap: () => setState(() {
@@ -1285,7 +1319,7 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
                           child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Text(category.$2,
+                                Text(AppLanguage.text(category.$2),
                                     style: TextStyle(
                                         fontSize: 12,
                                         color: section == category.$1
@@ -1302,15 +1336,15 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
       ]));
   Widget settingsButton() => IconButton(
       key: const ValueKey('library-settings'),
-      tooltip: '导出设置',
+      tooltip: AppLanguage.text('设置'),
       visualDensity: VisualDensity.compact,
       onPressed: () async {
         try {
           await widget.onSettings?.call();
         } catch (error) {
           if (mounted) {
-            ScaffoldMessenger.of(context)
-                .showSnackBar(SnackBar(content: Text('无法打开设置：$error')));
+            ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(AppLanguage.text('无法打开设置：$error'))));
           }
         }
       },
@@ -1321,9 +1355,9 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
         if (widget.showTitle) ...[
           const Icon(Icons.grass_rounded, size: 21, color: green),
           const SizedBox(width: 6),
-          const Expanded(
-              child: Text('存档库',
-                  style: TextStyle(
+          Expanded(
+              child: Text(AppLanguage.text('存档库'),
+                  style: const TextStyle(
                       fontSize: 17, fontWeight: FontWeight.w700, color: ink))),
         ],
         TextButton.icon(
@@ -1333,10 +1367,11 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
                 minimumSize: const Size(0, 32)),
             onPressed: widget.onNew,
             icon: const Icon(Icons.add, size: 16),
-            label: const Text('新建', style: TextStyle(fontSize: 12))),
+            label: Text(AppLanguage.text('新建'),
+                style: const TextStyle(fontSize: 12))),
         PopupMenuButton<String>(
             key: const ValueKey('library-import'),
-            tooltip: '导入',
+            tooltip: AppLanguage.text('导入'),
             padding: const EdgeInsets.all(6),
             iconSize: 19,
             icon: const Icon(Icons.file_download_outlined),
@@ -1346,14 +1381,14 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
         if (widget.onGameTools != null)
           IconButton(
               key: const ValueKey('library-game-tools'),
-              tooltip: '游戏存档',
+              tooltip: AppLanguage.text('游戏存档'),
               visualDensity: VisualDensity.compact,
               onPressed: () => widget.onGameTools!(null),
               icon: const Icon(Icons.sports_esports_outlined, size: 19)),
         if (widget.onSettings != null) settingsButton(),
         IconButton(
             key: const ValueKey('library-refresh'),
-            tooltip: '刷新存档库',
+            tooltip: AppLanguage.text('刷新存档库'),
             visualDensity: VisualDensity.compact,
             onPressed: refreshing ? null : refresh,
             icon: refreshing
@@ -1375,7 +1410,7 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
                       onChanged: (v) => setState(() => query = v),
                       style: const TextStyle(fontSize: 12),
                       decoration: InputDecoration(
-                          hintText: '搜索名称、备注或标签',
+                          hintText: AppLanguage.text('搜索名称、备注或标签'),
                           prefixIcon: const Icon(Icons.search, size: 18),
                           prefixIconConstraints:
                               const BoxConstraints(minWidth: 34),
@@ -1396,10 +1431,11 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
                       minimumSize: const Size(0, 34),
                       padding: const EdgeInsets.symmetric(horizontal: 7)),
                   icon: const Icon(Icons.tune, size: 16),
-                  label: const Text('筛选', style: TextStyle(fontSize: 12))),
+                  label: Text(AppLanguage.text('筛选'),
+                      style: const TextStyle(fontSize: 12))),
               PopupMenuButton<String>(
                   key: const ValueKey('library-sort'),
-                  tooltip: '排序',
+                  tooltip: AppLanguage.text('排序'),
                   padding: const EdgeInsets.all(6),
                   icon: const Icon(Icons.sort, size: 20),
                   onSelected: (v) => setState(() => sort = v),
@@ -1407,8 +1443,8 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
                       .map((v) => CheckedPopupMenuItem(
                           value: v,
                           checked: sort == v,
-                          child: Text(
-                              section == '预制名阵' && v == '最近修改' ? '原站顺序' : v)))
+                          child: Text(AppLanguage.text(
+                              section == '预制名阵' && v == '最近修改' ? '原站顺序' : v))))
                       .toList())
             ])),
         tagBrowser(),
@@ -1417,7 +1453,7 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
               padding: const EdgeInsets.fromLTRB(12, 0, 6, 0),
               child: Row(children: [
                 Expanded(
-                    child: Text(filterSummary,
+                    child: Text(AppLanguage.text(filterSummary),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(fontSize: 11, color: green))),
@@ -1429,13 +1465,13 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
                         style: TextButton.styleFrom(
                             minimumSize: Size.zero,
                             padding: const EdgeInsets.symmetric(horizontal: 6)),
-                        child:
-                            const Text('清除筛选', style: TextStyle(fontSize: 11))))
+                        child: Text(AppLanguage.text('清除筛选'),
+                            style: const TextStyle(fontSize: 11))))
               ])),
         if (widget.error != null)
           Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              child: Text(widget.error!,
+              child: Text(AppLanguage.text(widget.error!),
                   key: const ValueKey('library-error'),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -1468,7 +1504,9 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
                                       return Padding(
                                           padding: const EdgeInsets.only(
                                               left: 2, bottom: 7),
-                                          child: Text('共 ${list.length} 个阵型',
+                                          child: Text(
+                                              AppLanguage.text(
+                                                  '共 ${list.length} 个阵型'),
                                               style: const TextStyle(
                                                   fontSize: 10,
                                                   color: Color(0xff89947f))));
@@ -1497,7 +1535,7 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
                             child: Row(children: [
                               IconButton(
                                   key: const ValueKey('library-detail-back'),
-                                  tooltip: '返回列表',
+                                  tooltip: AppLanguage.text('返回列表'),
                                   onPressed: () =>
                                       setState(() => narrowDetails = false),
                                   icon: const Icon(Icons.arrow_back, size: 19)),
@@ -1538,7 +1576,7 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
             narrowSearch(),
             Padding(
                 padding: const EdgeInsets.all(8),
-                child: Text('共 ${list.length} 个阵型 · 点击在当前页打开',
+                child: Text(AppLanguage.text('共 ${list.length} 个阵型 · 点击在当前页打开'),
                     style: const TextStyle(fontSize: 12, color: green))),
             Expanded(
                 child: list.isEmpty
@@ -1580,7 +1618,9 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
                               if (index == 0) {
                                 return Padding(
                                     padding: const EdgeInsets.only(bottom: 8),
-                                    child: Text('$section · ${list.length} 项',
+                                    child: Text(
+                                        AppLanguage.text(
+                                            '${AppLanguage.text(section)} · ${list.length} 项'),
                                         style: const TextStyle(
                                             fontSize: 12,
                                             color: Color(0xff7c8976))));

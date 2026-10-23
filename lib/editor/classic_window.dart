@@ -1,3 +1,4 @@
+import '../platform/app_language.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 
@@ -53,7 +54,7 @@ class ClassicWindow extends StatelessWidget {
                                   child: Container(
                                       alignment: Alignment.centerLeft,
                                       padding: const EdgeInsets.only(left: 7),
-                                      child: Text(title,
+                                      child: Text(AppLanguage.text(title),
                                           style: const TextStyle(
                                               fontSize: 12,
                                               fontWeight:
@@ -64,7 +65,7 @@ class ClassicWindow extends StatelessWidget {
                         child: IconButton(
                             padding: EdgeInsets.zero,
                             iconSize: 16,
-                            tooltip: '关闭$title',
+                            tooltip: AppLanguage.text('关闭$title'),
                             onPressed: onClose,
                             icon: const Icon(Icons.close))),
                 ])),

@@ -1,3 +1,4 @@
+import '../platform/app_language.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
@@ -166,39 +167,41 @@ class _GamePanelState extends State<GamePanel> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(children: [
-                      const Expanded(
-                          child: Text('Windows 游戏与存档',
-                              style: TextStyle(
+                      Expanded(
+                          child: Text(AppLanguage.text('Windows 游戏与存档'),
+                              style: const TextStyle(
                                   fontSize: 20, fontWeight: FontWeight.w600))),
                       IconButton(
                           onPressed: busy ? null : refresh,
-                          tooltip: '刷新',
+                          tooltip: AppLanguage.text('刷新'),
                           icon: const Icon(Icons.refresh)),
                       IconButton(
                           onPressed: () => Navigator.pop(context),
-                          tooltip: '关闭',
+                          tooltip: AppLanguage.text('关闭'),
                           icon: const Icon(Icons.close))
                     ]),
-                    const Text('原版 PvZ 1.0.0.1051 · 写入前自动备份原阵型',
-                        style: TextStyle(fontSize: 12, color: Colors.black54)),
+                    Text(AppLanguage.text('原版 PvZ 1.0.0.1051 · 写入前自动备份原阵型'),
+                        style: const TextStyle(
+                            fontSize: 12, color: Colors.black54)),
                     const SizedBox(height: 8),
                     if (busy) const LinearProgressIndicator(),
                     if (error != null)
                       ConstrainedBox(
                           constraints: const BoxConstraints(maxHeight: 80),
                           child: SingleChildScrollView(
-                              child: SelectableText(error!,
+                              child: SelectableText(AppLanguage.text(error!),
                                   style: const TextStyle(
                                       color: Colors.red, fontSize: 12)))),
                     if (notice != null)
-                      SelectableText(notice!,
+                      SelectableText(AppLanguage.text(notice!),
                           style: const TextStyle(
                               color: Color(0xff376b50), fontSize: 12)),
                     Expanded(
                         child: games.isEmpty
-                            ? const Center(
+                            ? Center(
                                 child: Text(
-                                    '没有发现运行中的植物大战僵尸。\n请先启动原版 1.0.0.1051，再点击刷新。',
+                                    AppLanguage.text(
+                                        '没有发现运行中的植物大战僵尸。\n请先启动原版 1.0.0.1051，再点击刷新。'),
                                     textAlign: TextAlign.center))
                             : ListView(children: [
                                 DropdownButton<int>(
@@ -238,26 +241,28 @@ class _GamePanelState extends State<GamePanel> {
                                           busy || selected?.canRead != true
                                               ? null
                                               : read,
-                                      child: const Text('读取游戏现场')),
+                                      child: Text(AppLanguage.text('读取游戏现场'))),
                                   OutlinedButton(
                                       onPressed: busy ||
                                               widget.target == null ||
                                               selected?.canWrite != true
                                           ? null
                                           : apply,
-                                      child: const Text('应用所选阵型到游戏')),
+                                      child:
+                                          Text(AppLanguage.text('应用所选阵型到游戏'))),
                                   OutlinedButton(
                                       onPressed:
                                           busy || lastMemoryBackup == null
                                               ? null
                                               : undo,
-                                      child: const Text('撤销上次覆盖')),
+                                      child: Text(AppLanguage.text('撤销上次覆盖'))),
                                 ]),
                                 if (memoryBackups.isNotEmpty)
                                   DropdownButton<String>(
                                       value: lastMemoryBackup,
                                       isExpanded: true,
-                                      hint: const Text('选择要恢复的阵型备份'),
+                                      hint:
+                                          Text(AppLanguage.text('选择要恢复的阵型备份')),
                                       items: memoryBackups
                                           .map((p) => DropdownMenuItem(
                                               value: p,
@@ -287,21 +292,23 @@ class _GamePanelState extends State<GamePanel> {
                                                       document:
                                                           snapshot!.formation,
                                                       helpers: false))))),
-                                  Text(
-                                      '${snapshot!.formation.map.name} · ${snapshot!.formation.pieces.length} 个对象'),
+                                  Text(AppLanguage.text(
+                                      '${snapshot!.formation.map.name} · ${snapshot!.formation.pieces.length} 个对象')),
                                   Wrap(spacing: 8, children: [
                                     TextButton(
                                         onPressed: busy
                                             ? null
                                             : () => run(() => widget
                                                 .onEdit(snapshot!.formation)),
-                                        child: const Text('在编辑器打开')),
+                                        child:
+                                            Text(AppLanguage.text('在编辑器打开'))),
                                     TextButton(
                                         onPressed: busy
                                             ? null
                                             : () => run(() => widget.onArchive(
                                                 snapshot!.formation)),
-                                        child: const Text('加入我的存档')),
+                                        child:
+                                            Text(AppLanguage.text('加入我的存档'))),
                                     TextButton(
                                         onPressed: busy
                                             ? null
@@ -315,17 +322,19 @@ class _GamePanelState extends State<GamePanel> {
                                                           utf8.encode(text)),
                                                       'text/plain');
                                                 }),
-                                        child: const Text('另存为 Toolkit 阵图')),
+                                        child: Text(AppLanguage.text(
+                                            '另存为 Toolkit 阵图'))),
                                   ])
                                 ],
                                 const Divider(),
-                                const Text('游戏存档文件',
-                                    style:
-                                        TextStyle(fontWeight: FontWeight.w600)),
+                                Text(AppLanguage.text('游戏存档文件'),
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.w600)),
                                 if (files.isEmpty)
-                                  const Padding(
-                                      padding: EdgeInsets.all(12),
-                                      child: Text('未找到游戏存档文件。')),
+                                  Padding(
+                                      padding: const EdgeInsets.all(12),
+                                      child:
+                                          Text(AppLanguage.text('未找到游戏存档文件。'))),
                                 for (final file in files)
                                   ListTile(
                                       dense: true,
@@ -333,20 +342,23 @@ class _GamePanelState extends State<GamePanel> {
                                       title: Text(file.relativePath,
                                           style: const TextStyle(fontSize: 12)),
                                       subtitle: Text(
-                                          '${file.size} 字节 · ${file.directory}',
+                                          AppLanguage.text(
+                                              '${file.size} 字节 · ${file.directory}'),
                                           style: const TextStyle(fontSize: 11)),
                                       trailing: Wrap(children: [
                                         TextButton(
                                             onPressed: busy
                                                 ? null
                                                 : () => backupSave(file),
-                                            child: const Text('备份')),
+                                            child:
+                                                Text(AppLanguage.text('备份'))),
                                         TextButton(
                                             onPressed: busy
                                                 ? null
                                                 : () => backupSave(file,
                                                     saveAs: true),
-                                            child: const Text('另存为'))
+                                            child:
+                                                Text(AppLanguage.text('另存为')))
                                       ])),
                                 if (lastFileBackup != null)
                                   OutlinedButton(
@@ -360,7 +372,8 @@ class _GamePanelState extends State<GamePanel> {
                                                 lastFileBackup = redo;
                                                 notice = '已恢复游戏存档，覆盖前的文件也已备份。';
                                               }),
-                                      child: const Text('恢复上次游戏存档备份')),
+                                      child:
+                                          Text(AppLanguage.text('恢复上次游戏存档备份'))),
                               ])),
                   ]))));
 }

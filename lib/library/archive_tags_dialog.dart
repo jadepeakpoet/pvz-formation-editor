@@ -1,3 +1,4 @@
+import '../platform/app_language.dart';
 import 'package:flutter/material.dart';
 
 /// Reuse existing labels or create new ones without entering comma syntax.
@@ -49,7 +50,7 @@ class _ArchiveTagsDialogState extends State<_ArchiveTagsDialog> {
   Widget build(BuildContext context) {
     final sorted = labels.toList()..sort();
     return AlertDialog(
-        title: const Text('设置标签'),
+        title: Text(AppLanguage.text('设置标签')),
         content: SizedBox(
             width: 360,
             child: ConstrainedBox(
@@ -60,10 +61,11 @@ class _ArchiveTagsDialogState extends State<_ArchiveTagsDialog> {
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                      const Text('点击选择，可添加多个标签',
-                          style: TextStyle(fontSize: 12)),
+                      Text(AppLanguage.text('点击选择，可添加多个标签'),
+                          style: const TextStyle(fontSize: 12)),
                       const SizedBox(height: 10),
-                      if (sorted.isEmpty) const Text('还没有标签，先添加一个吧。'),
+                      if (sorted.isEmpty)
+                        Text(AppLanguage.text('还没有标签，先添加一个吧。')),
                       Wrap(spacing: 6, runSpacing: 4, children: [
                         for (final tag in sorted)
                           FilterChip(
@@ -85,26 +87,27 @@ class _ArchiveTagsDialogState extends State<_ArchiveTagsDialog> {
                                 key: const ValueKey('archive-tag-input'),
                                 controller: input,
                                 onSubmitted: (_) => add(),
-                                decoration: const InputDecoration(
-                                    labelText: '新标签', isDense: true))),
+                                decoration: InputDecoration(
+                                    labelText: AppLanguage.text('新标签'),
+                                    isDense: true))),
                         TextButton(
                             key: const ValueKey('archive-tag-add'),
                             onPressed: add,
-                            child: const Text('添加')),
+                            child: Text(AppLanguage.text('添加'))),
                       ]),
                     ])))),
         actions: [
           TextButton(
               key: const ValueKey('archive-tags-cancel'),
               onPressed: () => Navigator.pop(context),
-              child: const Text('取消')),
+              child: Text(AppLanguage.text('取消'))),
           FilledButton(
               key: const ValueKey('archive-tags-save'),
               onPressed: () {
                 add();
                 Navigator.pop(context, chosen.toList()..sort());
               },
-              child: const Text('保存')),
+              child: Text(AppLanguage.text('保存'))),
         ]);
   }
 }

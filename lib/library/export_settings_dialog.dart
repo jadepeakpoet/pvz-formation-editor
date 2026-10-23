@@ -1,10 +1,14 @@
+import '../platform/app_language.dart';
+import '../platform/language_selector.dart';
 import 'package:flutter/material.dart';
 import '../platform/export_preferences.dart';
 
 /// Sets the initial export folder; each export can still choose another folder.
 Future<void> showExportSettings(BuildContext context) async {
   await showDialog<void>(
-      context: context, builder: (_) => const _ExportSettingsDialog());
+      context: context,
+      builder: (_) =>
+          LanguageScope(builder: () => const _ExportSettingsDialog()));
 }
 
 class _ExportSettingsDialog extends StatefulWidget {
@@ -45,8 +49,8 @@ class _ExportSettingsDialogState extends State<_ExportSettingsDialog> {
     } catch (e) {
       if (mounted) {
         setState(() => error = '操作失败：$e');
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('导出设置操作失败：$e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(AppLanguage.text('导出设置操作失败：$e'))));
       }
     } finally {
       if (mounted) setState(() => busy = false);
@@ -64,7 +68,8 @@ class _ExportSettingsDialogState extends State<_ExportSettingsDialog> {
           key: const ValueKey('export-settings-dialog'),
           insetPadding:
               const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-          title: const Text('导出设置', style: TextStyle(fontSize: 19)),
+          title: Text(AppLanguage.text('设置'),
+              style: const TextStyle(fontSize: 19)),
           content: SizedBox(
               width: 400,
               child: SingleChildScrollView(
@@ -72,11 +77,13 @@ class _ExportSettingsDialogState extends State<_ExportSettingsDialog> {
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                    const Text('默认导出目录',
-                        style: TextStyle(fontWeight: FontWeight.w600)),
+                    const LanguageSelector(),
+                    const SizedBox(height: 18),
+                    Text(AppLanguage.text('默认导出目录'),
+                        style: const TextStyle(fontWeight: FontWeight.w600)),
                     const SizedBox(height: 8),
-                    const Text('未指定时使用系统文稿目录。每次导出时仍可更改保存位置。',
-                        style: TextStyle(
+                    Text(AppLanguage.text('未指定时使用系统文稿目录。每次导出时仍可更改保存位置。'),
+                        style: const TextStyle(
                             fontSize: 12,
                             height: 1.6,
                             color: Color(0xff68756a))),
@@ -90,10 +97,10 @@ class _ExportSettingsDialogState extends State<_ExportSettingsDialog> {
                           enabled: !busy,
                           minLines: 2,
                           maxLines: 3,
-                          decoration: const InputDecoration(
-                              hintText: '系统默认（文稿目录）',
-                              border: OutlineInputBorder(),
-                              contentPadding: EdgeInsets.all(12))),
+                          decoration: InputDecoration(
+                              hintText: AppLanguage.text('系统默认（文稿目录）'),
+                              border: const OutlineInputBorder(),
+                              contentPadding: const EdgeInsets.all(12))),
                     const SizedBox(height: 6),
                     Wrap(spacing: 8, children: [
                       TextButton.icon(
@@ -109,14 +116,14 @@ class _ExportSettingsDialogState extends State<_ExportSettingsDialog> {
                                   }),
                           icon:
                               const Icon(Icons.folder_open_outlined, size: 18),
-                          label: const Text('选择文件夹')),
+                          label: Text(AppLanguage.text('选择文件夹'))),
                       TextButton(
                           key: const ValueKey('export-settings-default'),
                           onPressed: loading || busy ? null : directory.clear,
-                          child: const Text('恢复系统默认'))
+                          child: Text(AppLanguage.text('恢复系统默认')))
                     ]),
                     if (error != null)
-                      Text(error!,
+                      Text(AppLanguage.text(error!),
                           style:
                               const TextStyle(fontSize: 12, color: Colors.red))
                   ]))),
@@ -124,7 +131,7 @@ class _ExportSettingsDialogState extends State<_ExportSettingsDialog> {
             TextButton(
                 key: const ValueKey('export-settings-cancel'),
                 onPressed: busy ? null : () => Navigator.of(context).pop(),
-                child: const Text('取消')),
+                child: Text(AppLanguage.text('取消'))),
             FilledButton(
                 key: const ValueKey('export-settings-save'),
                 onPressed: loading || busy
@@ -135,6 +142,6 @@ class _ExportSettingsDialogState extends State<_ExportSettingsDialog> {
                               value.isEmpty ? null : value);
                           if (mounted) Navigator.of(this.context).pop();
                         }),
-                child: Text(busy ? '正在保存…' : '保存'))
+                child: Text(AppLanguage.text(busy ? '正在保存…' : '保存')))
           ]);
 }

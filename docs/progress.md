@@ -290,3 +290,10 @@ useFormationPreset 成功应用后清除选择列表状态并回到懒人布局 
 补充验收：support.hover-preview与此前种植/铲子回归合计14/14通过，FlutterError0；水面荷叶与屋顶花盆预览截图已视检，像素差异及helpers=false导出排除验证通过。证据docs/qa/planting-support-preview-2026-10-23.json。
 
 最终bundle编译通过。目录重命名实际尝试os.rename(pvzstudio,PvzFormationEditor)被沙箱以PermissionError/Operation not permitted拒绝：父目录codex及新同级路径不在会话可写根范围。未改名、未覆盖其他目录、未重新打开新目录，当前源码仍保存在pvzstudio。当前工具没有修改工作区根目录/重开项目的接口，且环境禁止sandbox提权；需用户在宿主终端改名后用新目录重新打开。
+
+
+## 2026-10-23 — 中英文界面设置
+
+新增 AppLanguage 持久化语言偏好，存档库设置和编辑器选项设置共用语言选择器。主要界面标签、提示、地图、对话框以及 Flutter 内置组件支持简体中文/English；不修改用户保存的名称、备注、阵型内容或内部标识。部分植物与预制阵型名称保留来源名称。独立 Flutter 引擎每两秒读取原子写入的偏好，同步语言；macOS 原生主窗口和侧栏标题跟随切换。独立审查指出的临时文件竞争和旧读取回写已修复：每次写入使用独立临时目录，并用修订号阻止过期读取。
+
+验证：flutter analyze --no-pub 无问题；language_smoke 在真实 Flutter 引擎下通过下拉框切换、即时 UI 刷新、State/controller 和输入内容保留、偏好重新读取及损坏偏好回退；export_settings_smoke 在 410×640 下通过，FlutterError 为 0。xcodebuild Debug 构建成功，重启脚本正常退出替换一个旧实例并启动新版，进程路径核实仅一个新版应用。未执行其他平台构建，未把原始植物/预制名称视为全部翻译完成。

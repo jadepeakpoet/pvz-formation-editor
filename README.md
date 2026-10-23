@@ -1,5 +1,7 @@
 # PVZ Formation Editor · 植物大战僵尸布阵器
 
+在存档库的设置或编辑器的“选项设置”中，可切换简体中文 / English；选择会保存，并同步到独立窗口。部分植物与预制阵型名称保留原始名称。
+
 英文名称：**PVZ Formation Editor**；中文名称：**植物大战僵尸布阵器**。内部 Dart 包名仍为 `pvz_formation_editor`，应用标识、旧存档路径与文件格式标识保持兼容。
 
 使用 Flutter Widget / Canvas 的离线布阵编辑器，项目名 `pvz_formation_editor`。包含 Windows、macOS、Linux、Android、iOS 工程，没有 WebView、服务器、账号或游戏内存操作。当前是可运行源码与通过引擎验证的首版，**不是原网页全部功能或美术的完整复刻**。
