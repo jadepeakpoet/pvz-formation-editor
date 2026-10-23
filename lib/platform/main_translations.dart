@@ -1,5 +1,6 @@
 /// English translations for the main editor interface.
 const Map<String, String> mainTranslations = {
+  '陆地': 'Ground',
   '选择植物': 'Choose plants',
   '编辑阳光': 'Edit sun',
   '回车保存，Esc 取消': 'Enter to save, Esc to cancel',

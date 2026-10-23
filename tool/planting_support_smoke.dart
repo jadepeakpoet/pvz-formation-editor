@@ -481,10 +481,62 @@ Future<void> main() async {
     page.autoPotMode = 'land';
     plant(0, 1);
     h.expect(has('pot', 0, 1), 'All-land mode missing pot');
+    page.autoPotMode = 'ground';
+    s.execute('ground-only-roof', Formation(mapId: 'roof'));
+    plant(0, 0);
+    h.expect(!has('pot', 0, 0), 'Ground-only mode added roof pot');
+    s.execute('ground-only-land', Formation(mapId: 'day'));
+    plant(0, 0);
+    h.expect(has('pot', 0, 0), 'Ground-only mode missing land pot');
     page.autoPotMode = 'off';
     s.execute('off-roof', Formation(mapId: 'roof'));
     plant(0, 0);
     h.expect(!has('pot', 0, 0), 'Off mode added pot');
+  });
+  await h.run('support.checkbox-options',
+      'Roof/ground checkboxes are independent and settings omit extra tools',
+      () async {
+    page.autoPotMode = 'roof';
+    page.classicTab = 2;
+    page.update();
+    await h.settle();
+    Checkbox option(String name) =>
+        h.find((w) => w.key == ValueKey('original-auto-pot-$name')).widget
+            as Checkbox;
+    h.expect(option('roof').value == true && option('land').value == false,
+        'Default pot options must be roof on, ground off');
+    h.expect(h.all((w) => w.key == const ValueKey('auto-pot-mode')).isEmpty,
+        'Old dropdown still visible');
+    await h.tapElement(
+        h.find((w) => w.key == const ValueKey('original-auto-pot-land')));
+    h.expect(
+        page.autoPotMode == 'land' &&
+            option('roof').value == true &&
+            option('land').value == true,
+        'Both pot locations should be enabled');
+    await h.tapElement(
+        h.find((w) => w.key == const ValueKey('original-auto-pot-roof')));
+    h.expect(
+        page.autoPotMode == 'ground' &&
+            option('roof').value == false &&
+            option('land').value == true,
+        'Ground must remain independently enabled');
+    await h.tapElement(
+        h.find((w) => w.key == const ValueKey('original-auto-pot-land')));
+    h.expect(page.autoPotMode == 'off', 'Unchecking both must disable pots');
+    await h.tapElement(
+        h.find((w) => w.key == const ValueKey('original-auto-pot-roof')));
+    h.expect(page.autoPotMode == 'roof', 'Roof-only option must restore');
+    page.classicTab = 5;
+    page.update();
+    await h.settle();
+    h.expect(h.all((w) => w is ExpansionTile).isEmpty,
+        'Settings should not contain extra tools section');
+    await h.screenshot('settings-without-extra-tools');
+    page.classicTab = 2;
+    page.update();
+    await h.settle();
+    await h.screenshot('support-checkbox-options');
   });
   await h.run('batch.width',
       'Batch two-cell plants receive two supports without duplicates',
@@ -649,6 +701,9 @@ Future<void> main() async {
     final restored = await PlantingPreferences.load(file: file);
     h.expect(!restored.autoLily && restored.potMode == 'land',
         'Preferences not persisted');
+    await const PlantingPreferences(potMode: 'ground').save(file: file);
+    h.expect((await PlantingPreferences.load(file: file)).potMode == 'ground',
+        'Independent ground-only preference did not persist');
     final state = page.windowState() as Map;
     h.expect(
         state['autoLily'] == page.autoLily &&

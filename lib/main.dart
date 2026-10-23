@@ -3608,27 +3608,21 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
         Row(children: [
           Text(AppLanguage.text('自动垫花盆 '),
               style: const TextStyle(fontSize: 12)),
-          Expanded(
-              child: DropdownButton<String>(
-                  key: const ValueKey('auto-pot-mode'),
-                  isDense: true,
-                  isExpanded: true,
-                  value: autoPotMode,
-                  style:
-                      const TextStyle(fontSize: 12, color: Color(0xff304b32)),
-                  items: [
-                    DropdownMenuItem(
-                        value: 'roof', child: Text(AppLanguage.text('屋顶'))),
-                    DropdownMenuItem(
-                        value: 'land', child: Text(AppLanguage.text('屋顶及陆地'))),
-                    DropdownMenuItem(
-                        value: 'off', child: Text(AppLanguage.text('关闭'))),
-                  ],
-                  onChanged: (value) {
-                    if (value == null) return;
-                    setState(() => autoPotMode = value);
-                    persistPlantingPreferences();
-                  })),
+          originalCheck('auto-pot-roof', '屋顶',
+              autoPotMode == 'roof' || autoPotMode == 'land', (value) {
+            final land = autoPotMode == 'ground' || autoPotMode == 'land';
+            setState(() => autoPotMode =
+                value ? (land ? 'land' : 'roof') : (land ? 'ground' : 'off'));
+            persistPlantingPreferences();
+          }),
+          const SizedBox(width: 8),
+          originalCheck('auto-pot-land', '陆地',
+              autoPotMode == 'ground' || autoPotMode == 'land', (value) {
+            final roof = autoPotMode == 'roof' || autoPotMode == 'land';
+            setState(() => autoPotMode =
+                value ? (roof ? 'land' : 'ground') : (roof ? 'roof' : 'off'));
+            persistPlantingPreferences();
+          }),
         ]),
       ]);
 
@@ -3865,10 +3859,6 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                       style: const TextStyle(fontSize: 12))
                 ]))
         ]),
-        ExpansionTile(
-            title: Text(AppLanguage.text('对象属性与扩展工具'),
-                style: const TextStyle(fontSize: 12)),
-            children: [SizedBox(height: 500, child: properties())]),
       ]);
 
   void createMirror(double scale) => setState(() {

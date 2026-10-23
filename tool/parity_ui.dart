@@ -986,7 +986,9 @@ Future<void> main() async {
             'Imitation must change fixture');
       });
     }
-    for (final display in Formation().display.keys) {
+    // Coordinate display belonged to the removed extended-tools section.
+    for (final display
+        in Formation().display.keys.where((key) => key != '坐标')) {
       await h.run('display.$display', '显示选项：$display', () async {
         await fresh('选项设置');
         final before = session.document.display[display]!;
@@ -1012,20 +1014,6 @@ Future<void> main() async {
           await h.screenshot('display.$display.toggled');
           await h.choose<int>(0,
               where: (w) => w.key == const ValueKey('original-lFog'));
-        } else {
-          await h.tap('对象属性与扩展工具');
-          await Future<void>.delayed(const Duration(milliseconds: 350));
-          await h.tapElement(h.find((w) =>
-              w is SwitchListTile &&
-              w.title is Text &&
-              (w.title as Text).data == display));
-          h.expect(session.document.display[display] == !before,
-              'Extended display toggle did not update');
-          await h.screenshot('display.$display.toggled');
-          await h.tapElement(h.find((w) =>
-              w is SwitchListTile &&
-              w.title is Text &&
-              (w.title as Text).data == display));
         }
         h.expect(session.document.display[display] == before,
             'Display option did not restore');

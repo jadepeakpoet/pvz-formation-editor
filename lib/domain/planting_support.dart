@@ -3,7 +3,7 @@ import 'original_terrain.dart';
 
 /// Placement conflicts and supports belong to the same undoable command.
 class PlantingSupport {
-  static const potModes = ['roof', 'land', 'off'];
+  static const potModes = ['roof', 'land', 'ground', 'off'];
   static const aquaticTypes = {'cattail', 'tangle', 'seashroom'};
   static bool isBase(Piece piece) =>
       piece.type == 'lily' || piece.type == 'pot';
@@ -63,7 +63,10 @@ class PlantingSupport {
               p.col == col);
       final type = terrain == 2 && autoLily && !aquatic
           ? 'lily'
-          : terrain == 1 && (potMode == 'land' || potMode == 'roof' && map.roof)
+          : terrain == 1 &&
+                  (potMode == 'land' ||
+                      potMode == 'roof' && map.roof ||
+                      potMode == 'ground' && !map.roof)
               ? 'pot'
               : null;
       if (type == null ||
