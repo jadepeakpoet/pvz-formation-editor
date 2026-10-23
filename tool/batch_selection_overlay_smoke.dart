@@ -112,7 +112,7 @@ Future<void> main() async {
       'Unselected canvas must pass pointer through without changing axes');
   check(document.fingerprint == before, 'Selection mutated formation');
 
-  // Only row/column intersections are outlined, without a white fill.
+  // Warm thin outlines and a subtle tint identify only the selected intersection.
   final geometry = BoardGeometry(document);
   final recorder = ui.PictureRecorder();
   final canvas = Canvas(recorder);
@@ -132,13 +132,27 @@ Future<void> main() async {
   bool black(Offset point) => pixel(point).every((c) => c == 0);
   final edge = geometry.cellCenter(1, 2) - Offset(0, geometry.cellHeight / 2);
   final color = pixel(edge);
-  check(color[0] == 255 && color[1] == 213 && color[2] == 79,
-      'Selected cell boundary should be yellow');
+  final rowEdge =
+      pixel(geometry.cellCenter(1, 4) - Offset(0, geometry.cellHeight / 2));
+  final colEdge =
+      pixel(geometry.cellCenter(3, 2) - Offset(geometry.cellWidth / 2, 0));
   check(
-      black(geometry.cellCenter(1, 2)) &&
-          black(geometry.cellCenter(1, 4)) &&
-          black(geometry.cellCenter(3, 2)),
-      'Selection should not cover plant interiors or unselected axes');
+      rowEdge[0] > 40 &&
+          colEdge[0] > 40 &&
+          rowEdge[0] > rowEdge[1] &&
+          colEdge[0] > colEdge[1],
+      'Chosen row and column should both show their full boundary lines: $rowEdge / $colEdge');
+  check(color[0] > 100 && color[0] > color[1] && color[1] > color[2],
+      'Selected cell boundary should be a soft warm yellow');
+  final interior = pixel(geometry.cellCenter(1, 2));
+  check(
+      interior[0] > 0 &&
+          interior[0] <= 60 &&
+          interior[0] > interior[1] &&
+          interior[1] > interior[2],
+      'Cell intersection should have a translucent selected tint');
+  check(black(geometry.cellCenter(1, 4)) && black(geometry.cellCenter(3, 2)),
+      'Selection should leave unselected axes untouched');
   final png = await image.toByteData(format: ui.ImageByteFormat.png);
   await File('/tmp/pvz-batch-selection-mask.png')
       .writeAsBytes(png!.buffer.asUint8List());
@@ -159,7 +173,7 @@ Future<void> main() async {
   }
   check(errors.isEmpty, errors.map((e) => e.exceptionAsString()).join('\n'));
   stdout.writeln(
-      'PASS row/column toggles, independent all selectors, pointer pass-through, immutable document, 39px controls with 44px hit targets, yellow intersection outlines and five/six-row/roof geometry');
+      'PASS row/column toggles, independent all selectors, pointer pass-through, immutable document, 39px controls with 44px hit targets, soft yellow row/column boundaries, selected intersection shading and five/six-row/roof geometry');
   runApp(const SizedBox.shrink());
   await settle();
   exit(0);

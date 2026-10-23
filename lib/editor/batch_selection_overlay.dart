@@ -5,7 +5,7 @@ import '../platform/app_language.dart';
 import 'board_painter.dart';
 
 /// The source site's row/column selectors. Operations use their intersection;
-/// selected intersections use yellow cell outlines without obscuring plants.
+/// axis boundaries use thin yellow lines and intersections receive a soft tint.
 class BatchSelectionOverlay extends StatelessWidget {
   final Formation document;
   final Set<int> selectedRows, selectedColumns;
@@ -130,21 +130,41 @@ class BatchSelectionMaskPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final geometry = BoardGeometry(document);
-    final border = Paint()
-      ..color = const Color(0x99000000)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 4.5;
+    final fill = Paint()..color = const Color(0x33ffdf70);
     final highlight = Paint()
-      ..color = const Color(0xffffd54f)
+      ..color = const Color(0xbfe8c75b)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.5;
+      ..strokeWidth = 1.2
+      ..strokeJoin = StrokeJoin.round;
     for (final row in selectedRows) {
       if (row < 0 || row >= document.map.rows) continue;
       for (final col in selectedColumns) {
         if (col < 0 || col >= document.map.columns) continue;
-        final path = geometry.cellPath(row, col);
-        canvas.drawPath(path, border);
+        canvas.drawPath(geometry.cellPath(row, col), fill);
+      }
+    }
+    Offset corner(int row, int col) => Offset(
+        40 + col * geometry.cellWidth,
+        geometry.boardTop +
+            row * geometry.cellHeight +
+            geometry.slope(col.toDouble()));
+    for (final row in selectedRows) {
+      if (row < 0 || row >= document.map.rows) continue;
+      for (final boundary in [row, row + 1]) {
+        final start = corner(boundary, 0);
+        final path = Path()..moveTo(start.dx, start.dy);
+        for (var col = 1; col <= document.map.columns; col++) {
+          final point = corner(boundary, col);
+          path.lineTo(point.dx, point.dy);
+        }
         canvas.drawPath(path, highlight);
+      }
+    }
+    for (final col in selectedColumns) {
+      if (col < 0 || col >= document.map.columns) continue;
+      for (final boundary in [col, col + 1]) {
+        canvas.drawLine(corner(0, boundary),
+            corner(document.map.rows, boundary), highlight);
       }
     }
   }

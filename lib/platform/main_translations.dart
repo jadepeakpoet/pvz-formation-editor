@@ -1,5 +1,12 @@
 /// English translations for the main editor interface.
 const Map<String, String> mainTranslations = {
+  '一键预选': 'Quick selection',
+  '清除指定植物': 'Clear a selected type',
+  '清空选中区域': 'Clear selected cells',
+  '清空地图': 'Clear map',
+  '主画面或选区已更新，请重新选择清除范围':
+      'The board or selection changed. Choose the clear range again.',
+
   '等宽，否则游戏等宽': ' width, otherwise use game width',
   '生成图片': 'Generate image',
   '导出图片': 'Export image',

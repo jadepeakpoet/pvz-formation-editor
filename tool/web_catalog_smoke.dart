@@ -27,8 +27,13 @@ Future<void> main() async {
   await h.settle();
   final dynamic page =
       (h.find((w) => w is app.EditorPage) as StatefulElement).state;
-  h.expect(h.all((w) => w is TextButton && w.child is Text &&
-      (w.child as Text).data == '默认外表').isEmpty,
+  h.expect(
+      h
+          .all((w) =>
+              w is ButtonStyleButton &&
+              w.child is Text &&
+              (w.child as Text).data == '默认外表')
+          .isEmpty,
       'Catalog must not expose a standalone default-appearance button');
 
   await page.toggleSeedChooser(false);
@@ -36,6 +41,17 @@ Future<void> main() async {
   await h.settle();
   Future<void> tapKey(String key) =>
       h.tapElement(h.find((w) => w.key == ValueKey(key)));
+  Future<void> closePickerWith(String key) async {
+    await tapKey(key);
+    for (var attempt = 0; attempt < 20; attempt++) {
+      if (h.all((w) => w.key == const ValueKey('batch-clear-picker')).isEmpty) {
+        return;
+      }
+      await h.settle();
+    }
+    throw StateError('Type picker did not close after selection/cancel');
+  }
+
   Checkbox checkbox(String key) =>
       h.find((w) => w.key == ValueKey(key)).widget as Checkbox;
   Radio<bool> radio(String key) =>
@@ -52,6 +68,11 @@ Future<void> main() async {
       'Single selection radio must be default and hide batch axes');
   h.expect(h.all((w) => w is Text && w.data == '种植').isEmpty,
       'Catalog must not expose an extra planting button');
+  final appearanceField = h
+      .find((w) => w.key == const ValueKey('original-sGrowSelect'))
+      .renderObject as RenderBox;
+  h.expect(appearanceField.size.width <= 144,
+      'Default appearance field should stay compact');
   await tapKey('original-rHowGrow1');
   h.expect(
       radio('original-rHowGrow1').groupValue == true &&
@@ -116,10 +137,26 @@ Future<void> main() async {
   await h.settle();
   await tapKey('batch-row-2');
   await tapKey('batch-col-0');
-  await h.choose<String>('普通植物',
-      where: (w) => w.key == const ValueKey('original-rBatchClear'));
   final beforeDelete = session.document.fingerprint;
-  await h.tap('选定格子指定植物');
+  final depthBeforePicker = session.undoDepth;
+  h.expect(
+      h.all((w) => w is Text && w.data == '一键预选').length == 1 &&
+          h.all((w) => w is Text && w.data == '铲除').length == 1,
+      'Quick selection and clear controls need their own headings');
+  await h.tap('清除指定植物');
+  h.expect(
+      h.all((w) => w.key == const ValueKey('batch-clear-picker')).isNotEmpty &&
+          session.document.fingerprint == beforeDelete,
+      'Type picker must open without clearing anything');
+  await closePickerWith('batch-clear-cancel');
+  h.expect(
+      session.document.fingerprint == beforeDelete &&
+          session.undoDepth == depthBeforePicker,
+      'Cancel must not change formation');
+  await h.tap('清除指定植物');
+  await closePickerWith('batch-clear-kind-普通植物');
+  h.expect(h.all((w) => w.key == const ValueKey('batch-clear-picker')).isEmpty,
+      'Picking a type must close and clear without another confirmation');
   h.expect(
       session.document.pieces
               .map((p) => p.id)
@@ -131,10 +168,56 @@ Future<void> main() async {
   await h.settle();
   h.expect(session.document.fingerprint == beforeDelete,
       'Typed clear undo must restore the exact formation');
-  await h.tap('选定格子所有植物');
+  await h.tap('清除指定植物');
+  page.updateBatchSelection({1}, {1});
+  await h.settle();
+  await closePickerWith('batch-clear-kind-普通植物');
+  h.expect(session.document.fingerprint == beforeDelete,
+      'Changed selection must reject an obsolete type picker');
+  page.updateBatchSelection({2}, {0});
+  await h.settle();
+  await h.tap('清除指定植物');
+  session.execute('external update during clear picker',
+      session.document.copy(sunValue: session.document.sunValue + 1));
+  await h.settle();
+  final external = session.document.fingerprint,
+      externalDepth = session.undoDepth;
+  await closePickerWith('batch-clear-kind-普通植物');
+  h.expect(
+      session.document.fingerprint == external &&
+          session.undoDepth == externalDepth,
+      'Changed board must reject an obsolete type picker');
+  session.undo();
+  await h.settle();
+  await h.tap('清空选中区域');
   h.expect(session.document.pieces.single.id == 'other',
       'All clear must preserve objects outside the selected intersection');
   session.undo();
+  await h.settle();
+  await h.tap('清空地图');
+  h.expect(
+      session.document.pieces.isEmpty, 'Clear map must remove every object');
+  session.undo();
+  await h.settle();
+  h.expect(session.document.fingerprint == beforeDelete,
+      'Clear map must be undoable');
+  session.readOnly = true;
+  page.update();
+  await h.settle();
+  for (final key in [
+    'batch-clear-type',
+    'batch-clear-selection',
+    'batch-clear-map'
+  ]) {
+    h.expect(
+        (h.find((w) => w.key == ValueKey(key)).widget as ButtonStyleButton)
+                .onPressed ==
+            null,
+        'Readonly clear control must be disabled');
+  }
+  session.readOnly = false;
+  page.update();
+  await h.settle();
   await tapKey('original-rHowGrow0');
   h.expect(
       page.batchSelectionMode == false &&

@@ -4619,7 +4619,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
       Row(children: [
         Text(AppLanguage.text('选择种植时的默认外表 '),
             style: const TextStyle(fontSize: 12)),
-        Expanded(
+        SizedBox(width: 144,
             child: AppDropdown<int>(
           key: const ValueKey('original-sGrowSelect'),
           value: growMode,
@@ -4689,28 +4689,71 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     }
   }
 
+  bool choosingBatchClear = false;
+
+  Future<void> chooseBatchClear() async {
+    if (s.readOnly || cells.isEmpty || choosingBatchClear) return;
+    final target = s;
+    final token = documentToken;
+    final fingerprint = s.document.fingerprint;
+    final selection = Set<(int, int)>.of(cells);
+    setState(() => choosingBatchClear = true);
+    try {
+      final kind = await showDialog<String>(
+          context: context,
+          builder: (context) => AlertDialog(
+              key: const ValueKey('batch-clear-picker'),
+              title: Text(AppLanguage.text('清除指定植物')),
+              content: SizedBox(width: 300,
+                  child: SingleChildScrollView(child: Column(
+                      mainAxisSize: MainAxisSize.min, children: [
+                    for (final option in ['普通植物', '南瓜', '容器', '梯子',
+                      '咖啡豆', '钉耙', '墓碑', '物品及特效', '僵尸'])
+                      RadioListTile<String>(
+                          key: ValueKey('batch-clear-kind-$option'),
+                          value: option, groupValue: null,
+                          dense: true,
+                          title: Text(AppLanguage.text(option)),
+                          onChanged: (value) => Navigator.pop(context, value)),
+                  ]))),
+              actions: [TextButton(
+                  key: const ValueKey('batch-clear-cancel'),
+                  onPressed: () => Navigator.pop(context),
+                  child: Text(AppLanguage.text('取消')))]));
+      if (kind == null || !mounted) return;
+      if (!identical(s, target) || documentToken != token || target.readOnly ||
+          s.document.fingerprint != fingerprint || cells.length != selection.length ||
+          !selection.containsAll(cells)) {
+        message(context, '主画面或选区已更新，请重新选择清除范围');
+        return;
+      }
+      setState(() => batchShovelFilter = kind);
+      batchDelete(kind);
+    } finally {
+      if (mounted) setState(() => choosingBatchClear = false);
+    }
+  }
+
   Widget webBatchControls() => Column(
       key: const ValueKey('web-batch-controls'),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Text(AppLanguage.text('一键预选'), style: const TextStyle(fontSize: 12)),
         Wrap(children: [
           for (final label in ['陆路', '水路', '后置炮', '前置炮', '超前置炮',
             '底线炮', '水路前场', '水路56列', '重置批量选择'])
             classicButton(label, () => quickSelect(label)),
         ]),
+        const SizedBox(height: 4),
         Wrap(crossAxisAlignment: WrapCrossAlignment.center, children: [
-          AppDropdown<String>(
-              key: const ValueKey('original-rBatchClear'),
-              value: batchShovelFilter,
-              isDense: true,
-              style: const TextStyle(fontSize: 12, color: Colors.black),
-              items: const ['普通植物', '南瓜', '容器', '梯子', '咖啡豆', '钉耙',
-                '墓碑', '物品及特效', '僵尸'].map((kind) => DropdownMenuItem(
-                    value: kind, child: Text(AppLanguage.text(kind)))).toList(),
-              onChanged: (value) => setState(() => batchShovelFilter = value!)),
-          classicButton('选定格子指定植物', s.readOnly ? null : () => batchDelete(batchShovelFilter)),
-          classicButton('选定格子所有植物', s.readOnly ? null : () => batchDelete('全部')),
-          classicButton('全都不要给我清空', s.readOnly ? null : clearFormation),
+          Text(AppLanguage.text('铲除'), style: const TextStyle(fontSize: 12)),
+          classicButton('清除指定植物',
+              s.readOnly || cells.isEmpty || choosingBatchClear ? null : chooseBatchClear,
+              key: const ValueKey('batch-clear-type')),
+          classicButton('清空选中区域', s.readOnly || cells.isEmpty ? null : () => batchDelete('全部'),
+              key: const ValueKey('batch-clear-selection')),
+          classicButton('清空地图', s.readOnly ? null : clearFormation,
+              key: const ValueKey('batch-clear-map')),
         ]),
       ]);
 

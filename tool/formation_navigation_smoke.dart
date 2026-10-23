@@ -428,7 +428,7 @@ Future<void> main() async {
     await selectCells([(2, 1), (0, 1)]);
     await h.settle();
     final depth = tabs.active.undoDepth;
-    await h.tap('选定格子所有植物');
+    await h.tap('清空选中区域');
     h.expect(
         tabs.active.document.pieces.length == 1 &&
             tabs.active.document.pieces.single.id == 'outside',
