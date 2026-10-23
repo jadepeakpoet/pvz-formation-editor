@@ -104,4 +104,4 @@ FLUTTER_SDK=/path/to/flutter ./tool/check.sh
 
 ## 作者与鸣谢
 
-作者及维护者：**yuexiaomeng**。感谢 PopCap Games 的原作、jspvz 网页布阵器的作者与维护者，以及 Flutter、Dart 和本项目使用的开源依赖贡献者。详细来源见 [鸣谢名单](ACKNOWLEDGMENTS.md) 和 [素材说明](docs/assets.md)。未核实的个人姓名不作署名推断。
+作者及维护者：**yuexiaomeng**。感谢 PopCap Games 的原作、[jspvz 网页布阵器](http://jspvz.com/ArrayDesign/)作者囧丫乙（LonelyStar），以及 Flutter、Dart 和本项目使用的开源依赖贡献者。详细来源见 [鸣谢名单](ACKNOWLEDGMENTS.md) 和 [素材说明](docs/assets.md)。

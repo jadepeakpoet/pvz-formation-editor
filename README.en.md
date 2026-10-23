@@ -76,4 +76,4 @@ Previous records report a successful macOS Debug build and launch. Android packa
 
 ## Credits
 
-Thanks to PopCap Games, the authors and maintainers of the [jspvz formation editor](http://jspvz.com/ArrayDesign/), and the contributors to Flutter, Dart and the open-source dependencies used here. See [acknowledgments](ACKNOWLEDGMENTS.md) and [asset provenance](docs/assets.md).
+Thanks to PopCap Games, 囧丫乙 (LonelyStar), author of the [jspvz formation editor](http://jspvz.com/ArrayDesign/), and the contributors to Flutter, Dart and the open-source dependencies used here. See [acknowledgments](ACKNOWLEDGMENTS.md) and [asset provenance](docs/assets.md).
