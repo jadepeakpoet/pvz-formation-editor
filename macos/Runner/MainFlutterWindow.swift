@@ -76,6 +76,8 @@ class MainFlutterWindow: NSWindow, NSWindowDelegate {
   private var plantingPlayers: [String: [AVAudioPlayer]] = [:]
   private var lastPlantingSource: String?
   private var soundVolume: Float = 0
+  private var languageCode: String?
+  private var languageChannels: [String: FlutterMethodChannel] = [:]
   private var fileChannel: FlutterMethodChannel?
   private var windowsChannel: FlutterMethodChannel?
   private var toolboxChannel: FlutterMethodChannel?
@@ -154,6 +156,22 @@ class MainFlutterWindow: NSWindow, NSWindowDelegate {
           sidebarWindow?.attachedSheet == nil, NSApp.modalWindow == nil else { return }
     activateWindow(self)
     channel.invokeMethod("showHistory", arguments: nil)
+  }
+
+  private func configureLanguageChannel(_ engine: FlutterEngine, key: String) {
+    let channel = FlutterMethodChannel(name: "pvz_formation_editor/language", binaryMessenger: engine.binaryMessenger)
+    languageChannels[key] = channel
+    channel.setMethodCallHandler { [weak self] call, result in
+      if call.method == "getLanguage" { result(self?.languageCode) }
+      else { result(FlutterMethodNotImplemented) }
+    }
+  }
+
+  private func broadcastLanguage(_ language: String) {
+    languageCode = language
+    for channel in languageChannels.values {
+      channel.invokeMethod("changed", arguments: ["language": language])
+    }
   }
 
   private func configureSidebar(_ arguments: [String: Any]) {
@@ -308,6 +326,7 @@ class MainFlutterWindow: NSWindow, NSWindowDelegate {
     if toolboxController != nil { return true }
     let engine = FlutterEngine(name: "pvz-toolbox", project: nil)
     toolboxEngine = engine
+    configureLanguageChannel(engine, key: "toolbox")
     let secondary = FlutterMethodChannel(name: "pvz_formation_editor/windows", binaryMessenger: engine.binaryMessenger)
     toolboxChannel = secondary
     secondary.setMethodCallHandler { [weak self] call, result in
@@ -355,6 +374,7 @@ class MainFlutterWindow: NSWindow, NSWindowDelegate {
       toolboxFilesChannel = nil
       toolboxAudioChannel = nil
       toolboxEngine = nil
+      languageChannels.removeValue(forKey: "toolbox")
       return false
     }
     let controller = FlutterViewController(engine: engine, nibName: nil, bundle: nil)
@@ -436,6 +456,7 @@ class MainFlutterWindow: NSWindow, NSWindowDelegate {
     if libraryController != nil { return true }
     let engine = FlutterEngine(name: "pvz-library", project: nil)
     libraryEngine = engine
+    configureLanguageChannel(engine, key: "library")
     let library = FlutterMethodChannel(name: "pvz_formation_editor/library", binaryMessenger: engine.binaryMessenger)
     libraryChannel = library
     library.setMethodCallHandler { [weak self] call, result in
@@ -481,6 +502,7 @@ class MainFlutterWindow: NSWindow, NSWindowDelegate {
       libraryFilesChannel = nil
       libraryAudioChannel = nil
       libraryEngine = nil
+      languageChannels.removeValue(forKey: "library")
       return false
     }
     let controller = FlutterViewController(engine: engine, nibName: nil, bundle: nil)
@@ -523,6 +545,7 @@ class MainFlutterWindow: NSWindow, NSWindowDelegate {
       self.setFrameOrigin(NSPoint(x: left, y: self.frame.origin.y))
     }
     RegisterGeneratedPlugins(registry: flutterViewController)
+    configureLanguageChannel(flutterViewController.engine, key: "main")
     lifecycleChannel = FlutterMethodChannel(name: "pvz_formation_editor/lifecycle", binaryMessenger: flutterViewController.engine.binaryMessenger)
     self.delegate = self
     let channel = FlutterMethodChannel(name: "pvz_formation_editor/files", binaryMessenger: flutterViewController.engine.binaryMessenger)
@@ -531,13 +554,21 @@ class MainFlutterWindow: NSWindow, NSWindowDelegate {
       guard let window = self else { result(FlutterError(code: "closed", message: "窗口已关闭", details: nil)); return }
       switch call.method {
       case "setLanguage":
-        let args = call.arguments as? [String: Any]
-        window.englishUI = args?["language"] as? String == "en"
+        guard let args = call.arguments as? [String: Any],
+              let language = args["language"] as? String,
+              ["zh", "en"].contains(language) else {
+          result(FlutterError(code: "language", message: "Unsupported language", details: nil)); return
+        }
+        // A late engine startup must not overwrite a newer explicit selection.
+        let effectiveLanguage = args["initializeOnly"] as? Bool == true
+          ? (window.languageCode ?? language) : language
+        window.englishUI = effectiveLanguage == "en"
         window.title = ""
         window.sidebarWindow?.title = window.sidebarTitle(window.sidebarMode)
         NSApp.mainMenu?.items.compactMap { $0.submenu }.flatMap { $0.items }
           .first { $0.action == #selector(MainFlutterWindow.showCurrentHistory(_:)) }?
           .title = window.englishUI ? "Version History…" : "历史版本…"
+        window.broadcastLanguage(effectiveLanguage)
         result(nil)
       case "openExternal":
         guard let args = call.arguments as? [String: Any],

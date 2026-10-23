@@ -12,35 +12,50 @@ class LanguageScope extends StatefulWidget {
 
 class _LanguageScopeState extends State<LanguageScope> {
   Timer? timer;
+  bool listening = false;
+
   @override
-  void initState() {
-    super.initState();
-    // Separate desktop windows use separate Flutter engines.
-    AppLanguage.locale.addListener(refresh);
-    timer =
-        Timer.periodic(const Duration(seconds: 2), (_) => AppLanguage.load());
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Dialogs can also use this scope in an otherwise unlocalized host. A
+    // nested scope shares its ancestor's refresh rather than walking it twice.
+    final shouldListen =
+        context.findAncestorStateOfType<_LanguageScopeState>() == null;
+    if (shouldListen == listening) return;
+    listening = shouldListen;
+    if (listening) {
+      AppLanguage.locale.addListener(refresh);
+      timer =
+          Timer.periodic(const Duration(seconds: 2), (_) => AppLanguage.load());
+    } else {
+      AppLanguage.locale.removeListener(refresh);
+      timer?.cancel();
+      timer = null;
+    }
   }
 
   void refresh() {
     void visit(Element element) {
-      element.markNeedsBuild();
+      // Text is derived in component builds. Render objects and their static
+      // image assets need not rebuild just because the UI language changed.
+      if (element is ComponentElement) element.markNeedsBuild();
       element.visitChildren(visit);
     }
 
-    if (mounted) (context as Element).visitChildren(visit);
+    if (!mounted) return;
+    setState(() {});
+    (context as Element).visitChildren(visit);
   }
 
   @override
   void dispose() {
-    AppLanguage.locale.removeListener(refresh);
+    if (listening) AppLanguage.locale.removeListener(refresh);
     timer?.cancel();
     super.dispose();
   }
 
   @override
-  Widget build(BuildContext context) => ValueListenableBuilder<String>(
-      valueListenable: AppLanguage.locale,
-      builder: (_, __, ___) => widget.builder());
+  Widget build(BuildContext context) => widget.builder();
 }
 
 class LanguageSelector extends StatefulWidget {
