@@ -238,9 +238,13 @@ Future<void> main() async {
               s.document.fingerprint == fixture.fingerprint &&
               s.undoDepth == depth,
           'Top bank click edited underlying plant or failed to toggle');
+      h.expect(
+          h.all((w) => w.key == const ValueKey('board-shovel-cursor')).length ==
+              (expected == '铲除' ? 1 : 0),
+          'Shovel must appear immediately on pickup and disappear on return');
     }
-    page.updatePlantingPointer(BoardPainter.shovelBankBounds.center);
-    await h.settle();
+    h.expect(page.plantingPointer != null,
+        'Picking up shovel cleared pointer before first movement');
     final cursor =
         h.find((w) => w.key == const ValueKey('board-shovel-cursor'));
     final cursorPosition = cursor.findAncestorWidgetOfExactType<Positioned>()!;

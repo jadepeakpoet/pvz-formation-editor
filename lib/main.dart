@@ -4754,8 +4754,14 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
   void toggleBoardShovel() {
     if (s.readOnly) return;
     final cancel = tool == '铲除';
+    final pointer = plantingPointer;
     cancelPlanting();
-    if (!cancel) setState(() => tool = '铲除');
+    if (!cancel) {
+      setState(() {
+        tool = '铲除';
+        plantingPointer = pointer;
+      });
+    }
   }
 
   Widget boardShovelBank() => Positioned.fromRect(
@@ -4854,6 +4860,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                       child: Listener(
                           behavior: HitTestBehavior.opaque,
                           onPointerDown: (d) {
+                            updatePlantingPointer(d.localPosition);
                             canvasFocus.requestFocus();
                             if (seedChooserOpen) return;
                             if (rendered.display['卡槽'] == true &&
