@@ -13,3 +13,7 @@ macOS, Windows and Android preserve transparency. iOS uses an opaque green backg
 ## Validation
 
 The master PNG matches the final user-supplied file byte for byte. All catalog dimensions and the seven Windows ICO images were checked; iOS icons have no alpha channel. The macOS Debug application built successfully. iOS, Android and Windows builds were not run.
+
+## macOS Dock refresh
+
+`tool/restart_macos_app.swift` refreshes only the target application’s icon from its bundled `AppIcon.icns` before launch. This avoids stale Dock icons when a build is replaced at the same path and does not clear other applications’ icon caches. Graceful save/quit still completes before the replacement starts.

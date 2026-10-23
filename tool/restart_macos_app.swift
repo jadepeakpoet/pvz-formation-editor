@@ -33,6 +33,14 @@ guard matchingApps().isEmpty else {
   fputs("Existing app has not finished saving/quitting; no replacement launched\n", stderr)
   exit(4)
 }
+// Updating a bundle at the same path can leave Dock using an old or wrapped
+// Launch Services icon. Refresh only this bundle from its shipped artwork.
+if let iconURL = bundle.url(forResource: "AppIcon", withExtension: "icns"),
+   let icon = NSImage(contentsOf: iconURL), icon.isValid {
+  if !NSWorkspace.shared.setIcon(icon, forFile: url.path, options: []) {
+    fputs("Could not refresh Dock icon; launching with the bundled icon\n", stderr)
+  }
+}
 let launch = Process()
 launch.executableURL = URL(fileURLWithPath: "/usr/bin/open")
 launch.arguments = [url.path]
