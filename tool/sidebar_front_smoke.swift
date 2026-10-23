@@ -24,6 +24,7 @@ let reportPath = "\(report.path)"
 final class Editor: NSWindow {
   var sidebarWindow: NSWindow?
   var editorFrontQueued = false
+  var editorRestoreObserver: NSObjectProtocol?
 \(method)
 }
 func pump() { RunLoop.current.run(until: Date().addingTimeInterval(0.15)) }
@@ -45,7 +46,11 @@ editor.orderFront(nil)
 panel.orderFront(nil)
 blocker.makeKeyAndOrderFront(nil)
 app.activate(ignoringOtherApps: true)
-pump()
+for _ in 0..<20 {
+  pump()
+  if app.isActive { break }
+  app.activate(ignoringOtherApps: true)
+}
 panel.makeKeyAndOrderFront(nil)
 panel.makeFirstResponder(field)
 pump()
@@ -65,14 +70,20 @@ check(p < e && e < b, "Editor should be raised immediately behind sidebar")
 editor.orderOut(nil)
 editor.queueVisibleEditorFront()
 pump()
-check(!editor.isVisible, "A hidden editor must stay hidden")
+check(editor.isVisible, "A hidden editor must be restored")
+check(panel.isKeyWindow && panel.firstResponder === responder, "Restoring hidden editor stole sidebar focus")
 editor.orderFront(nil)
 editor.miniaturize(nil)
 pump()
 panel.makeKeyAndOrderFront(nil)
 editor.queueVisibleEditorFront()
-pump()
-check(editor.isMiniaturized, "A minimized editor must stay minimized")
+for _ in 0..<20 {
+  pump()
+  if !editor.isMiniaturized && editor.isVisible && panel.isKeyWindow { break }
+}
+check(!editor.isMiniaturized && editor.isVisible, "A minimized editor must be restored")
+check(panel.isKeyWindow, "Restoring minimized editor stole sidebar key focus")
+check(panel.firstResponder === field.currentEditor(), "Restoring minimized editor lost text editing focus")
 editor.deminiaturize(nil)
 pump()
 panel.orderOut(nil)
@@ -88,7 +99,7 @@ pump()
 check(app.orderedWindows.map { $0.windowNumber } == previous,
       "A sidebar without key focus must not reorder its companion")
 for window in [editor, panel, blocker] { window.orderOut(nil); window.close() }
-try! "PASS actual AppKit companion ordering, retained key/responder, coalescing, hidden/minimized and non-key guards; source click/key/activation hooks present".write(toFile: reportPath, atomically: true, encoding: .utf8)
+try! "PASS actual AppKit companion ordering, retained key/responder, coalescing, hidden/minimized editor restoration and sidebar/non-key guards; source click/key/activation hooks present".write(toFile: reportPath, atomically: true, encoding: .utf8)
 """
 let script = folder.appendingPathComponent("main.swift")
 try fixture.write(to: script, atomically: true, encoding: .utf8)

@@ -4539,7 +4539,8 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
         classicButton('清空', s.readOnly ? null : clearFormation,
             key: const ValueKey('clear-formation'))
       ]),
-      mapChangeControls(const ValueKey('original-change-map')),
+      if (!batchSelectionMode)
+        mapChangeControls(const ValueKey('original-change-map')),
       const SizedBox(height: 5),
       plantingSupportOptions(),
       const SizedBox(height: 8),
@@ -4738,8 +4739,8 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
       key: const ValueKey('web-batch-controls'),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(AppLanguage.text('一键预选'), style: const TextStyle(fontSize: 12)),
-        Wrap(children: [
+        Wrap(crossAxisAlignment: WrapCrossAlignment.center, children: [
+          Text(AppLanguage.text('一键预选'), style: const TextStyle(fontSize: 12)),
           for (final label in ['陆路', '水路', '后置炮', '前置炮', '超前置炮',
             '底线炮', '水路前场', '水路56列', '重置批量选择'])
             classicButton(label, () => quickSelect(label)),

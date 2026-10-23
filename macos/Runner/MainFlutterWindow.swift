@@ -107,6 +107,7 @@ class MainFlutterWindow: NSWindow, NSWindowDelegate {
   private var sidebarLifecycleSyncQueued = false
   private var sidebarFrontQueued = false
   private var editorFrontQueued = false
+  private var editorRestoreObserver: NSObjectProtocol?
 
   override func sendEvent(_ event: NSEvent) {
     super.sendEvent(event)
@@ -128,13 +129,38 @@ class MainFlutterWindow: NSWindow, NSWindowDelegate {
       guard let self = self else { return }
       self.editorFrontQueued = false
       guard NSApp.isActive, !NSApp.isHidden,
-            self.isVisible, !self.isMiniaturized, self.attachedSheet == nil,
+            self.attachedSheet == nil,
             NSApp.modalWindow == nil,
             let panel = self.sidebarWindow, panel.isKeyWindow,
             panel.isVisible, !panel.isMiniaturized,
             panel.attachedSheet == nil else { return }
       // Bring the editor alongside the active sidebar without changing its key
-      // window or first responder. Hidden/minimized companions stay untouched.
+      // window or first responder. Restore a hidden or minimized editor first.
+      if self.isMiniaturized {
+        // Miniaturization restoration completes asynchronously. Reapply sidebar
+        // focus after AppKit finishes making the restored editor key.
+        if let observer = self.editorRestoreObserver {
+          NotificationCenter.default.removeObserver(observer)
+        }
+        self.editorRestoreObserver = NotificationCenter.default.addObserver(
+          forName: NSWindow.didDeminiaturizeNotification, object: self, queue: .main
+        ) { [weak self, weak panel] _ in
+          guard let self = self else { return }
+          if let observer = self.editorRestoreObserver {
+            NotificationCenter.default.removeObserver(observer)
+            self.editorRestoreObserver = nil
+          }
+          guard let panel = panel,
+                NSApp.isActive, panel.isVisible, !panel.isMiniaturized else { return }
+          DispatchQueue.main.async { [weak self, weak panel] in
+            guard let self = self, let panel = panel,
+                  NSApp.isActive, panel.isVisible, !panel.isMiniaturized else { return }
+            panel.makeKey()
+            self.order(.below, relativeTo: panel.windowNumber)
+          }
+        }
+        self.deminiaturize(nil)
+      }
       self.order(.below, relativeTo: panel.windowNumber)
     }
   }
