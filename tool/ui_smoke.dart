@@ -103,6 +103,19 @@ Future<void> main() async {
       await h.settle();
       await h
           .tapElement(h.find((w) => w.key == const ValueKey('workspace-more')));
+      await Future<void>.delayed(const Duration(milliseconds: 700));
+      for (final key in ['workspace-undo', 'workspace-redo', 'archive-save',
+        'archive-save-as', 'workspace-rename', 'workspace-history']) {
+        final item = h.find((w) => w.key == ValueKey(key)).widget as PopupMenuItem;
+        h.expect(item.child is Row &&
+            (item.child as Row).children.any((w) => w is Icon) &&
+            (item.child as Row).children.any((w) => w is Text),
+            'More menu actions must show both icon and text');
+      }
+      h.expect(
+          (h.find((w) => w.key == const ValueKey('workspace-undo')).widget as PopupMenuItem).enabled == page.canUndoEditing &&
+          (h.find((w) => w.key == const ValueKey('workspace-redo')).widget as PopupMenuItem).enabled == page.canRedoEditing,
+          'More menu history actions must share toolbar availability');
       final save = h.find((w) => w.key == const ValueKey('archive-save')).widget
           as PopupMenuItem;
       final saveAs = h
@@ -122,7 +135,10 @@ Future<void> main() async {
       h.expect(h.all((w) => w.key == const ValueKey('archive-name')).isNotEmpty,
           'More menu Save As must open archive dialog');
       await h.tap('取消');
-      await h.settle();
+      for (var attempt = 0; attempt < 10; attempt++) {
+        if (h.all((w) => w.key == const ValueKey('archive-name')).isEmpty) break;
+        await h.settle();
+      }
       h.expect(
           h.all((w) => w.key == const ValueKey('archive-name')).isEmpty &&
               session.document.fingerprint == before &&
@@ -132,9 +148,13 @@ Future<void> main() async {
         final name = session.name;
         await h.tapElement(
             h.find((w) => w.key == const ValueKey('workspace-more')));
+        await Future<void>.delayed(const Duration(milliseconds: 350));
         await h.tapElement(
             h.find((w) => w.key == const ValueKey('workspace-rename')));
-        await h.settle();
+        for (var attempt = 0; attempt < 10; attempt++) {
+          if (h.all((w) => w.key == const ValueKey('workspace-rename-input')).isNotEmpty) break;
+          await h.settle();
+        }
         final input = h
             .find((w) => w.key == const ValueKey('workspace-rename-input'))
             .widget as TextField;
@@ -146,6 +166,10 @@ Future<void> main() async {
         input.controller!.text = 'cancelled rename';
         await h.tapElement(
             h.find((w) => w.key == const ValueKey('workspace-rename-cancel')));
+        for (var attempt = 0; attempt < 10; attempt++) {
+          if (h.all((w) => w.key == const ValueKey('workspace-rename-input')).isEmpty) break;
+          await h.settle();
+        }
         h.expect(
             session.name == name &&
                 session.document.fingerprint == before &&
@@ -153,9 +177,13 @@ Future<void> main() async {
             'Cancelling rename must preserve name, document and undo history');
         await h.tapElement(
             h.find((w) => w.key == const ValueKey('workspace-more')));
+        await Future<void>.delayed(const Duration(milliseconds: 350));
         await h.tapElement(
             h.find((w) => w.key == const ValueKey('workspace-rename')));
-        await h.settle();
+        for (var attempt = 0; attempt < 10; attempt++) {
+          if (h.all((w) => w.key == const ValueKey('workspace-rename-input')).isNotEmpty) break;
+          await h.settle();
+        }
         final renameInput = h
             .find((w) => w.key == const ValueKey('workspace-rename-input'))
             .widget as TextField;

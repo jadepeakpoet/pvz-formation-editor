@@ -95,12 +95,17 @@ Future<void> main() async {
               p.type == 'pea' && p.row == 1 && (p.col == 0 || p.col == 2)) &&
           session.undoDepth == beforeCard + 1,
       'Clicking a card must plant the intersection in one undo step');
-  await h.tap('(点击隐藏行列)');
+  await h.tap('隐藏行列');
   h.expect(
       page.batchSelectionMode == true &&
           h.all((w) => w.key == const ValueKey('batch-row-0')).isEmpty,
       'Hiding row/column controls must retain batch mode');
   checkCells({(1, 0), (1, 2)}, 'Hiding axes must retain their selection');
+  await h.tap('显示行列');
+  h.expect(h.all((w) => w.key == const ValueKey('batch-row-0')).isNotEmpty,
+      'Showing row/column controls must restore selectors');
+  checkCells({(1, 0), (1, 2)}, 'Showing axes must retain their selection');
+  await h.tap('隐藏行列');
   final beforeCanvas = session.document.fingerprint;
   final board = h
       .find((w) => w is CustomPaint && w.painter is BoardPainter)

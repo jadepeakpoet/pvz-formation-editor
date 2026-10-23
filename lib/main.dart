@@ -2040,6 +2040,12 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
   bool historyDialogOpen = false;
   bool historyRestoring = false;
 
+  Widget workspaceMenuLabel(IconData icon, String label) => Row(children: [
+    Icon(icon, size: 18),
+    const SizedBox(width: 10),
+    Text(AppLanguage.text(label)),
+  ]);
+
   Widget workspaceMoreMenu() => PopupMenuButton<String>(
       key: const ValueKey('workspace-more'),
       tooltip: AppLanguage.text('更多'),
@@ -2048,7 +2054,11 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
       enabled: !savingArchive && !renameDialogOpen && !historyDialogOpen,
       icon: const Icon(Icons.more_vert),
       onSelected: (action) {
-        if (action == 'history') {
+        if (action == 'undo') {
+          undoEditing();
+        } else if (action == 'redo') {
+          redoEditing();
+        } else if (action == 'history') {
           unawaited(showCurrentArchiveHistory());
         } else if (action == 'rename') {
           unawaited(renameFromMenu());
@@ -2058,24 +2068,35 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
       },
       itemBuilder: (_) => [
             PopupMenuItem(
+                value: 'undo',
+                key: const ValueKey('workspace-undo'),
+                enabled: canUndoEditing,
+                child: workspaceMenuLabel(Icons.undo, '撤销')),
+            PopupMenuItem(
+                value: 'redo',
+                key: const ValueKey('workspace-redo'),
+                enabled: canRedoEditing,
+                child: workspaceMenuLabel(Icons.redo, '恢复')),
+            const PopupMenuDivider(),
+            PopupMenuItem(
                 value: 'save',
                 key: const ValueKey('archive-save'),
                 enabled: !s.readOnly,
-                child: Text(AppLanguage.text('保存'))),
+                child: workspaceMenuLabel(Icons.save_outlined, '保存')),
             PopupMenuItem(
                 value: 'saveAs',
                 key: const ValueKey('archive-save-as'),
-                child: Text(AppLanguage.text('另存为'))),
+                child: workspaceMenuLabel(Icons.save_as_outlined, '另存为')),
             PopupMenuItem(
                 value: 'rename',
                 key: const ValueKey('workspace-rename'),
                 enabled: !s.readOnly && pendingDocumentRename == null,
-                child: Text(AppLanguage.text('重命名'))),
+                child: workspaceMenuLabel(Icons.drive_file_rename_outline, '重命名')),
             PopupMenuItem(
                 value: 'history',
                 key: const ValueKey('workspace-history'),
                 enabled: s.sourceArchiveId != null,
-                child: Text(AppLanguage.text('历史版本'))),
+                child: workspaceMenuLabel(Icons.history, '历史版本')),
           ]);
 
   Widget workspaceTabBar() => Material(
@@ -3800,12 +3821,13 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
           ? (canRedoEditing ? redoEditing : null)
           : (canUndoEditing ? undoEditing : null),
       icon: redo ? Icons.redo : Icons.undo,
+      iconOnly: true,
       tooltip: redo
           ? (Platform.isMacOS ? '恢复刚撤销的操作（⌘Y / ⇧⌘Z）' : '恢复刚撤销的操作（Ctrl+Y）')
           : (Platform.isMacOS ? '撤销上一步操作（⌘Z）' : '撤销上一步操作（Ctrl+Z）'));
 
   Widget classicButton(String label, VoidCallback? action,
-      {bool active = false, Key? key, IconData? icon, String? tooltip}) {
+      {bool active = false, Key? key, IconData? icon, bool iconOnly = false, String? tooltip}) {
     final button = Padding(
         padding: const EdgeInsets.all(2),
         child: SizedBox(
@@ -3829,7 +3851,9 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                 onPressed: action,
                 child: icon == null
                     ? Text(AppLanguage.text(label))
-                    : Row(mainAxisSize: MainAxisSize.min, children: [
+                    : iconOnly
+                        ? Semantics(label: AppLanguage.text(label), child: Icon(icon, size: 16))
+                        : Row(mainAxisSize: MainAxisSize.min, children: [
                         Icon(icon, size: 16),
                         const SizedBox(width: 3),
                         Text(AppLanguage.text(label)),
@@ -4503,21 +4527,29 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
         : category == '物品效果' ? propOrder : const <String>[];
     final specs = ids.map(ObjectSpec.byId).toList();
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Wrap(children: [
-        for (final batch in [false, true])
-          Row(mainAxisSize: MainAxisSize.min, children: [
-            SizedBox(width: 24, height: 28, child: Radio<bool>(
-                key: ValueKey(batch ? 'original-rHowGrow1' : 'original-rHowGrow0'),
-                value: batch, groupValue: batchSelectionMode,
-                onChanged: (value) => setSelectionMode(value!))),
-            InkWell(onTap: () => setSelectionMode(batch),
-                child: Text(AppLanguage.text(batch ? '批量选择' : '单个选择'),
-                    style: const TextStyle(fontSize: 12))),
-          ]),
+      Row(children: [
+        Expanded(child: Wrap(crossAxisAlignment: WrapCrossAlignment.center, children: [
+          for (final batch in [false, true])
+            Row(mainAxisSize: MainAxisSize.min, children: [
+              SizedBox(width: 24, height: 28, child: Radio<bool>(
+                  key: ValueKey(batch ? 'original-rHowGrow1' : 'original-rHowGrow0'),
+                  value: batch, groupValue: batchSelectionMode,
+                  onChanged: (value) => setSelectionMode(value!))),
+              InkWell(onTap: () => setSelectionMode(batch),
+                  child: Text(AppLanguage.text(batch ? '批量选择' : '单个选择'),
+                      style: const TextStyle(fontSize: 12))),
+            ]),
+        ])),
         if (batchSelectionMode)
-          InkWell(onTap: () => setState(() => batchSelectorsVisible = false),
-              child: Text(AppLanguage.text('(点击隐藏行列)'),
-                  style: const TextStyle(fontSize: 12, color: Colors.blue, decoration: TextDecoration.underline))),
+          TextButton(
+              key: const ValueKey('batch-toggle-selectors'),
+              style: TextButton.styleFrom(
+                  minimumSize: const Size(0, 28),
+                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  textStyle: const TextStyle(fontSize: 12)),
+              onPressed: () => setState(() => batchSelectorsVisible = !batchSelectorsVisible),
+              child: Text(AppLanguage.text(batchSelectorsVisible ? '隐藏行列' : '显示行列'))),
       ]),
       if (batchSelectionMode) webBatchControls(),
       if (!batchSelectionMode)

@@ -12,7 +12,8 @@ const Map<String, String> mainTranslations = {
   '导出图片': 'Export image',
   '正在生成…': 'Generating…',
   '生成图片失败：{error}': 'Could not generate image: {error}',
-  '(点击隐藏行列)': '(Hide row and column selectors)',
+  '隐藏行列': 'Hide selectors',
+  '显示行列': 'Show selectors',
 
   '全部行': 'All rows',
   '局部布局': 'Partial layouts',
