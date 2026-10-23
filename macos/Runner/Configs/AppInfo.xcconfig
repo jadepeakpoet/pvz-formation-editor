@@ -13,4 +13,4 @@ EXECUTABLE_NAME = pvz_formation_editor
 PRODUCT_BUNDLE_IDENTIFIER = com.example.pvzFormationEditor
 
 // The copyright displayed in application information
-PRODUCT_COPYRIGHT = Copyright © 2026 com.example. All rights reserved.
+PRODUCT_COPYRIGHT = Copyright © 2026 越小梦 yuexiaomeng. All rights reserved.
