@@ -1916,20 +1916,21 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                   child: SizedBox(
                       width: nameWidth,
                       height: 22,
-                      child: TextField(
-                          key: const ValueKey('document-name-input'),
-                          controller: documentNameEditor,
-                          focusNode: documentNameFocus,
-                          style: const TextStyle(fontSize: 12),
-                          textInputAction: TextInputAction.done,
-                          decoration: const InputDecoration(
-                              isDense: true,
-                              contentPadding: EdgeInsets.symmetric(
-                                  horizontal: 5, vertical: 3),
-                              border: OutlineInputBorder()),
-                          onSubmitted: (_) => unawaited(finishDocumentRename()),
-                          onTapOutside: (_) =>
-                              unawaited(finishDocumentRename()))))
+                      child: DefaultTextEditingShortcuts(
+                          child: TextField(
+                              key: const ValueKey('document-name-input'),
+                              controller: documentNameEditor,
+                              focusNode: documentNameFocus,
+                              style: const TextStyle(fontSize: 12),
+                              textInputAction: TextInputAction.done,
+                              decoration: const InputDecoration(
+                                  isDense: true,
+                                  contentPadding: EdgeInsets.symmetric(
+                                      horizontal: 5, vertical: 3),
+                                  border: OutlineInputBorder()),
+                              onSubmitted: (_) => unawaited(finishDocumentRename()),
+                              onTapOutside: (_) =>
+                                  unawaited(finishDocumentRename())))))
               : Tooltip(
                   message: showWindowError && windowError != null
                       ? windowError!
