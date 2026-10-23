@@ -113,6 +113,11 @@ class _OriginalSeedChooserState extends State<OriginalSeedChooser> {
                     ValueKey('seed-choice-${mimic ? 'mimic' : 'normal'}-$type'),
                 behavior: HitTestBehavior.opaque,
                 onTap: widget.readOnly ? null : () => toggle(type, mimic),
+                onSecondaryTap: !widget.readOnly && !mimic &&
+                        widget.document.imitaterSeedSlots.isEmpty &&
+                        WebsiteCodec.plantIds.take(40).contains(type)
+                    ? () => toggle(type, true)
+                    : null,
                 child: ColorFiltered(
                     // The original chooser dims cards already in the bank,
                     // retaining their color; grayscale belongs to Imitater art.

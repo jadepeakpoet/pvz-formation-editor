@@ -34,7 +34,7 @@ Element? find(bool Function(Widget) predicate) {
 
 Future<void> settle() =>
     Future<void>.delayed(const Duration(milliseconds: 120));
-Future<void> tap(String key) async {
+Future<void> tap(String key, {int buttons = 1}) async {
   final element = find((w) => w.key == ValueKey(key));
   check(element != null, 'Missing $key');
   await Scrollable.ensureVisible(element!,
@@ -43,9 +43,9 @@ Future<void> tap(String key) async {
   final box = element.renderObject as RenderBox,
       p = box.localToGlobal(box.size.center(Offset.zero));
   GestureBinding.instance.handlePointerEvent(
-      PointerDownEvent(pointer: 1, position: p, buttons: 1));
+      PointerDownEvent(pointer: 1, position: p, buttons: buttons, kind: PointerDeviceKind.mouse));
   GestureBinding.instance
-      .handlePointerEvent(PointerUpEvent(pointer: 1, position: p));
+      .handlePointerEvent(PointerUpEvent(pointer: 1, position: p, kind: PointerDeviceKind.mouse));
   await settle();
 }
 
@@ -196,6 +196,9 @@ Future<void> main() async {
     await tap('seed-choice-normal-fume');
     check(changes == before && doc.value.seedSlots.length == 10,
         'Eleventh card cannot be added');
+    await tap('seed-choice-normal-pea', buttons: 2);
+    check(changes == before && doc.value.imitaterSeedSlots.isEmpty,
+        'Right-click mimic must respect ten-card capacity');
     final button = find((w) => w.key == const ValueKey('seed-imitater-open'))!
         .widget as GestureDetector;
     check(button.onTap == null, 'Mimic cannot open when full');
@@ -214,11 +217,33 @@ Future<void> main() async {
     check(jsonEncode(copy) == jsonEncode(original),
         'Unrelated document fields preserved');
     results.add('map, sun, fog, pieces and other document fields unchanged');
+    doc.value = doc.value.copy(seedSlots: ['pea'], imitaterSeedSlots: {});
+    await settle();
+    await tap('seed-choice-normal-pea', buttons: 2);
+    check(doc.value.seedSlots.join(',') == 'pea,pea' &&
+        doc.value.imitaterSeedSlots.single == 1,
+        'Right-click must add mimic while keeping the normal card');
+    final rightBefore = changes;
+    await tap('seed-choice-normal-pea', buttons: 2);
+    await tap('seed-choice-normal-fume', buttons: 2);
+    check(changes == rightBefore && doc.value.imitaterSeedSlots.single == 1,
+        'Existing mimic must neither be removed nor replaced by right-click');
+    doc.value = doc.value.copy(seedSlots: [], imitaterSeedSlots: {});
+    await settle();
+    await tap('seed-choice-normal-gatling', buttons: 2);
+    check(changes == rightBefore && doc.value.seedSlots.isEmpty,
+        'Unsupported upgraded plants must not become imitater');
+    await tap('seed-choice-normal-fume', buttons: 2);
+    check(doc.value.seedSlots.single == 'fume' && doc.value.imitaterSeedSlots.single == 0,
+        'Right-click must work again after the previous mimic is returned');
+    results.add('right-click mimic selection, normal coexistence, existing mimic and upgrade/capacity guards');
+    doc.value = doc.value.copy(seedSlots: [], imitaterSeedSlots: {});
     readOnly = true;
     await mount();
     final readBefore = changes;
     await tap('seed-choice-normal-pea');
-    check(changes == readBefore, 'Read-only selection blocked');
+    await tap('seed-choice-normal-pea', buttons: 2);
+    check(changes == readBefore, 'Read-only primary and secondary selection blocked');
     check(
         (find((w) => w.key == const ValueKey('seed-imitater-open'))!.widget
                     as GestureDetector)
