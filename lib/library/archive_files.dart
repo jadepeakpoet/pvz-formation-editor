@@ -11,7 +11,7 @@ class ArchiveFiles {
     final now = DateTime.now();
     final stamp = '${now.year}${now.month.toString().padLeft(2, '0')}'
         '${now.day.toString().padLeft(2, '0')}';
-    return await ProjectFiles.save('我的存档-$stamp.pvzlib.json',
+    return await ProjectFiles.save('存档库-$stamp.pvzlib.json',
             Uint8List.fromList(utf8.encode(text)), 'application/json') !=
         null;
   }

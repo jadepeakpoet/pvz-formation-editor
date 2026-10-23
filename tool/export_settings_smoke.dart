@@ -2,10 +2,16 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:pvz_formation_editor/library/export_settings_dialog.dart';
+import 'package:pvz_formation_editor/platform/export_preferences.dart';
 import 'sidebar_title_smoke.dart' as h;
 
 Future<void> main() async {
   h.TitleBinding();
+  final temporary =
+      await Directory.systemTemp.createTemp('pvz-export-settings-');
+  ExportPreferences.fileOverride = File('${temporary.path}/preferences.json');
+  ExportPreferences.documentsDirectoryOverride =
+      Directory('${temporary.path}/Documents');
   final errors = <FlutterErrorDetails>[];
   FlutterError.onError = errors.add;
   runApp(MaterialApp(
@@ -35,7 +41,8 @@ Future<void> main() async {
     }
     h.check(
         h
-            .find((w) => w is Text && (w.data ?? '').contains('系统文稿目录'))
+            .find((w) =>
+                w is Text && (w.data ?? '').contains('PVZ Formation Editor'))
             .isNotEmpty,
         'default folder explained');
     await h.tap('export-settings-default');
@@ -64,5 +71,8 @@ Future<void> main() async {
   File('/tmp/pvz-export-settings-report.json')
       .writeAsStringSync(jsonEncode(report));
   stdout.writeln(jsonEncode(report));
+  ExportPreferences.fileOverride = null;
+  ExportPreferences.documentsDirectoryOverride = null;
+  await temporary.delete(recursive: true);
   exit(rows.every((r) => r['status'] == 'pass') && errors.isEmpty ? 0 : 1);
 }

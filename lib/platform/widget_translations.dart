@@ -1,5 +1,24 @@
 /// English labels for the library, dialogs, and editor widgets.
 const Map<String, String> widgetTranslations = {
+  '默认使用文稿目录下的“PVZ Formation Editor”文件夹。每次导出时仍可更改保存位置。':
+      'Uses Documents/PVZ Formation Editor by default. You can choose another folder for each export.',
+  '布阵器专用目录': 'Formation editor folder',
+  '恢复默认目录': 'Restore default folder',
+  '选择标签': 'Choose a tag',
+  '取消选择': 'Cancel selection',
+  '去重': 'Deduplicate',
+  '正在去重…': 'Deduplicating…',
+  '存档去重': 'Deduplicate archives',
+  '确认去重': 'Confirm deduplication',
+  '去重失败：{error}': 'Deduplication failed: {error}',
+  '没有可清理的重复存档。正在打开的存档会保留。': 'No removable duplicates. Open archives are kept.',
+  '发现 {groups} 组重复，可清理 {count} 个存档。':
+      'Found {groups} duplicate groups; {count} archives can be removed.',
+  '仅合并阵型内容、备注、标签和收藏状态相同的存档。优先保留正在打开的存档，否则保留最近修改的一份；历史版本会完整保留。':
+      'Only matching formations, notes, tags and favorite status are merged. Open archives are kept first; otherwise the most recently changed copy is kept. All version history is retained.',
+  '保留：{name}；清理 {count} 份重复': 'Keep: {name}; remove {count} duplicates',
+  '已清理 {count} 个重复存档，历史版本已保留。':
+      'Removed {count} duplicate archives. Version history was retained.',
   '阵型已写入游戏，原阵型已备份。':
       'Formation written to the game. The previous formation was backed up.',
   '已恢复原阵型，恢复前的内容也已备份。':

@@ -40,6 +40,7 @@ import 'storage/formation_repository.dart';
 import 'library/library_browser.dart';
 import 'library/archive_tags_dialog.dart';
 import 'library/library_presets.dart';
+import 'library/archive_dedup_dialog.dart';
 import 'library/game_panel.dart';
 import 'library/archive_files.dart';
 import 'library/formation_images.dart';
@@ -631,6 +632,33 @@ class _LibraryPageState extends State<LibraryPage> {
     }
   }
 
+  Future<void> deduplicateLibraryArchives() async {
+    final request = <String, dynamic>{'kind': 'archive-dedup'};
+    if (widget.independent) {
+      final handled = await libraryChannel.invokeMethod<bool>('openEditor', request);
+      if (handled != true) throw StateError('主编辑器暂时无法执行去重');
+    } else if (widget.onDocumentAction != null) {
+      if (!await widget.onDocumentAction!(request)) return;
+    } else {
+      Set<String> protected() => {
+        for (final session in workspace?.allSessions ?? <EditorSession>[])
+          if (session.sourceArchiveId != null) session.sourceArchiveId!,
+        if (widget.activeDraftId != null) widget.activeDraftId!,
+      };
+      final result = await showArchiveDedupDialog(context, repo!,
+          protectedArchiveIds: protected,
+          flushEditors: () async {
+            if (workspace != null && !await workspace!.flushAll()) {
+              throw StateError(workspace!.error ?? '无法保存打开的存档');
+            }
+          });
+      if (result != null && mounted) {
+        message(context, '已清理 ${result.removedCount} 个重复存档，历史版本已保留。');
+      }
+    }
+    await refresh();
+  }
+
   Future<void> archiveAction(String action, ArchiveRecord a) async {
     try {
       if (action == 'copy-image' || action == 'export-image') {
@@ -885,7 +913,8 @@ class _LibraryPageState extends State<LibraryPage> {
       }
       if (action == 'open-current' || action == 'open-tab') {
         final session = EditorSession(repo!,
-            document: preset.document, name: await uniqueName(preset.name));
+            document: preset.document, name: preset.name,
+            deferInitialSave: true);
         if (!mounted) {
           session.dispose();
           return;
@@ -994,6 +1023,7 @@ class _LibraryPageState extends State<LibraryPage> {
         }
       },
       onAddPreset: addPreset,
+      onDeduplicate: deduplicateLibraryArchives,
       drafts: drafts,
       archives: archives,
       error: error,
@@ -2386,6 +2416,30 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
       await s.flush();
       if (!mounted) return false;
       if (s.error != null) throw StateError('当前存档保存失败：${s.error}');
+      if (request['kind'] == 'archive-dedup') {
+        final controller = context.findAncestorWidgetOfExactType<EditorWorkspace>()?.controller;
+        Set<String> protected() => {
+          for (final session in controller?.allSessions ?? <EditorSession>[s])
+            if (session.sourceArchiveId != null) session.sourceArchiveId!,
+        };
+        final result = await showArchiveDedupDialog(context, s.repository,
+            protectedArchiveIds: protected,
+            flushEditors: () async {
+              if (controller != null) {
+                if (!await controller.flushAll()) {
+                  throw StateError(controller.error ?? '无法保存打开的存档');
+                }
+              } else {
+                await s.flush();
+                if (s.error != null) throw StateError(s.error!);
+              }
+            });
+        await refreshLibraryView();
+        if (result != null && mounted) {
+          message(context, '已清理 ${result.removedCount} 个重复存档，历史版本已保留。');
+        }
+        return true;
+      }
       EditorSession next;
       final id = request['id'];
       if (request['kind'] == 'archive-rename' ||
@@ -2463,7 +2517,8 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
         final document = Formation.fromJson(Map<String, dynamic>.from(
             jsonDecode(request['documentJson'] as String) as Map));
         next = EditorSession(s.repository,
-            document: document, name: request['name'] as String? ?? '未命名阵型');
+            document: document, name: request['name'] as String? ?? '未命名阵型',
+            deferInitialSave: true);
       } else if (request['kind'] == 'draft') {
         final matches =
             (await s.repository.listDrafts()).where((d) => d.id == id);
@@ -4780,7 +4835,8 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
       return;
     }
     final next =
-        EditorSession(s.repository, document: document, name: name ?? s.name)
+        EditorSession(s.repository, document: document, name: name ?? s.name,
+            deferInitialSave: true)
           ..filePath = filePath
           ..fileFormat = fileFormat
           ..lastFileBackup = lastFileBackup;

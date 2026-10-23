@@ -57,6 +57,7 @@ Future<void> main() async {
     h.check(
         h.find((w) => w is Text && w.data == '已选 2（含 1 个筛选外存档）').length == 1,
         'union count hint');
+    await h.tap('library-export');
     await h.tap('library-export-selected');
     h.check(exported.single.join(',') == 'a0,a1',
         'export preserves hidden selection');

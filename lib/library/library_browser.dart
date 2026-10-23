@@ -29,6 +29,7 @@ class LibraryBrowser extends StatefulWidget {
   final Future<void> Function(String, LibraryPreset)? onPresetAction;
   final Set<String> favoritePresetIds;
   final Future<void> Function(List<ArchiveRecord>)? onExportArchives;
+  final Future<void> Function()? onDeduplicate;
   const LibraryBrowser(
       {super.key,
       required this.drafts,
@@ -54,6 +55,7 @@ class LibraryBrowser extends StatefulWidget {
       this.onAddPreset,
       this.onPresetAction,
       this.onExportArchives,
+      this.onDeduplicate,
       this.favoritePresetIds = const {}});
   @override
   State<LibraryBrowser> createState() => _LibraryBrowserState();
@@ -99,7 +101,9 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
   bool filterDialogOpen = false;
   String? addingPreset;
   bool narrowDetails = false;
-  bool selectingArchives = false, exportingArchives = false;
+  bool selectingArchives = false,
+      exportingArchives = false,
+      deduplicatingArchives = false;
   final selectedArchiveIds = <String>{};
   void toggleArchive(String id) => setState(() {
         if (!selectedArchiveIds.add(id)) selectedArchiveIds.remove(id);
@@ -121,8 +125,73 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
     }
   }
 
+  List<ArchiveRecord> get favoriteExports => [
+        ...widget.archives.where((archive) => archive.favorite),
+        for (final preset in widget.presets)
+          if (widget.favoritePresetIds.contains(preset.id))
+            ArchiveRecord(
+                id: 'preset:${preset.id}',
+                name: preset.name,
+                document: preset.document.toJson(),
+                favorite: true,
+                createdAt: DateTime.fromMillisecondsSinceEpoch(0),
+                updatedAt: DateTime.fromMillisecondsSinceEpoch(0)),
+      ];
+
+  Widget exportMenu() => PopupMenuButton<String>(
+      key: const ValueKey('library-export'),
+      tooltip: AppLanguage.text('导出'),
+      enabled: !exportingArchives && !deduplicatingArchives,
+      onSelected: (scope) => exportArchives(scope == 'favorites'
+          ? favoriteExports
+          : scope == 'selected'
+              ? widget.archives
+                  .where((a) => selectedArchiveIds.contains(a.id))
+                  .toList()
+              : widget.archives),
+      itemBuilder: (_) => [
+            PopupMenuItem(
+                value: 'all',
+                key: const ValueKey('library-export-all'),
+                enabled: widget.archives.isNotEmpty,
+                child: Text(AppLanguage.text('我的存档'))),
+            PopupMenuItem(
+                value: 'favorites',
+                key: const ValueKey('library-export-favorites'),
+                enabled: favoriteCount > 0,
+                child: Text(AppLanguage.text('收藏'))),
+            if (selectedArchiveIds.isNotEmpty)
+              PopupMenuItem(
+                  value: 'selected',
+                  key: const ValueKey('library-export-selected'),
+                  child: Text(AppLanguage.text('导出已选'))),
+          ],
+      child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            const Icon(Icons.file_upload_outlined, size: 18),
+            const SizedBox(width: 3),
+            Text(AppLanguage.text(exportingArchives ? '正在导出…' : '导出'),
+                style: const TextStyle(fontSize: 12)),
+          ])));
+
+  Widget selectionButton() => TextButton(
+      key: const ValueKey('library-select-archives'),
+      style: TextButton.styleFrom(
+          minimumSize: const Size(0, 32),
+          padding: const EdgeInsets.symmetric(horizontal: 6)),
+      onPressed: deduplicatingArchives || exportingArchives
+          ? null
+          : () => setState(() {
+                selectingArchives = !selectingArchives;
+                if (!selectingArchives) selectedArchiveIds.clear();
+              }),
+      child: Text(AppLanguage.text(selectingArchives ? '取消选择' : '批量选择'),
+          style: const TextStyle(fontSize: 12)));
+
   Widget archiveSelectionBar() {
-    if (section != '我的存档' || widget.onExportArchives == null) {
+    if (section != '我的存档' ||
+        (widget.onExportArchives == null && widget.onDeduplicate == null)) {
       return const SizedBox.shrink();
     }
     final visible = filtered
@@ -141,16 +210,14 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               if (!selectingArchives) ...[
-                TextButton(
-                    key: const ValueKey('library-select-archives'),
-                    onPressed: () => setState(() => selectingArchives = true),
-                    child: Text(AppLanguage.text('批量选择'))),
-                TextButton(
-                    key: const ValueKey('library-export-all'),
-                    onPressed: exportingArchives || widget.archives.isEmpty
-                        ? null
-                        : () => exportArchives(widget.archives),
-                    child: Text(AppLanguage.text('导出全部'))),
+                if (widget.onDeduplicate != null)
+                  TextButton(
+                      key: const ValueKey('library-deduplicate'),
+                      onPressed: deduplicatingArchives || exportingArchives
+                          ? null
+                          : deduplicateArchives,
+                      child: Text(AppLanguage.text(
+                          deduplicatingArchives ? '正在去重…' : '去重'))),
               ] else ...[
                 Text(
                     AppLanguage.text(
@@ -162,22 +229,23 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
                     onPressed: () => setState(() =>
                         selectedArchiveIds.addAll(visible.map((a) => a.id))),
                     child: Text(AppLanguage.text('全选当前结果'))),
-                TextButton(
-                    key: const ValueKey('library-export-selected'),
-                    onPressed: exportingArchives || chosen.isEmpty
-                        ? null
-                        : () => exportArchives(chosen),
-                    child: Text(AppLanguage.text(
-                        exportingArchives ? '正在导出…' : '导出已选'))),
-                TextButton(
-                    key: const ValueKey('library-selection-cancel'),
-                    onPressed: () => setState(() {
-                          selectingArchives = false;
-                          selectedArchiveIds.clear();
-                        }),
-                    child: Text(AppLanguage.text('取消'))),
               ]
             ]));
+  }
+
+  Future<void> deduplicateArchives() async {
+    if (deduplicatingArchives || widget.onDeduplicate == null) return;
+    setState(() => deduplicatingArchives = true);
+    try {
+      await widget.onDeduplicate!();
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(AppLanguage.text('去重失败：$error'))));
+      }
+    } finally {
+      if (mounted) setState(() => deduplicatingArchives = false);
+    }
   }
 
   final narrowListScroll = ScrollController();
@@ -248,43 +316,57 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
         narrowDetails = false;
       });
 
+  bool tagsPageOpen = false;
+  Future<void> showTagPicker() async {
+    if (tagsPageOpen) return;
+    tagsPageOpen = true;
+    try {
+      final counts = tagCounts;
+      final tags = counts.keys.toList()..sort();
+      final picked = await Navigator.of(context).push<String>(MaterialPageRoute(
+          fullscreenDialog: true,
+          builder: (pageContext) => Scaffold(
+              key: const ValueKey('library-tag-picker'),
+              backgroundColor: const Color(0xfff5f7f0),
+              appBar: AppBar(title: Text(AppLanguage.text('选择标签'))),
+              body: ListView(children: [
+                ListTile(
+                    key: const ValueKey('library-tag-all'),
+                    title: Text(AppLanguage.text('全部存档')),
+                    trailing: Text('${widget.archives.length}'),
+                    selected: tagFilter == null,
+                    onTap: () => Navigator.pop(pageContext, '')),
+                for (final tag in tags)
+                  ListTile(
+                      key: ValueKey('library-tag:$tag'),
+                      title: Text(tag),
+                      trailing: Text('${counts[tag]}'),
+                      selected: tagFilter == tag,
+                      onTap: () => Navigator.pop(pageContext, tag)),
+                if (tags.isEmpty)
+                  Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Text(AppLanguage.text('在存档详情中设置标签即可分类。'))),
+              ]))));
+      if (mounted && picked != null) openTag(picked.isEmpty ? null : picked);
+    } finally {
+      tagsPageOpen = false;
+    }
+  }
+
   Widget tagBrowser() {
     if (section == '预制名阵') return const SizedBox.shrink();
-    final counts = tagCounts;
-    final tags = counts.keys.toList()..sort();
-    return ExpansionTile(
-        key: const ValueKey('library-tags'),
-        tilePadding: const EdgeInsets.symmetric(horizontal: 12),
-        dense: true,
-        title: Text(
-            AppLanguage.text(
-                tagFilter == null ? '标签 · ${tags.length}' : '标签 · $tagFilter'),
-            style: const TextStyle(fontSize: 12)),
-        children: [
-          ConstrainedBox(
-              constraints: const BoxConstraints(maxHeight: 144),
-              child: SingleChildScrollView(
-                  child: Padding(
-                      padding: const EdgeInsets.fromLTRB(10, 0, 10, 8),
-                      child: Wrap(spacing: 5, runSpacing: 4, children: [
-                        filterChip(
-                            key: 'library-tag-all',
-                            label: '全部存档',
-                            count: widget.archives.length,
-                            selected: tagFilter == null,
-                            select: () => openTag(null)),
-                        for (final tag in tags)
-                          filterChip(
-                              key: 'library-tag:$tag',
-                              label: tag,
-                              count: counts[tag],
-                              selected: tagFilter == tag,
-                              select: () => openTag(tag)),
-                        if (tags.isEmpty)
-                          Text(AppLanguage.text('在存档详情中设置标签即可分类。'),
-                              style: const TextStyle(fontSize: 11)),
-                      ]))))
-        ]);
+    return Align(
+        alignment: Alignment.centerLeft,
+        child: TextButton.icon(
+            key: const ValueKey('library-tags'),
+            onPressed: showTagPicker,
+            icon: const Icon(Icons.sell_outlined, size: 16),
+            label: Text(
+                AppLanguage.text(tagFilter == null
+                    ? '标签 · ${tagCounts.length}'
+                    : '标签 · $tagFilter'),
+                style: const TextStyle(fontSize: 12))));
   }
 
   bool matchesQuery(_Entry e) {
@@ -818,71 +900,79 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
   Widget header() => Padding(
       padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              if (widget.showTitle)
-                Text(AppLanguage.text('存档库'),
-                    style: const TextStyle(
-                        fontSize: 20, fontWeight: FontWeight.w700, color: ink)),
-              FilledButton.icon(
-                  key: const ValueKey('library-new'),
-                  onPressed: widget.onNew,
-                  icon: const Icon(Icons.add, size: 18),
-                  label: Text(AppLanguage.text('新建阵型'))),
-              PopupMenuButton<String>(
-                  key: const ValueKey('library-import'),
-                  tooltip: AppLanguage.text('导入'),
-                  onSelected: (v) {
-                    if (v == 'game-save') {
-                      widget.onImportGameSave?.call();
-                    } else if (v == 'project') {
-                      widget.onImportProject();
-                    } else {
-                      widget.onImportString();
-                    }
-                  },
-                  itemBuilder: (_) => [
-                        PopupMenuItem(
-                            value: 'project',
-                            child: Text(AppLanguage.text('导入项目文件'))),
-                        PopupMenuItem(
-                            value: 'string',
-                            child: Text(AppLanguage.text('导入阵型字符串'))),
-                        if (widget.onImportGameSave != null)
+        Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+          Expanded(
+              child: Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                if (widget.showTitle)
+                  Text(AppLanguage.text('存档库'),
+                      style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          color: ink)),
+                FilledButton.icon(
+                    key: const ValueKey('library-new'),
+                    onPressed: widget.onNew,
+                    icon: const Icon(Icons.add, size: 18),
+                    label: Text(AppLanguage.text('新建阵型'))),
+                PopupMenuButton<String>(
+                    key: const ValueKey('library-import'),
+                    tooltip: AppLanguage.text('导入'),
+                    onSelected: (v) {
+                      if (v == 'game-save') {
+                        widget.onImportGameSave?.call();
+                      } else if (v == 'project') {
+                        widget.onImportProject();
+                      } else {
+                        widget.onImportString();
+                      }
+                    },
+                    itemBuilder: (_) => [
                           PopupMenuItem(
-                              key: const ValueKey('library-import-game-save'),
-                              value: 'game-save',
-                              child: Text(AppLanguage.text('导入PC无尽存档（实验）'))),
-                      ],
-                  child: Padding(
-                      padding: const EdgeInsets.all(8),
-                      child: Row(mainAxisSize: MainAxisSize.min, children: [
-                        const Icon(Icons.file_download_outlined, size: 19),
-                        const SizedBox(width: 6),
-                        Text(AppLanguage.text('导入')),
-                        const Icon(Icons.arrow_drop_down, size: 18)
-                      ]))),
-              if (widget.onGameTools != null)
-                TextButton.icon(
-                    key: const ValueKey('library-game-tools'),
-                    onPressed: () => widget.onGameTools!(null),
-                    icon: const Icon(Icons.sports_esports_outlined, size: 17),
-                    label: Text(AppLanguage.text('游戏存档'))),
-              if (widget.onSettings != null) settingsButton(),
-              IconButton(
-                  key: const ValueKey('library-refresh'),
-                  tooltip: AppLanguage.text('刷新存档库'),
-                  onPressed: refreshing ? null : refresh,
-                  icon: refreshing
-                      ? const SizedBox(
-                          width: 18,
-                          height: 12,
-                          child: CircularProgressIndicator(strokeWidth: 2))
-                      : const Icon(Icons.refresh, size: 21))
-            ]),
+                              value: 'project',
+                              child: Text(AppLanguage.text('导入项目文件'))),
+                          PopupMenuItem(
+                              value: 'string',
+                              child: Text(AppLanguage.text('导入阵型字符串'))),
+                          if (widget.onImportGameSave != null)
+                            PopupMenuItem(
+                                key: const ValueKey('library-import-game-save'),
+                                value: 'game-save',
+                                child: Text(AppLanguage.text('导入PC无尽存档（实验）'))),
+                        ],
+                    child: Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: Row(mainAxisSize: MainAxisSize.min, children: [
+                          const Icon(Icons.file_download_outlined, size: 19),
+                          const SizedBox(width: 6),
+                          Text(AppLanguage.text('导入')),
+                          const Icon(Icons.arrow_drop_down, size: 18)
+                        ]))),
+                if (widget.onExportArchives != null) exportMenu(),
+              ])),
+          if (section == '我的存档' && widget.onExportArchives != null)
+            selectionButton(),
+          if (widget.onGameTools != null)
+            TextButton.icon(
+                key: const ValueKey('library-game-tools'),
+                onPressed: () => widget.onGameTools!(null),
+                icon: const Icon(Icons.sports_esports_outlined, size: 17),
+                label: Text(AppLanguage.text('游戏存档'))),
+          if (widget.onSettings != null) settingsButton(),
+          IconButton(
+              key: const ValueKey('library-refresh'),
+              tooltip: AppLanguage.text('刷新存档库'),
+              onPressed: refreshing ? null : refresh,
+              icon: refreshing
+                  ? const SizedBox(
+                      width: 18,
+                      height: 12,
+                      child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Icon(Icons.refresh, size: 21))
+        ]),
         const SizedBox(height: 5),
         Text(AppLanguage.text('整理你的布阵灵感，随时接着上一次创作。'),
             style: const TextStyle(color: Color(0xff6a786c), fontSize: 13)),
@@ -1062,7 +1152,11 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
                         ])),
                     if (e.favorite)
                       const Icon(Icons.star_rounded,
-                          size: 18, color: Color(0xffb18a31)),
+                          size: 20,
+                          color: Color(0xffffb300),
+                          shadows: [
+                            Shadow(color: Color(0xffb97900), blurRadius: 1)
+                          ]),
                     if (widget.onPresetPick == null)
                       menu(e)
                     else
@@ -1105,8 +1199,8 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
                                     ? Icons.star_rounded
                                     : Icons.star_outline_rounded,
                                 color: e.favorite
-                                    ? const Color(0xffb18a31)
-                                    : green)),
+                                    ? const Color(0xffffb300)
+                                    : const Color(0xff8b9586))),
                       if (widget.onPresetPick == null)
                         menu(e)
                       else
@@ -1378,7 +1472,10 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
             icon: const Icon(Icons.file_download_outlined),
             onSelected: importSelected,
             itemBuilder: (_) => importItems()),
+        if (widget.onExportArchives != null) exportMenu(),
         if (!widget.showTitle) const Spacer(),
+        if (section == '我的存档' && widget.onExportArchives != null)
+          selectionButton(),
         if (widget.onGameTools != null)
           IconButton(
               key: const ValueKey('library-game-tools'),

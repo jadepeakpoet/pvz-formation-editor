@@ -22,8 +22,9 @@ Future<void> main() async {
       throw StateError('导出目录未持久化');
     }
     await ExportPreferences.setDirectory(null);
-    if (await ExportPreferences.loadDirectory() != null) {
-      throw StateError('恢复系统默认失败');
+    if (await ExportPreferences.loadDirectory() !=
+        await ExportPreferences.defaultDirectory()) {
+      throw StateError('恢复布阵器默认目录失败');
     }
     final document = Formation(pieces: [
       Piece(id: 'pea', type: 'pea', row: 1, col: 1, layer: 10),

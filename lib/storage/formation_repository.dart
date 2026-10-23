@@ -57,12 +57,48 @@ class ArchiveVersion {
       required this.document});
 }
 
+/// A read-only duplicate plan. Only matching document content and metadata
+/// qualify; names and object-local IDs do not define formation content.
+class ArchiveDuplicateGroup {
+  final ArchiveRecord keeper;
+  final List<ArchiveRecord> duplicates;
+  ArchiveDuplicateGroup._(this.keeper, List<ArchiveRecord> duplicates)
+      : duplicates = List.unmodifiable(duplicates);
+}
+
+class ArchiveDedupPlan {
+  final List<ArchiveDuplicateGroup> groups;
+  final int preservedHistoryCount, skippedProtectedCount;
+  final Object _owner;
+  final Map<String, String> _heads, _versions;
+  ArchiveDedupPlan._(
+      this._owner,
+      List<ArchiveDuplicateGroup> groups,
+      this._heads,
+      this._versions,
+      this.preservedHistoryCount,
+      this.skippedProtectedCount)
+      : groups = List.unmodifiable(groups);
+  int get groupsCount => groups.length;
+  int get removableCount =>
+      groups.fold(0, (sum, group) => sum + group.duplicates.length);
+}
+
+class ArchiveDedupResult {
+  final int removedCount, preservedHistoryCount, groupsCount;
+  final Map<String, String> redirects;
+  ArchiveDedupResult._(this.removedCount, this.preservedHistoryCount,
+      this.groupsCount, Map<String, String> redirects)
+      : redirects = Map.unmodifiable(redirects);
+}
+
 /// Each operation, including reads, occupies one queue slot. Transactions cannot interleave.
 class FormationRepository {
   NativeSqlite? _native;
   dynamic _mobile;
   Future<void> _tail = Future.value();
   bool _closed = false;
+  final Object _dedupOwner = Object();
   FormationRepository._();
   static Future<FormationRepository> open(String path) async {
     final repo = FormationRepository._();
@@ -392,6 +428,139 @@ class FormationRepository {
     if (latestVersion != null && now <= latestVersion) now = latestVersion + 1;
     return now;
   }
+
+  static Object? _canonical(Object? value) {
+    if (value is Map) {
+      final keys = value.keys.cast<String>().toList()..sort();
+      return {for (final key in keys) key: _canonical(value[key])};
+    }
+    if (value is List) return value.map(_canonical).toList();
+    return value;
+  }
+
+  static String _canonicalJson(Object? value) => jsonEncode(_canonical(value));
+
+  static String _duplicateContent(Map<String, Object?> row) {
+    final document = jsonDecode(row['document'] as String) as Map;
+    final content = Map<String, dynamic>.from(document);
+    if (content['objects'] is List) {
+      content['objects'] = (content['objects'] as List).map((object) {
+        if (object is! Map) return object;
+        return Map<String, dynamic>.from(object)..remove('id');
+      }).toList();
+    }
+    return _canonicalJson({
+      'document': content,
+      'note': row['note'],
+      'tags': jsonDecode(row['tags'] as String),
+      'favorite': row['favorite'],
+    });
+  }
+
+  /// Plan without writing. Multiple protected sessions in one group remain
+  /// separate; an unprotected head is never preferred over an active session.
+  Future<ArchiveDedupPlan> planDuplicateArchives(
+          {Set<String> protectedArchiveIds = const {}}) =>
+      _serial(() async {
+        final byContent = <String, List<Map<String, Object?>>>{};
+        for (final row in await _query('SELECT * FROM archives')) {
+          byContent.putIfAbsent(_duplicateContent(row), () => []).add(row);
+        }
+        final groups = <ArchiveDuplicateGroup>[];
+        final heads = <String, String>{}, versions = <String, String>{};
+        var preserved = 0, skippedProtected = 0;
+        for (final rows in byContent.values.where((rows) => rows.length > 1)) {
+          rows.sort((a, b) {
+            final protectedA = protectedArchiveIds.contains(a['id']);
+            final protectedB = protectedArchiveIds.contains(b['id']);
+            if (protectedA != protectedB) return protectedA ? -1 : 1;
+            final date =
+                (b['updated_at'] as int).compareTo(a['updated_at'] as int);
+            return date == 0
+                ? (a['id'] as String).compareTo(b['id'] as String)
+                : date;
+          });
+          final keeper = rows.first;
+          final candidates = rows
+              .skip(1)
+              .where((row) => !protectedArchiveIds.contains(row['id']))
+              .toList();
+          skippedProtected += rows
+              .skip(1)
+              .where((row) => protectedArchiveIds.contains(row['id']))
+              .length;
+          if (candidates.isEmpty) continue;
+          groups.add(ArchiveDuplicateGroup._(
+              _archive(keeper), candidates.map(_archive).toList()));
+          for (final row in [keeper, ...candidates]) {
+            final id = row['id'] as String;
+            final history = await _query(
+                'SELECT * FROM archive_versions WHERE archive_id=${_q(id)} ORDER BY id');
+            heads[id] = _canonicalJson(row);
+            versions[id] = _canonicalJson(history);
+            if (id != keeper['id']) preserved += history.length + 1;
+          }
+        }
+        return ArchiveDedupPlan._(_dedupOwner, groups, Map.unmodifiable(heads),
+            Map.unmodifiable(versions), preserved, skippedProtected);
+      });
+
+  /// Revalidate every involved head/history and then move all history before
+  /// removing duplicate heads. No document, version or metadata is discarded.
+  Future<ArchiveDedupResult> removeDuplicateArchives(ArchiveDedupPlan plan,
+          {Set<String> protectedArchiveIds = const {}}) =>
+      _serial(() => _transaction(() async {
+            if (!identical(plan._owner, _dedupOwner)) {
+              throw StateError('去重计划属于其他存档库，请重新检查');
+            }
+            final currentHeads = <String, Map<String, Object?>>{};
+            for (final entry in plan._heads.entries) {
+              final rows = await _query(
+                  'SELECT * FROM archives WHERE id=${_q(entry.key)}');
+              final history = await _query(
+                  'SELECT * FROM archive_versions WHERE archive_id=${_q(entry.key)} ORDER BY id');
+              if (rows.length != 1 ||
+                  _canonicalJson(rows.single) != entry.value ||
+                  _canonicalJson(history) != plan._versions[entry.key]) {
+                throw StateError('存档或历史版本已更新，请重新检查重复存档');
+              }
+              currentHeads[entry.key] = rows.single;
+            }
+            for (final group in plan.groups) {
+              if (group.duplicates
+                  .any((row) => protectedArchiveIds.contains(row.id))) {
+                throw StateError('待去重存档已打开编辑，请重新检查');
+              }
+            }
+            final redirects = <String, String>{};
+            var preserved = 0;
+            for (final group in plan.groups) {
+              final keeperId = group.keeper.id;
+              for (final duplicate in group.duplicates) {
+                final old = currentHeads[duplicate.id]!;
+                final history = await _query(
+                    'SELECT id FROM archive_versions WHERE archive_id=${_q(duplicate.id)}');
+                preserved += history.length + 1;
+                await _query(
+                    'UPDATE archive_versions SET archive_id=${_q(keeperId)} WHERE archive_id=${_q(duplicate.id)}');
+                final snapshotId =
+                    '$keeperId-dedup-${duplicate.id}-${DateTime.now().microsecondsSinceEpoch}';
+                await _query(
+                    'INSERT INTO archive_versions VALUES(${_q(snapshotId)},${_q(keeperId)},${_q(old['name'])},${_q(old['note'])},${_q(old['tags'])},${_q(old['document'])},${old['updated_at']})');
+                await _query(
+                    "UPDATE editor_preferences SET value=${_q(keeperId)} WHERE key='last_opened_archive' AND value=${_q(duplicate.id)}");
+                await _query(
+                    'UPDATE legacy_draft_archives SET archive_id=${_q(keeperId)} WHERE archive_id=${_q(duplicate.id)}');
+                await _query(
+                    'UPDATE drafts SET source_archive_id=${_q(keeperId)} WHERE source_archive_id=${_q(duplicate.id)}');
+                await _query(
+                    'DELETE FROM archives WHERE id=${_q(duplicate.id)}');
+                redirects[duplicate.id] = keeperId;
+              }
+            }
+            return ArchiveDedupResult._(
+                redirects.length, preserved, plan.groupsCount, redirects);
+          }));
 
   Future<ArchiveRecord> saveArchive(
           {required String id,

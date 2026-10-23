@@ -6,32 +6,92 @@ import 'package:path_provider/path_provider.dart';
 /// Read from disk on every call so independent Flutter windows share settings.
 class ExportPreferences {
   static const _channel = MethodChannel('pvz_formation_editor/files');
-  static Future<File> _file() async => File(
+  static const applicationDirectoryName = 'PVZ Formation Editor';
+
+  // Isolated harnesses never need to create folders in the user's Documents.
+  static File? fileOverride;
+  static Directory? documentsDirectoryOverride;
+  static Future<File> _file() async => File(fileOverride?.path ??
       '${(await getApplicationSupportDirectory()).path}/export-preferences.json');
 
+  static Future<Directory> _documents() async =>
+      documentsDirectoryOverride ?? await getApplicationDocumentsDirectory();
+
+  static bool _sameDirectory(String a, String b) {
+    String normalized(String path) {
+      final value = Directory(path).absolute.uri.normalizePath().toString();
+      return Platform.isWindows ? value.toLowerCase() : value;
+    }
+
+    return normalized(a) == normalized(b);
+  }
+
+  /// Resolve the effective default without creating a folder while viewing settings.
+  static Future<String> defaultDirectory() async => Directory(
+          '${(await _documents()).path}${Platform.pathSeparator}$applicationDirectoryName')
+      .path;
+
   static Future<String?> loadDirectory() async {
+    String? stored;
     try {
       final file = await _file();
-      if (!await file.exists()) return null;
-      final data = jsonDecode(await file.readAsString());
-      final path = data is Map ? data['directory'] : null;
-      return path is String &&
-              Directory(path).isAbsolute &&
-              await Directory(path).exists()
-          ? path
-          : null;
+      if (await file.exists()) {
+        final data = jsonDecode(await file.readAsString());
+        final path = data is Map ? data['directory'] : null;
+        if (path is String &&
+            Directory(path).isAbsolute &&
+            await Directory(path).exists()) {
+          stored = path;
+        }
+      }
     } on MissingPluginException {
-      return null;
+      /* Resolve a Documents default even without preference storage support. */
     } on FormatException {
-      return null;
+      /* Invalid preferences fall back to the application folder. */
+    }
+    try {
+      final documents = await _documents();
+      if (stored != null && !_sameDirectory(stored, documents.path)) {
+        return stored;
+      }
+      return Directory(
+              '${documents.path}${Platform.pathSeparator}$applicationDirectoryName')
+          .path;
+    } on MissingPluginException {
+      return stored;
+    } on PlatformException {
+      return stored;
+    } on MissingPlatformDirectoryException {
+      return stored;
+    }
+  }
+
+  /// Only an export or folder-picker action creates the application directory.
+  static Future<String?> ensureDirectory() async {
+    final path = await loadDirectory();
+    if (path != null) await Directory(path).create(recursive: true);
+    return path;
+  }
+
+  static Future<bool> _isDefaultDirectory(String path) async {
+    try {
+      return _sameDirectory(path, await defaultDirectory());
+    } on MissingPluginException {
+      return false;
+    } on PlatformException {
+      return false;
+    } on MissingPlatformDirectoryException {
+      return false;
     }
   }
 
   static Future<void> setDirectory(String? directory) async {
     final path = directory?.trim();
-    if (path != null &&
-        path.isNotEmpty &&
-        (!Directory(path).isAbsolute || !await Directory(path).exists())) {
+    final hasPath = path != null && path.isNotEmpty;
+    final isDefault = hasPath && await _isDefaultDirectory(path);
+    if (hasPath &&
+        (!Directory(path).isAbsolute ||
+            (!isDefault && !await Directory(path).exists()))) {
       throw const FileSystemException('请选择存在的绝对目录');
     }
     final file = await _file();
@@ -40,9 +100,7 @@ class ExportPreferences {
         File('${file.path}.${DateTime.now().microsecondsSinceEpoch}.tmp');
     try {
       await temporary.writeAsString(
-          jsonEncode({
-            'directory': path == null || path.isEmpty ? null : path,
-          }),
+          jsonEncode({'directory': !hasPath || isDefault ? null : path}),
           flush: true);
       await temporary.rename(file.path);
     } finally {
@@ -51,7 +109,7 @@ class ExportPreferences {
   }
 
   static Future<String?> pickDirectory() async {
-    final current = await loadDirectory();
+    final current = await ensureDirectory();
     if (Platform.isMacOS) {
       return _channel.invokeMethod<String>(
           'chooseExportDirectory', {'directory': current});

@@ -168,16 +168,19 @@ Future<void> main() async {
     check(actions.last == 'archive:versions', 'history callback');
   });
   await test('export-all-selection-subset-cancel', () async {
+    await tap('library-export');
     await tap('library-export-all');
     check(exports.last.join(',') == 'a0,a1,a2', 'all excludes presets');
     await tap('library-select-archives');
     await tap('library-select-a1');
+    await tap('library-export');
     await tap('library-export-selected');
     check(exports.last.join(',') == 'a1', 'single selected export');
     await tap('library-select-all');
+    await tap('library-export');
     await tap('library-export-selected');
     check(exports.last.toSet().length == 3, 'all selected');
-    await tap('library-selection-cancel');
+    await tap('library-select-archives');
     check(
         find((w) => w.key == const ValueKey('library-selected-count')).isEmpty,
         'cancel selection');

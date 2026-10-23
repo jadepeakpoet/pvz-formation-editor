@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 import '../storage/file_backups.dart';
 import 'export_preferences.dart';
-import 'package:path_provider/path_provider.dart';
 
 class PickedFormationFile {
   final String? path;
@@ -117,7 +116,7 @@ class ProjectFiles {
       final path = await _channel.invokeMethod<String>('chooseSavePath', {
         'name': name,
         'mime': mime,
-        'directory': await ExportPreferences.loadDirectory(),
+        'directory': await ExportPreferences.ensureDirectory(),
       });
       if (path == null) return null;
       final backup = await saveToPath(path, bytes);
@@ -135,8 +134,7 @@ class ProjectFiles {
     try {
       String? directory;
       if (save) {
-        directory = await ExportPreferences.loadDirectory();
-        directory ??= (await getApplicationDocumentsDirectory()).path;
+        directory = await ExportPreferences.ensureDirectory();
       }
       if (Platform.isLinux) {
         result = await Process.run('zenity', [

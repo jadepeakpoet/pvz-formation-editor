@@ -82,7 +82,9 @@ class _ExportSettingsDialogState extends State<_ExportSettingsDialog> {
                     Text(AppLanguage.text('默认导出目录'),
                         style: const TextStyle(fontWeight: FontWeight.w600)),
                     const SizedBox(height: 8),
-                    Text(AppLanguage.text('未指定时使用系统文稿目录。每次导出时仍可更改保存位置。'),
+                    Text(
+                        AppLanguage.text(
+                            '默认使用文稿目录下的“PVZ Formation Editor”文件夹。每次导出时仍可更改保存位置。'),
                         style: const TextStyle(
                             fontSize: 12,
                             height: 1.6,
@@ -98,7 +100,7 @@ class _ExportSettingsDialogState extends State<_ExportSettingsDialog> {
                           minLines: 2,
                           maxLines: 3,
                           decoration: InputDecoration(
-                              hintText: AppLanguage.text('系统默认（文稿目录）'),
+                              hintText: AppLanguage.text('布阵器专用目录'),
                               border: const OutlineInputBorder(),
                               contentPadding: const EdgeInsets.all(12))),
                     const SizedBox(height: 6),
@@ -119,8 +121,14 @@ class _ExportSettingsDialogState extends State<_ExportSettingsDialog> {
                           label: Text(AppLanguage.text('选择文件夹'))),
                       TextButton(
                           key: const ValueKey('export-settings-default'),
-                          onPressed: loading || busy ? null : directory.clear,
-                          child: Text(AppLanguage.text('恢复系统默认')))
+                          onPressed: loading || busy
+                              ? null
+                              : () => perform(() async {
+                                    final path = await ExportPreferences
+                                        .defaultDirectory();
+                                    if (mounted) directory.text = path;
+                                  }),
+                          child: Text(AppLanguage.text('恢复默认目录')))
                     ]),
                     if (error != null)
                       Text(AppLanguage.text(error!),
