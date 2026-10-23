@@ -1,6 +1,6 @@
 # PVZ Formation Editor · 植物大战僵尸布阵器
 
-作者：**越小梦 yuexiaomeng**
+作者：**yuexiaomeng**
 
 在存档库的设置或编辑器的“选项设置”中，可切换简体中文 / English；选择会保存，并同步到独立窗口。部分植物与预制阵型名称保留原始名称。
 

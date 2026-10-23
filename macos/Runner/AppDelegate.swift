@@ -14,6 +14,12 @@ class AppDelegate: FlutterAppDelegate {
     primary?.title = "植物大战僵尸布阵器"
   }
 
+  @IBAction func showAbout(_ sender: Any?) {
+    NSApp.orderFrontStandardAboutPanel(options: [
+      .credits: NSAttributedString(string: "作者 / Author: yuexiaomeng")
+    ])
+  }
+
   override func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
     if terminationPending { return .terminateLater }
     guard let channel = sender.windows.compactMap({ $0 as? MainFlutterWindow }).first?.lifecycleChannel else {
