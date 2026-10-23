@@ -4456,7 +4456,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
               key: const ValueKey('original-help')),
         ]),
         const SizedBox(height: 6),
-        mapChangeControls(const ValueKey('lazy-change-map'), label: '更换底图'),
+        mapChangeControls(const ValueKey('lazy-change-map')),
         const SizedBox(height: 6),
         presetSelector('阵型', OriginalCatalog.formations),
         presetSelector('炮位', OriginalCatalog.cobLayouts),
