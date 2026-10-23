@@ -1,5 +1,7 @@
 /// English translations for the main editor interface.
 const Map<String, String> mainTranslations = {
+  '图片已复制': 'Image copied',
+  '复制图片失败：{error}': 'Could not copy image: {error}',
   '为陆地第2–6列的南瓜搭梯': 'Place ladders on land pumpkins in columns 2–6',
   '恢复植物默认状态': 'Restore default plant states',
   '植物恢复默认状态': 'Reset plant states',

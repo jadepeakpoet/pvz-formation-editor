@@ -18,8 +18,9 @@ class FormationImages {
         null;
   }
 
-  static Future<void> copy(Formation document) async {
-    final bytes = await render(document);
+  static Future<void> copy(Formation document) async => copyBytes(await render(document));
+
+  static Future<void> copyBytes(Uint8List bytes) async {
     if (Platform.isLinux) {
       Process process;
       try {

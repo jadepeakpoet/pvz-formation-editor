@@ -547,3 +547,9 @@ web_catalog_smoke最终通过弹框打开/取消无写、选择即清除、选�
 一键荷叶复用PlantingSupport水生植物类型集合，跳过香蒲/缠绕海草/海蘑菇所在整格，即使同格有南瓜也不补荷叶；已有水生植物和荷叶的ID/帧/特效保持。普通搭梯原先错误要求坚果与南瓜同格，对照原版main.js AutoGrow(3)改为陆地第2–6列南瓜搭梯，不要求内层坚果；已有梯子保留且重复操作不重复新增，智能搭梯既有白南瓜清理规则保持。按钮增加范围悬停说明。
 
 验证：layout_actions_test和original_terrain_test共42项通过，新增覆盖三类水生植物+南瓜/已有荷叶、普通植物和双格炮补荷叶，以及单独南瓜搭梯、陆水与列范围、现有梯子属性和重复操作；flutter analyze无问题，macOS Debug构建成功。
+
+## 2026-10-24 — 生成图片旁导出与复制
+
+生成/导出/复制图片放在同一Wrap、缩略图上方；后两项仅在生成成功后显示，重新生成期间禁用。FormationImages提取copyBytes复用已有跨平台图片剪贴板实现，直接复制当前生成PNG，保留倍率/背景/宽度，不重新渲染或弹保存框。复制成功/失败提供中英文反馈。
+
+验证：web_toolbox_defaults_smoke通过生成前隐藏、生成后图像操作同组、真实按钮点击派发copyImage（剪贴板通道mock）并逐字节核对与生成PNG相同、无保存框、既有导出/设置/镜像回归；查看source-transfer-controls-toolbox截图布局。flutter analyze无问题，macOS Debug构建成功；未改写用户真实剪贴板。

@@ -24,6 +24,7 @@ Future<void> main() async {
   };
   ParityBinding.handlers['pvz_formation_editor/files'] = (call) async {
     fileCalls.add(call);
+    if (call.method == 'copyImage') return true;
     // Cancel the save picker; this tests export dispatch without writing a file.
     return null;
   };
@@ -229,7 +230,7 @@ Future<void> main() async {
               .isEmpty &&
           h
               .all((w) => w.key == const ValueKey('formation-export-image'))
-              .isEmpty,
+              .isEmpty && h.all((w) => w.key == const ValueKey('formation-copy-image')).isEmpty,
       'Image preview/export must not exist before generation');
   final ratioDropdown = h.find((w) => w is DropdownButton<double>).widget
       as DropdownButton<double>;
@@ -260,6 +261,17 @@ Future<void> main() async {
               .isNotEmpty &&
           !fileCalls.any((c) => c.method == 'chooseSavePath'),
       'Generation must expose preview/export without opening a save picker');
+  for (final key in ['formation-generate-image', 'formation-export-image', 'formation-copy-image']) {
+    h.expect(h.find((w) => w.key == ValueKey(key)).findAncestorWidgetOfExactType<Wrap>()?.key ==
+        const ValueKey('formation-image-actions'), 'Image actions must stay together above preview');
+  }
+  await h.tapElement(h.find((w) => w.key == const ValueKey('formation-copy-image')));
+  final copied = (fileCalls.singleWhere((c) => c.method == 'copyImage').arguments as Map)['bytes'] as List<int>;
+  final copiedPng = page.generatedPng as List<int>;
+  h.expect(copied.length == copiedPng.length &&
+      copiedPng.asMap().entries.every((entry) => copied[entry.key] == entry.value) &&
+      !fileCalls.any((c) => c.method == 'chooseSavePath'),
+      'Copy image must send exact generated PNG bytes without opening export picker');
   final previewElement =
       h.find((w) => w.key == const ValueKey('formation-image-preview'));
   await precacheImage((previewElement.widget as Image).image, previewElement);

@@ -4443,9 +4443,29 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
         originalCheck('exportBackground', '显示游戏背景，否则背景透明', exportBackground,
             (v) => setState(() => exportBackground = v)),
         pokerWidthOption(),
-        classicButton(generatingPng ? '正在生成…' : '生成图片',
-            generatingPng ? null : generateExportPreview,
-            key: const ValueKey('formation-generate-image')),
+        Wrap(key: const ValueKey('formation-image-actions'), children: [
+          classicButton(generatingPng ? '正在生成…' : '生成图片',
+              generatingPng ? null : generateExportPreview,
+              key: const ValueKey('formation-generate-image')),
+          if (generatedPng != null) ...[
+            classicButton('导出图片', generatingPng ? null : () async {
+              try {
+                await ProjectFiles.save('${generatedPngName ?? safeName(s.name)}.png',
+                    generatedPng!, 'image/png');
+              } catch (e) {
+                if (mounted) message(context, e);
+              }
+            }, key: const ValueKey('formation-export-image')),
+            classicButton('复制图片', generatingPng ? null : () async {
+              try {
+                await FormationImages.copyBytes(generatedPng!);
+                if (mounted) message(context, '图片已复制');
+              } catch (e) {
+                if (mounted) message(context, '复制图片失败：$e');
+              }
+            }, key: const ValueKey('formation-copy-image')),
+          ],
+        ]),
         if (generatedPng != null) ...[
           const SizedBox(height: 8),
           ConstrainedBox(
@@ -4453,14 +4473,6 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
               child: Image.memory(generatedPng!,
                   key: const ValueKey('formation-image-preview'),
                   fit: BoxFit.contain, gaplessPlayback: true)),
-          classicButton('导出图片', () async {
-            try {
-              await ProjectFiles.save('${generatedPngName ?? safeName(s.name)}.png',
-                  generatedPng!, 'image/png');
-            } catch (e) {
-              if (mounted) message(context, e);
-            }
-          }, key: const ValueKey('formation-export-image')),
         ],
       ]);
     }
