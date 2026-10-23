@@ -383,6 +383,16 @@ class FormationRepository {
             'INSERT OR IGNORE INTO deleted_drafts VALUES(${_q(id)},${DateTime.now().millisecondsSinceEpoch})');
         await _query('DELETE FROM drafts WHERE id=${_q(id)}');
       }));
+  Future<int> _nextArchiveTimestamp(String id, int previousUpdated) async {
+    final latest = await _query(
+        'SELECT MAX(created_at) AS latest FROM archive_versions WHERE archive_id=${_q(id)}');
+    var now = DateTime.now().millisecondsSinceEpoch;
+    if (now <= previousUpdated) now = previousUpdated + 1;
+    final latestVersion = latest.single['latest'] as int?;
+    if (latestVersion != null && now <= latestVersion) now = latestVersion + 1;
+    return now;
+  }
+
   Future<ArchiveRecord> saveArchive(
           {required String id,
           required String name,
@@ -396,7 +406,7 @@ class FormationRepository {
           bool uniqueName = false}) =>
       _serial(() => _transaction(() async {
             final data = _json(document);
-            final now = DateTime.now().millisecondsSinceEpoch;
+            var now = DateTime.now().millisecondsSinceEpoch;
             final target = updateId ?? id;
             final previous =
                 await _query('SELECT * FROM archives WHERE id=${_q(target)}');
@@ -433,6 +443,8 @@ class FormationRepository {
                   old['tags'] == jsonEncode(tags)) {
                 return _archive(old);
               }
+              now =
+                  await _nextArchiveTimestamp(target, old['updated_at'] as int);
               await _query(
                   'INSERT INTO archive_versions VALUES(${_q('$target-$now-${DateTime.now().microsecondsSinceEpoch}')},${_q(target)},${_q(old['name'])},${_q(old['note'])},${_q(old['tags'])},${_q(old['document'])},$now)');
             }
@@ -451,6 +463,45 @@ class FormationRepository {
                 (await _query('SELECT * FROM archives WHERE id=${_q(target)}'))
                     .single);
           }));
+
+  /// Restore contents and title as a new current revision without rewriting history.
+  /// Notes, tags and favorite status remain attached to the current archive.
+  Future<ArchiveRecord> restoreArchiveVersion(
+          {required String archiveId,
+          required String versionId,
+          String? expectedFingerprint,
+          String? expectedName}) =>
+      _serial(() => _transaction(() async {
+            final currentRows = await _query(
+                'SELECT * FROM archives WHERE id=${_q(archiveId)}');
+            if (currentRows.isEmpty) throw StateError('来源存档已不存在');
+            final current = currentRows.single;
+            if ((expectedFingerprint != null &&
+                    current['document'] != expectedFingerprint) ||
+                (expectedName != null && current['name'] != expectedName)) {
+              throw StateError('存档已在其他窗口更新，请重新打开后再编辑');
+            }
+            final versions = await _query(
+                'SELECT * FROM archive_versions WHERE id=${_q(versionId)} AND archive_id=${_q(archiveId)}');
+            if (versions.isEmpty) throw StateError('历史版本已不存在');
+            final version = versions.single;
+            final names = (await _query(
+                    'SELECT name FROM archives WHERE id<>${_q(archiveId)} UNION SELECT name FROM drafts WHERE id<>${_q(archiveId)}'))
+                .map((row) => row['name'] as String)
+                .toSet();
+            final name = _availableName(version['name'] as String, names);
+            final now = await _nextArchiveTimestamp(
+                archiveId, current['updated_at'] as int);
+            // Even an identical restoration is an explicit new revision.
+            await _query(
+                'INSERT INTO archive_versions VALUES(${_q('$archiveId-restore-$now')},${_q(archiveId)},${_q(current['name'])},${_q(current['note'])},${_q(current['tags'])},${_q(current['document'])},$now)');
+            await _query(
+                'UPDATE archives SET name=${_q(name)},document=${_q(version['document'])},updated_at=$now WHERE id=${_q(archiveId)}');
+            return _archive((await _query(
+                    'SELECT * FROM archives WHERE id=${_q(archiveId)}'))
+                .single);
+          }));
+
   Future<void> deleteArchive(String id) => _serial(() => _transaction(() async {
         await _query(
             'UPDATE drafts SET source_archive_id=NULL,saved_fingerprint=NULL WHERE source_archive_id=${_q(id)}');
@@ -466,8 +517,9 @@ class FormationRepository {
             final contentChanged = (name != null && name != previous['name']) ||
                 (note != null && note != previous['note']) ||
                 (tags != null && jsonEncode(tags) != previous['tags']);
+            final now =
+                await _nextArchiveTimestamp(id, previous['updated_at'] as int);
             if (contentChanged) {
-              final now = DateTime.now().millisecondsSinceEpoch;
               await _query(
                   'INSERT INTO archive_versions VALUES(${_q('$id-$now-${DateTime.now().microsecondsSinceEpoch}')},${_q(id)},${_q(previous['name'])},${_q(previous['note'])},${_q(previous['tags'])},${_q(previous['document'])},$now)');
             }
@@ -487,7 +539,7 @@ class FormationRepository {
             if (fields.isEmpty) {
               return;
             }
-            fields.add('updated_at=${DateTime.now().millisecondsSinceEpoch}');
+            fields.add('updated_at=$now');
             await _query(
                 'UPDATE archives SET ${fields.join(',')} WHERE id=${_q(id)}');
           }));
