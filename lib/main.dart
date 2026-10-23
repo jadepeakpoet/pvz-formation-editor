@@ -3666,10 +3666,14 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
 
   Widget plantingSupportOptions() =>
       Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        originalCheck('autoLily', '水面自动垫荷叶', autoLily, (value) {
-          setState(() => autoLily = value);
-          persistPlantingPreferences();
-        }),
+        Row(children: [
+          Text(AppLanguage.text('自动垫荷叶 '),
+              style: const TextStyle(fontSize: 12)),
+          originalCheck('autoLily', '水面', autoLily, (value) {
+            setState(() => autoLily = value);
+            persistPlantingPreferences();
+          }),
+        ]),
         Row(children: [
           Text(AppLanguage.text('自动垫花盆 '),
               style: const TextStyle(fontSize: 12)),

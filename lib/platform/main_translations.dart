@@ -1,5 +1,7 @@
 /// English translations for the main editor interface.
 const Map<String, String> mainTranslations = {
+  '自动垫荷叶 ': 'Auto-place Lily Pads ',
+  '水面': 'Water',
   '重命名': 'Rename',
   '更多': 'More',
   '打开选卡': 'Choose plants',

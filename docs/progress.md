@@ -339,3 +339,10 @@ useFormationPreset 成功应用后清除选择列表状态并回到懒人布局 
 智能搭梯按OriginalTerrain逐格判断，仅terrain=1且有模仿者南瓜的位置需要梯子；移除水面、裸地、普通南瓜和无南瓜处的既有梯子，合格位置保留首个梯子原属性并清理重复项，缺失则补上。其他对象不变，重复执行不再改变文档。测试原有铲除夹具改为陆地图以保留铲除覆盖含义。
 
 验证：layout_actions_test和original_terrain_test共39项通过，覆盖泳池陆/水、受限庭院裸格、无合格目标清空梯子、有效梯子属性保留、重复项及输入文档不变；shovel_preview_smoke通过，flutter analyze无问题，macOS Debug构建成功。
+
+
+## 2026-10-23 — 荷叶布局对齐与当前花盆默认状态
+
+荷叶一行改为“自动垫荷叶 ☑水面”，与花盆“自动垫花盆 ☑屋顶 ☐陆地”对齐，沿用autoLily原有勾选和保存逻辑。代码默认仍为roof；发现本机旧偏好potMode=land，按用户要求仅将此应用当前保存值改为roof，保留其他偏好，不改变以后手动选择的持久化规则。
+
+验证：support.checkbox-options专项在真实Flutter引擎通过并视检截图，两行标签/复选框对齐、屋顶选中、陆地未选；flutter analyze无问题，macOS Debug构建成功，正常替换一个旧实例启动。重启后重新读取本机偏好仍为roof。
