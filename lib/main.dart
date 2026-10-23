@@ -2663,7 +2663,10 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     } else if (tool == '放置') {
       final existing = gesturePieces
           .where((p) =>
-              p.type == selectedType && p.row == cell.$1 && p.col == cell.$2)
+              p.type == selectedType &&
+              p.row == cell.$1 &&
+              p.col == cell.$2 &&
+              p.effects.contains('模仿者') == plantingEffects.contains('模仿者'))
           .toList()
         ..sort((a, b) => b.layer.compareTo(a.layer));
       if (existing.isNotEmpty && cyclePlantState(existing.first)) {

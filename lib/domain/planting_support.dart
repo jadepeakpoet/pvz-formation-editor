@@ -77,6 +77,7 @@ class PlantingSupport {
           row: plant.row,
           col: col,
           layer: ObjectSpec.byId(type).layer,
+          effects: plant.effects.contains('模仿者') ? {'模仿者'} : {},
           frameRow: type == 'pot' ? 1 : 0));
     }
   }

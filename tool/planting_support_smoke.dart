@@ -216,6 +216,99 @@ Future<void> main() async {
             !has('lily', 2, 2),
         'Attachments added incompatible lily under cattail');
   });
+  await h.run('replacement.normal-imitater',
+      'Normal and Imitater placements replace each other; matching forms still cycle states',
+      () async {
+    for (final type in ['pea', 'pumpkin', 'cob', 'lily', 'pot', 'coffee']) {
+      for (final wasMimic in [false, true]) {
+        final target = Piece(
+            id: 'form-target',
+            type: type,
+            row: 2,
+            col: 2,
+            layer: ObjectSpec.byId(type).layer,
+            effects: wasMimic ? {'模仿者'} : {});
+        s.execute('form fixture', Formation(pieces: [target]));
+        final before = s.document.fingerprint;
+        final depth = s.undoDepth;
+        page.selectedType = type;
+        page.plantingEffects.clear();
+        if (!wasMimic) page.plantingEffects.add('模仿者');
+        plant(2, 2);
+        final placed = s.document.pieces.where((p) => p.type == type).single;
+        h.expect(
+            placed.effects.contains('模仿者') == !wasMimic &&
+                placed.id != target.id,
+            '$type did not replace opposite form');
+        h.expect(s.undoDepth == depth + 1, 'Replacement must be one undo step');
+        s.undo();
+        h.expect(
+            s.document.fingerprint == before, 'Form replacement undo failed');
+        s.redo();
+        plant(2, 2);
+        h.expect(
+            s.document.pieces.where((p) => p.type == type).single.id ==
+                placed.id,
+            '$type matching form no longer cycles existing object');
+      }
+    }
+    page.plantingEffects.clear();
+  });
+  await h.run('support.imitater',
+      'Automatic lily and pot inherit Imitater in placement and preview without changing existing bases',
+      () async {
+    for (final mapId in ['pool', 'roof']) {
+      final baseType = mapId == 'pool' ? 'lily' : 'pot';
+      s.execute('mimic support fixture', Formation(mapId: mapId));
+      page.selectedType = 'pea';
+      page.plantingEffects.clear();
+      page.plantingEffects.add('模仿者');
+      page.tool = '放置';
+      page.updatePlantingPointer(BoardGeometry(s.document).cellCenter(2, 2));
+      await h.settle();
+      final painter = (h
+              .find((w) => w is CustomPaint && w.painter is BoardPainter)
+              .widget as CustomPaint)
+          .painter as BoardPainter;
+      h.expect(
+          painter.plantingSupportPreviews.single.type == baseType &&
+              painter.plantingSupportPreviews.single.effects.contains('模仿者'),
+          'Mimic $baseType missing from preview');
+      final before = s.document.fingerprint;
+      plant(2, 2);
+      h.expect(
+          s.document.pieces
+              .where((p) => p.type == baseType)
+              .single
+              .effects
+              .contains('模仿者'),
+          'Automatic $baseType must inherit Imitater');
+      s.undo();
+      h.expect(
+          s.document.fingerprint == before, 'Mimic plant/support undo failed');
+      final base =
+          Piece(id: 'existing-base', type: baseType, row: 2, col: 2, layer: 0);
+      s.execute(
+          'existing normal support', Formation(mapId: mapId, pieces: [base]));
+      plant(2, 2);
+      h.expect(
+          s.document.pieces.firstWhere((p) => p.id == base.id).effects.isEmpty,
+          'Existing normal base must remain unchanged');
+      page.plantingEffects.clear();
+      s.execute('normal support fixture', Formation(mapId: mapId));
+      plant(2, 2);
+      h.expect(
+          s.document.pieces
+              .where((p) => p.type == baseType)
+              .single
+              .effects
+              .isEmpty,
+          'Ordinary plants must create normal supports');
+      page.plantingEffects.clear();
+      page.plantingEffects.add('模仿者');
+    }
+    page.plantingEffects.clear();
+  });
   await h.run('shovel.top-bank',
       'Original top shovel bank toggles tool, highlights/removes one plant, preserves undo and readonly',
       () async {
