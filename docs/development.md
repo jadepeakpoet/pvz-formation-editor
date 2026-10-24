@@ -63,4 +63,4 @@ GitHub Release 提供 Windows 绿色包、源码归档和 SHA-256 校验文件�
 
 ## Windows 渲染后端对照
 
-默认跟随 Flutter SDK 的渲染后端。启动前设置当前进程环境变量 `PVZ_RENDERER=skia` 可使用 Skia 进行性能对照，主窗口与侧窗采用同一设置。环境变量仅影响该次进程启动。
+Windows 默认使用 Skia。启动前设置当前进程环境变量 `PVZ_RENDERER=impeller` 可使用 Impeller 进行性能对照，主窗口与侧窗采用同一设置。环境变量仅影响该次进程启动。
