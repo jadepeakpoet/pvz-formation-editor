@@ -35,7 +35,40 @@ struct GameX86 {
     return type==8 || type==9 || type==10 || type==12 || type==13 || type==14 ||
            type==15 || type==24 || type==31 || type==42;
   }
-  void PutPlant(uint32_t board,int row,int col,int type,bool asleep,bool daytime,bool imitater=false) {
+  void PlantField(uint8_t offset,uint32_t value) {
+    Byte(0xc7); Byte(0x40); Byte(offset); Dword(value);
+  }
+  void PlayBody(uint32_t track) {
+    // 1051 Plant::PlayBodyReanim: EAX=plant, ECX=blend time,
+    // stack=(track, loop type, float rate), callee pops 12 bytes.
+    Byte(0x50); Push(0x41400000); Push(0); Push(track);
+    Byte(0x31); Byte(0xc9); Call(0x45fd90); Byte(0x58);
+  }
+  void SetVisualState(int type,int state,bool asleep) {
+    if(type==47) {
+      PlantField(0x3c,state==0 ? 37u : 35u);
+      // Empty appearance means cooldown complete: begin charging next update.
+      // A loaded appearance skips charging and is ready before the loop resumes.
+      PlantField(0x54,0u);
+      PlayBody(state==0 ? 0x6580d4u : 0x668cb0u);
+    } else if(type==4) {
+      PlantField(0x3c,state==0 ? 0u : 16u);
+      PlantField(0x54,state==0 ? 1500u : 0u);
+      PlayBody(state==0 ? 0x6580d4u : 0x657230u);
+    } else if(type==9) {
+      PlantField(0x3c,state==0 ? 23u : 25u);
+      PlantField(0x54,state==0 ? 12000u : 0u);
+      PlayBody(state==0 ? (asleep ? 0x668cd4u : 0x6580d4u)
+                           : (asleep ? 0x668c80u : 0x668c90u));
+    } else if(type==26) {
+      PlantField(0x3c,state==0 ? 30u : 32u);
+      PlayBody(state==0 ? 0x6580d4u : 0x668e78u);
+    } else if(type==3 || type==23 || type==36 || type==46) {
+      const uint32_t maximum=type==3 ? 4000u : type==23 ? 8000u : type==36 ? 400u : 450u;
+      PlantField(0x40,state==0 ? maximum : state==1 ? maximum/2 : maximum/4);
+    }
+  }
+  void PutPlant(uint32_t board,int row,int col,int type,bool asleep,bool daytime,bool imitater=false,int visualState=0) {
     Push(imitater ? static_cast<uint32_t>(type) : 0xffffffff);
     Push(imitater ? 48u : static_cast<uint32_t>(type));
     MovEax(static_cast<uint32_t>(row)); Push(static_cast<uint32_t>(col)); Push(board); Call(0x40d120);
@@ -50,7 +83,7 @@ struct GameX86 {
     if(Sleepable(type) && (daytime || asleep)) {
       Byte(0x50); Push(asleep ? 1u : 0u); Call(0x45e860); Byte(0x58);
     }
-    if(type==4 || type==9) { Byte(0xc7); Byte(0x40); Byte(0x54); Dword(1); }
+    SetVisualState(type,visualState,asleep);
   }
   void PutRake(uint32_t board,int row,int col) {
     // Enter the original constructor after random row selection and inventory

@@ -1,6 +1,7 @@
 import 'package:flutter/services.dart';
 import '../domain/formation.dart';
 import '../domain/website_codec.dart';
+import '../domain/plant_game_state.dart';
 
 /// An identified live process. Capabilities are reported by the native adapter,
 /// never inferred from the window title by the UI.
@@ -73,6 +74,8 @@ class GameFormationSnapshot {
           col: col,
           layer: ObjectSpec.byId(id).layer,
           asleep: p['asleep'] == true,
+          frameRow: p['frameRow'] as int?,
+          frameCol: p['frameCol'] as int? ?? 0,
           effects: p['imitater'] == true ? {'模仿者'} : const {}));
     }
     final map = json['map'] as String;
@@ -144,12 +147,16 @@ class GameBridge {
           p.effects.any((effect) => effect != '模仿者')) {
         throw UnsupportedError('当前游戏应用暂不支持缩放、翻转或装饰图像特效');
       }
+      if (p.type == 'cob' && p.frameRow != 0) {
+        throw UnsupportedError('玉米炮发射动作不能作为初始布阵状态，请选择第一行的已装填或空炮外观');
+      }
       pieces.add({
         if (gridType == null) 'type': type else 'gridType': gridType,
         'row': p.row,
         'col': p.col,
         'imitater': p.effects.contains('模仿者'),
-        'asleep': p.toJson()['asleep'] == true
+        'asleep': p.asleep,
+        if (PlantGameState.of(p) case final int state) 'visualState': state
       });
     }
     final result =

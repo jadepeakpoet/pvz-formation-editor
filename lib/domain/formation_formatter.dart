@@ -43,10 +43,11 @@ class FormationFormatter {
         row: original.row,
         col: original.col,
         layer: original.spec.layer,
-        asleep: toolkit &&
-            original.asleep &&
-            _sleepers.contains(index) &&
-            {0, 2, 4}.contains(scene),
+        asleep: toolkit
+            ? original.asleep &&
+                _sleepers.contains(index) &&
+                {0, 2, 4}.contains(scene)
+            : original.asleep,
         effects: effects,
         websiteEffects: Piece.encodeWebsiteEffects(effects),
         opacity: toolkit
@@ -55,7 +56,12 @@ class FormationFormatter {
                 ? .5
                 : 1,
         flipped: !toolkit && original.flipped,
-        frameRow: toolkit ? 0 : original.frameRow,
+        frameRow: toolkit
+            ? Piece.mushroomTypes.contains(original.type) &&
+                    !(original.asleep && {0, 2, 4}.contains(scene))
+                ? 1
+                : 0
+            : original.frameRow,
         frameCol: toolkit ? 0 : original.frameCol,
       );
       kept.removeWhere((p) => _conflicts(p, candidate, toolkit));

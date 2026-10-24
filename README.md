@@ -4,9 +4,9 @@
 
 [简体中文](README.md) | [English](README.en.md)
 
-**落植为棋，布阵成道。** 一个使用 Flutter Widget / Canvas 构建的本地离线布阵器。
+**落植为棋，布阵成道。** 一个以 **Windows** 为主要平台、使用 Flutter Widget / Canvas 构建的本地离线布阵器。
 
-**v1.0.0** · [官网](https://xmpvz.pages.dev) · [使用文档](https://xmpvz.pages.dev/docs/) · [下载 Windows x64 绿色版](https://xmpvz.pages.dev/downloads/PvZ-Formation-Editor-1.0.0-windows-x64.zip) · [加入 QQ 群：425175276](https://qm.qq.com/q/BbkV57ELaa)
+**v1.0.1** · [官网](https://xmpvz.pages.dev) · [使用文档](https://xmpvz.pages.dev/docs/) · [下载 Windows x64 绿色版](https://xmpvz.pages.dev/downloads/PvZ-Formation-Editor-1.0.1-windows-x64.zip) · [加入 QQ 群：425175276](https://qm.qq.com/q/BbkV57ELaa)
 
 作者及维护者：**越小梦** · [作者信息](AUTHORS) · [鸣谢](ACKNOWLEDGMENTS.md)
 
@@ -14,11 +14,11 @@
 
 ## Windows 版本
 
-当前发布为 **Windows v1.0.0**，已构建并启动验证。其他平台目前提供工程源码，没有本次对应的发布包。
+当前发布为 **Windows v1.0.1**，已构建并启动验证。其他平台目前提供工程源码，没有本次对应的发布包。
 
 | 项目 | 信息 |
 | --- | --- |
-| 应用版本 | 1.0.0 |
+| 应用版本 | 1.0.1 |
 | 系统与架构 | Windows 10 / Windows 11，x64 |
 | 发布形式 | Release 绿色 ZIP 包，免安装 |
 | 启动程序 | `pvz_formation_editor.exe` |
@@ -27,7 +27,7 @@
 | 本地数据 | 用户应用支持目录；不随绿色包目录自动移动 |
 | 更新方式 | 正常退出旧版，解压新版后运行；迁移设备前先导出存档 |
 
-**[下载 Windows v1.0.0 x64 绿色版](https://xmpvz.pages.dev/downloads/PvZ-Formation-Editor-1.0.0-windows-x64.zip)** · [SHA-256 校验](https://xmpvz.pages.dev/downloads/SHA256SUMS.txt) · [Windows 使用文档](https://xmpvz.pages.dev/docs/)
+**[下载 Windows v1.0.1 x64 绿色版](https://xmpvz.pages.dev/downloads/PvZ-Formation-Editor-1.0.1-windows-x64.zip)** · [SHA-256 校验](https://xmpvz.pages.dev/downloads/SHA256SUMS.txt) · [Windows 使用文档](https://xmpvz.pages.dev/docs/)
 
 本版包含独立双窗口、Windows 中文字体优化、名阵打开即自动保存、存档批量导入导出，以及模仿者/梯子/墓碑/钉耙的游戏应用支持。完整游戏实测范围见下文；不保证改版或其他游戏版本兼容。
 
@@ -62,6 +62,10 @@ Windows 10 / 11 x64：下载绿色包、完整解压，然后运行 `pvz_formati
 3. 存档/名阵详情中的应用按钮位于“复制 Toolkit 阵型码”旁，列表项“更多”菜单也有同一操作，直接写入运行中的游戏。
 
 支持常规植物、模仿者、睡眠状态、墓碑、梯子、钉耙及六类场景切换。缩放、翻转、图像特效、装饰僵尸和我是僵尸模式暂不支持，会明确拒绝而不伪报成功。其他游戏版本和改版未保证兼容。
+
+选卡默认将大喷菇、忧郁蘑菇、磁力菇设为唤醒外观，寒冰菇、毁灭菇及其他可睡眠蘑菇默认睡眠。用户可继续切换外观，保存、导出及应用到游戏始终以最终外观帧为准，载入既有阵型不会重套默认值。
+
+v1.0.1 直接应用文档时还会按外观设置玉米炮装填、土豆雷出土、阳光菇大小、仙人掌高矮，以及部分植物的受损程度。有弹玉米炮直接可发射；空炮冷却归零，恢复运行后立即装填。PvZ Toolkit 阵型码本身不保存上述全部状态，完整项目及网页阵型码可保存外观。详见 [v1.0.1 更新说明](docs/releases/1.0.1.md)。
 
 **实测：363 个名阵全部尝试，360 个应用后读回一致，3 个因网页装饰内容被拒绝。** 用户提供的 86 对象历史名阵码也通过真实写入/读取验证。各应用入口已分别实测，测试后恢复原阵型。详见 [完整名阵验证记录](docs/game-integration/all-presets-validation.md) 和 [Windows 接入说明](docs/game-integration/windows-1051.md)。
 

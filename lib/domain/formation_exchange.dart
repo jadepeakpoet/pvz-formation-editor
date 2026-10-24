@@ -24,7 +24,7 @@ enum FormationFormat {
       case toolkit:
         return '仅保存场地、格位植物、睡眠和模仿者；不保存阳光、卡槽、显示设置或动画帧。';
       case website:
-        return '保存原网页支持的布局和视觉字段；不保存阳光、卡槽、显示设置，睡眠状态尚未验证。';
+        return '保存原网页支持的布局和视觉字段（含蘑菇睡眠外观）；不保存阳光、卡槽和显示设置。';
       case project:
         return '完整保存编辑器项目，包括阳光、卡槽、显示设置和对象属性。';
     }
@@ -75,7 +75,11 @@ class FormationExchange {
           ? document.pieces.map((piece) {
               final json = piece.toJson()
                 ..remove('websiteFields')
-                ..['frameRow'] = 0
+                // Strip animation frames without discarding the state that
+                // was expressed by a mushroom's visible row.
+                ..['asleep'] = piece.asleep
+                ..['frameRow'] = Piece.mushroomTypes.contains(piece.type) &&
+                        !piece.asleep ? 1 : 0
                 ..['frameCol'] = 0;
               return Piece.fromJson(json);
             }).toList()

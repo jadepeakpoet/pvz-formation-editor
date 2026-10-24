@@ -1,11 +1,12 @@
 // Pages advanced-mode worker. Stream an ordinary ZIP from bounded static parts.
-const release = __RELEASE__;
+const releases = __RELEASES__;
 // __ANALYTICS__
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     if(url.pathname.startsWith('/api/')) return analyticsFetch(request,env);
-    if (url.pathname !== release.path) return env.ASSETS.fetch(request);
+    const release=releases.find(item=>item.path===url.pathname);
+    if (!release) return env.ASSETS.fetch(request);
     if (!['GET', 'HEAD'].includes(request.method)) return new Response(null, {status:405,headers:{Allow:'GET, HEAD'}});
     const headers = new Headers({
       'Content-Type':'application/zip',

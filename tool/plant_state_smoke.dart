@@ -340,8 +340,8 @@ Future<void> main() async {
     }
   });
   await h.run('mushroom.awake-default',
-      'Fume and gloom default awake in preview, single and batch planting while explicit frames remain selectable', () async {
-    for (final type in ['fume', 'gloom']) {
+      'Fume, gloom and magnet default awake in preview, single and batch planting while explicit frames remain selectable', () async {
+    for (final type in ['fume', 'gloom', 'magnet']) {
       session.execute('empty fixture', Formation(mapId: 'day'));
       page.selectedType = type;
       page.tool = '放置';

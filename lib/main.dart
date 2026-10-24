@@ -2933,7 +2933,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
   }
 
   (int, int) defaultPlantFrame(String type) =>
-      type == 'fume' || type == 'gloom' ? (1, 0) : (0, 0);
+      Piece.defaultPlantFrame(type);
 
   Piece plantWithDefaultState(Piece piece) {
     final frame = defaultPlantFrame(piece.type);

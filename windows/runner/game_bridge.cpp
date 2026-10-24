@@ -46,6 +46,28 @@ template <class T> T Read(HANDLE p, uintptr_t a) {
   return value;
 }
 bool WriteCompatible(HANDLE process, const std::string &executable);
+bool HasVisualState(int type) {
+  return type==3 || type==4 || type==9 || type==23 || type==26 ||
+         type==36 || type==46 || type==47;
+}
+int ReadVisualState(HANDLE process,uintptr_t plant,int type) {
+  const int state=Read<int32_t>(process,plant+0x3c);
+  if(type==47) return state==37 ? 0 : 1;
+  if(type==4) return state==16 ? 1 : 0;
+  if(type==9) return state==25 ? 1 : 0;
+  if(type==26) return state==32 ? 1 : 0;
+  const int health=Read<int32_t>(process,plant+0x40),maximum=Read<int32_t>(process,plant+0x44);
+  return health<maximum/3 ? 2 : health<maximum*2/3 ? 1 : 0;
+}
+std::pair<int,int> VisualFrame(int type,int state,bool asleep) {
+  if(type==47) return {0,state==0 ? 0 : 2};
+  if(type==4) return {0,state};
+  if(type==9) return {asleep ? 0 : 1,state==1 ? 2 : 0};
+  if(type==26) return {state==1 ? 2 : 0,0};
+  if(type==3) return {0,state==0 ? 0 : state+1};
+  if(type==23 || type==36 || type==46) return {0,state};
+  return {GameX86::Sleepable(type) && !asleep ? 1 : 0,0};
+}
 struct Target {
   DWORD pid;
   uint32_t stamp;
@@ -172,12 +194,33 @@ M ReadBoard(DWORD pid) {
                col = Read<int32_t>(p.h, a + 0x28);
     if (type < 0 || type > 47 || row < 0 || row > 5 || col < 0 || col > 8)
       throw std::runtime_error("植物记录超出原版范围");
-    pieces.push_back(
-        V(M{{V("type"), V(type)},
+    const bool asleep=Read<uint8_t>(p.h,a+0x143)!=0;
+    const int visualState=HasVisualState(type) ? ReadVisualState(p.h,a,type) : 0;
+    const auto frame=VisualFrame(type,visualState,asleep);
+    M piece{{V("type"), V(type)},
             {V("row"), V(row)},
             {V("col"), V(col)},
             {V("imitater"), V(Read<int32_t>(p.h, a + 0x138) == 48)},
-            {V("asleep"), V(Read<uint8_t>(p.h, a + 0x143) != 0)}}));
+            {V("asleep"), V(asleep)},
+            {V("frameRow"), V(frame.first)},
+            {V("frameCol"), V(frame.second)}};
+    if(HasVisualState(type)) piece[V("visualState")]=V(visualState);
+    if(type==47) {
+      piece[V("plantState")]=V(Read<int32_t>(p.h,a+0x3c));
+      piece[V("stateCountdown")]=V(Read<int32_t>(p.h,a+0x54));
+      const uint32_t id=Read<uint32_t>(p.h,a+0x94);
+      const uint32_t holder=Read<uint32_t>(p.h,lawn+0x820);
+      const uint32_t array=Read<uint32_t>(p.h,holder+8);
+      const uint32_t index=id&0xffff;
+      if(id && index<Read<uint32_t>(p.h,array+8)) {
+        const uintptr_t animation=Read<uint32_t>(p.h,array)+index*0xa0;
+        if(Read<uint32_t>(p.h,animation+0x9c)==id) {
+          piece[V("bodyFrameStart")]=V(Read<int32_t>(p.h,animation+0x18));
+          piece[V("bodyFrameCount")]=V(Read<int32_t>(p.h,animation+0x1c));
+        }
+      }
+    }
+    pieces.push_back(V(piece));
   }
   const auto grids = Read<uint32_t>(p.h, board + 0x11c),
              gridCount = Read<uint32_t>(p.h, board + 0x120);
@@ -234,7 +277,8 @@ bool WriteCompatible(HANDLE process, const std::string &) {
     // Like Toolkit, identify the loaded game instead of reopening its DRM-locked EXE.
     for (uint32_t address : {0x40d120u,0x4679b0u,0x45e860u,0x40a160u,
                               0x458d10u,0x40bc70u,0x5160c0u,0x466b80u,
-                              0x408f40u,0x426620u,0x44d000u,0x40bb2cu,0x41e1c0u}) {
+                              0x408f40u,0x426620u,0x44d000u,0x40bb2cu,0x41e1c0u,
+                              0x45fd90u}) {
       if (!RuntimeEntryCompatible(process,address)) return false;
     }
     return true;
@@ -287,6 +331,11 @@ void RequireRepresentable(const M &snapshot) {
     if (type < 0 || type > 47 || row < 0 ||
         row > (map == "pool" || map == "fog" ? 5 : 4) || col < 0 || col > 8)
       throw std::runtime_error("阵型植物或坐标超出原版场地");
+    if(p.find(V("visualState"))!=p.end()) {
+      const int state=Number(p,"visualState");
+      if(!HasVisualState(type) || state<0 || state>((type==3 || type==23 || type==36 || type==46) ? 2 : 1))
+        throw std::runtime_error("植物外观对应的游戏状态无效");
+    }
 
 
   }
@@ -302,6 +351,22 @@ Composition(const M &snapshot) {
   }
   std::sort(value.begin(), value.end());
   return value;
+}
+void VerifyVisualStates(const M &target,const M &actual) {
+  const auto& results=std::get<L>(Field(actual,"pieces"));
+  for(const auto& item:std::get<L>(Field(target,"pieces"))) {
+    const auto& expected=Object(item);
+    if(expected.find(V("visualState"))==expected.end()) continue;
+    bool found=false;
+    for(const auto& candidate:results) {
+      const auto& p=Object(candidate);
+      if(p.find(V("type"))==p.end() || Number(p,"type")!=Number(expected,"type") ||
+          Number(p,"row")!=Number(expected,"row") || Number(p,"col")!=Number(expected,"col")) continue;
+      found=p.find(V("visualState"))!=p.end() && Number(p,"visualState")==Number(expected,"visualState");
+      break;
+    }
+    if(!found) throw std::runtime_error("植物外观对应的状态校验不一致，请重新获取阵型");
+  }
 }
 std::atomic<bool> pendingWrite{false};
 std::atomic<DWORD> blockedPid{0};
@@ -534,7 +599,8 @@ M ApplyBoard(DWORD pid, const M &target, const M &expected) {
       }
     } else {
       code.PutPlant(board,Number(p,"row"),Number(p,"col"),Number(p,"type"),
-                    Flag(p,"asleep"),targetScene==0 || targetScene==2 || targetScene==4,Flag(p,"imitater"));
+                    Flag(p,"asleep"),targetScene==0 || targetScene==2 || targetScene==4,Flag(p,"imitater"),
+                    p.find(V("visualState"))==p.end() ? 0 : Number(p,"visualState"));
     }
   }
   code.Byte(0x61);
@@ -605,6 +671,7 @@ M ApplyBoard(DWORD pid, const M &target, const M &expected) {
     VirtualFreeEx(process.h, allocation, 0, MEM_RELEASE);
     allocation = nullptr;
     const M after = ReadBoard(pid);
+    VerifyVisualStates(target,after);
     if (std::get<std::string>(Field(after,"map")) != targetMap ||
         Composition(after) != Composition(target) ||
         Number(after, "sunValue") != Number(target, "sunValue"))

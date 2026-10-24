@@ -236,6 +236,15 @@ class ObjectSpec {
 }
 
 class Piece {
+  // Original ArrayDesign sprite row zero is asleep; subsequent rows are awake.
+  static const mushroomTypes = {
+    'puff', 'sunshroom', 'fume', 'hypno', 'scaredy',
+    'ice', 'doom', 'seashroom', 'magnet', 'gloom'
+  };
+  static (int, int) defaultPlantFrame(String type) =>
+      type == 'fume' || type == 'gloom' || type == 'magnet'
+          ? (1, 0)
+          : (0, 0);
   final String id, type;
   final int row, col, layer;
   final int frameRow, frameCol;
@@ -243,7 +252,10 @@ class Piece {
   final List<String>? websiteFields;
   final double scale, opacity;
   final bool flipped, flippedVertical;
-  final bool asleep;
+  final bool _asleep;
+  // Original-site appearance is authoritative, including imported documents.
+  // The explicit flag is only retained for validating non-mushroom objects.
+  bool get asleep => mushroomTypes.contains(type) ? frameRow == 0 : _asleep;
   final Set<String> effects;
   final String appearance;
   Piece(
@@ -254,16 +266,19 @@ class Piece {
       required this.layer,
       this.scale = 1,
       double? opacity,
-      this.frameRow = 0,
+      int? frameRow,
       this.frameCol = 0,
       this.websiteEffects = '0',
       List<String>? websiteFields,
-      this.asleep = false,
+      bool? asleep,
       this.flipped = false,
       this.flippedVertical = false,
       Set<String> effects = const {},
       this.appearance = '默认'})
-      : opacity = opacity ?? (effects.contains('半透明') ? .5 : 1),
+      : frameRow = frameRow ??
+            (mushroomTypes.contains(type) && asleep == false ? 1 : 0),
+        _asleep = asleep ?? false,
+        opacity = opacity ?? (effects.contains('半透明') ? .5 : 1),
         websiteFields =
             websiteFields == null ? null : List.unmodifiable(websiteFields),
         effects = Set.unmodifiable(normalizeEffects(effects));
@@ -308,7 +323,10 @@ class Piece {
                       : this.effects.contains('半透明')
                           ? 1
                           : this.opacity),
-          frameRow: frameRow ?? this.frameRow,
+          frameRow: frameRow ??
+              (asleep != null && mushroomTypes.contains(type)
+                  ? asleep ? 0 : max(1, this.frameRow)
+                  : this.frameRow),
           frameCol: frameCol ?? this.frameCol,
           websiteEffects: websiteEffects ??
               (effects == null
@@ -319,7 +337,7 @@ class Piece {
                       (col != null && col != this.col)
                   ? null
                   : this.websiteFields),
-          asleep: asleep ?? this.asleep,
+          asleep: asleep ?? _asleep,
           flipped: flipped ?? this.flipped,
           flippedVertical: flippedVertical ?? this.flippedVertical,
           effects: effects ??
@@ -465,7 +483,7 @@ class Piece {
         frameCol: frameCol,
         websiteEffects: websiteEffects,
         websiteFields: websiteFields,
-        asleep: j['asleep'] == true,
+        asleep: j['asleep'] as bool?,
         flipped: j['flipped'] as bool,
         flippedVertical: (j['flippedVertical'] ?? false) as bool,
         effects: effects,

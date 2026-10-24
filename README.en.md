@@ -4,9 +4,9 @@
 
 [简体中文](README.md) | [English](README.en.md)
 
-**Plants as pieces. Formation as an art.** An offline desktop editor built with Flutter widgets and Canvas.
+**Plants as pieces. Formation as an art.** A **Windows-first** offline desktop editor built with Flutter widgets and Canvas.
 
-**v1.0.0** · [Website](https://xmpvz.pages.dev/en/) · [User guide](https://xmpvz.pages.dev/en/docs/) · [Windows x64 portable download](https://xmpvz.pages.dev/downloads/PvZ-Formation-Editor-1.0.0-windows-x64.zip) · [Join QQ group 425175276](https://qm.qq.com/q/BbkV57ELaa)
+**v1.0.1** · [Website](https://xmpvz.pages.dev/en/) · [User guide](https://xmpvz.pages.dev/en/docs/) · [Windows x64 portable download](https://xmpvz.pages.dev/downloads/PvZ-Formation-Editor-1.0.1-windows-x64.zip) · [Join QQ group 425175276](https://qm.qq.com/q/BbkV57ELaa)
 
 Author: **越小梦 (yuexiaomeng)** · [Authors](AUTHORS) · [Acknowledgments](ACKNOWLEDGMENTS.md)
 
@@ -14,11 +14,11 @@ The primary reference is [jspvz ArrayDesign](http://jspvz.com/ArrayDesign/) by *
 
 ## Windows release
 
-The current published package is **Windows v1.0.0**, built and launched for verification. Other platforms have source projects, but no corresponding release package from this run.
+The current published package is **Windows v1.0.1**, built and launched for verification. Other platforms have source projects, but no corresponding release package from this run.
 
 | Item | Details |
 | --- | --- |
-| App version | 1.0.0 |
+| App version | 1.0.1 |
 | OS / architecture | Windows 10 / Windows 11, x64 |
 | Package | Release ZIP, no installation required |
 | Executable | `pvz_formation_editor.exe` |
@@ -27,7 +27,7 @@ The current published package is **Windows v1.0.0**, built and launched for veri
 | Local data | User application-support folder; moving the ZIP/app folder does not move archives |
 | Updating | Quit the previous version normally, extract the new package and run it; export archives before migrating devices |
 
-**[Download Windows v1.0.0 x64](https://xmpvz.pages.dev/downloads/PvZ-Formation-Editor-1.0.0-windows-x64.zip)** · [SHA-256 checksums](https://xmpvz.pages.dev/downloads/SHA256SUMS.txt) · [Windows user guide](https://xmpvz.pages.dev/en/docs/)
+**[Download Windows v1.0.1 x64](https://xmpvz.pages.dev/downloads/PvZ-Formation-Editor-1.0.1-windows-x64.zip)** · [SHA-256 checksums](https://xmpvz.pages.dev/downloads/SHA256SUMS.txt) · [Windows user guide](https://xmpvz.pages.dev/en/docs/)
 
 This release includes independent windows, improved Windows CJK typography, autosave when opening presets, batch archive import/export, and live-game support for Imitaters, ladders, graves and rakes. See the verification scope below; mods and other game versions are not guaranteed to work.
 

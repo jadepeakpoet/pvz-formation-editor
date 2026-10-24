@@ -1,12 +1,14 @@
 """Create the complete Windows x64 ZIP, including app-local MSVC runtimes."""
 from pathlib import Path
-import argparse, shutil, zipfile, hashlib, uuid
+import argparse, shutil, zipfile, hashlib, uuid, re
 repo=Path(__file__).resolve().parent.parent
 parser=argparse.ArgumentParser()
+parser.add_argument('--version',default=re.search(r'^version: (\d+\.\d+\.\d+)',(repo/'pubspec.yaml').read_text(encoding='utf-8'),re.M).group(1))
 parser.add_argument('--build',default='build/windows-release-1.0.0/runner/Release')
 parser.add_argument('--crt',default=r'C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Redist\MSVC\14.44.35112\x64\Microsoft.VC143.CRT')
 args=parser.parse_args()
-root=repo/'release/1.0.0';name='PvZ-Formation-Editor-1.0.0-windows-x64'
+assert re.fullmatch(r'\d+\.\d+\.\d+',args.version),'Invalid release version'
+root=repo/'release'/args.version;name=f'PvZ-Formation-Editor-{args.version}-windows-x64'
 root.mkdir(parents=True,exist_ok=True)
 stage=repo/'build'/('pvz-release-stage-'+uuid.uuid4().hex[:12]);stage.mkdir();dst=stage/name
 source=repo/args.build

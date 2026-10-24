@@ -31,7 +31,8 @@ class ToolkitCodec {
           p.opacity != 1 ||
           p.flipped ||
           p.flippedVertical ||
-          p.frameRow != 0 ||
+          (p.frameRow != 0 &&
+              !(Piece.mushroomTypes.contains(p.type) && p.frameRow == 1)) ||
           p.frameCol != 0 ||
           p.appearance != '默认' ||
           p.websitePixelX != null ||

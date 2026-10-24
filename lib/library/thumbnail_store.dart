@@ -29,7 +29,10 @@ class ThumbnailStore {
         'map': document.mapId,
         'objects': [
           for (final piece in document.pieces)
-            Map<String, dynamic>.from(piece.toJson())..remove('id')
+            Map<String, dynamic>.from(piece.toJson())
+              ..remove('id')
+              // Frame already captures the visible sleep/awake appearance.
+              ..remove('asleep')
         ],
       })))
       .toString();

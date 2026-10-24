@@ -72,6 +72,20 @@ int main() {
   assert(Decode(asleepGloom.bytes,32)==1);
   GameX86 nightGloom;
   nightGloom.PutPlant(0x12345678,2,3,42,false,false);
+  GameX86 readyCob;
+  readyCob.Byte(0x60);
+  readyCob.PutPlant(0x12345678,0,0,47,false,true,false,0);
+  // Constructor returns at byte 31; explicit ready state and zero countdown
+  // are written before playing the loaded idle animation without blending.
+  assert(readyCob.bytes.at(31)==0xc7 && readyCob.bytes.at(33)==0x3c);
+  assert(Decode(readyCob.bytes,34)==37);
+  assert(readyCob.bytes.at(40)==0x54 && Decode(readyCob.bytes,41)==0);
+  assert(readyCob.calls.back().target==0x45fd90);
+  GameX86 emptyCob;
+  emptyCob.Byte(0x60);
+  emptyCob.PutPlant(0x12345678,0,0,47,false,true,false,1);
+  assert(Decode(emptyCob.bytes,34)==35 && Decode(emptyCob.bytes,41)==0);
+  assert(emptyCob.calls.back().target==0x45fd90);
   assert(nightGloom.calls.size()==1);
   GameX86 terrain;
   terrain.StoreDword(0x12345678,3);

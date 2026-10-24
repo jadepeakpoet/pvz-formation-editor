@@ -164,7 +164,9 @@ class WebsiteCodec {
       }
       final spec = ObjectSpec.byId(p.type);
       if (!formation.fits(p, formation.map)) issues.add('$label：对象越界');
-      if (p.asleep) issues.add('$label：睡眠状态的原站字段尚未验证');
+      if (p.asleep && !Piece.mushroomTypes.contains(p.type)) {
+        issues.add('$label：此对象不支持睡眠状态');
+      }
       if (p.appearance != '默认') issues.add('$label：非默认外表尚未验证');
       if (p.scale != 1) issues.add('$label：缩放字段尚未验证');
       if (![.5, 1].contains(p.opacity)) issues.add('$label：此透明度的原站字段尚未验证');
