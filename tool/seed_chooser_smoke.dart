@@ -14,7 +14,7 @@ import 'package:pvz_formation_editor/editor/seed_chooser.dart';
 class Binding extends WidgetsFlutterBinding {
   @override
   ViewConfiguration createViewConfigurationFor(RenderView view) =>
-      const ViewConfiguration(size: Size(800, 650), devicePixelRatio: 1);
+      ViewConfiguration(logicalConstraints: BoxConstraints.tight(Size(800, 650)), physicalConstraints: BoxConstraints.tight(Size(800, 650)), devicePixelRatio: 1);
 }
 
 void check(bool value, String why) {

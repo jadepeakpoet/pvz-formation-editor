@@ -70,7 +70,7 @@ Offset center(Element element) {
 
 void checkVisible(Offset point) {
   final logicalSize =
-      WidgetsBinding.instance.renderViews.first.configuration.size;
+      WidgetsBinding.instance.renderViews.first.configuration.logicalConstraints.biggest;
   if (!(Offset.zero & logicalSize).contains(point)) {
     throw StateError('UI point $point outside actual viewport $logicalSize');
   }
@@ -367,9 +367,9 @@ Future<void> main() async {
       'physicalHeight': view.physicalSize.height,
       'devicePixelRatio': view.devicePixelRatio,
       'configuredLogicalWidth':
-          WidgetsBinding.instance.renderViews.first.configuration.size.width,
+          WidgetsBinding.instance.renderViews.first.configuration.logicalConstraints.biggest.width,
       'configuredLogicalHeight':
-          WidgetsBinding.instance.renderViews.first.configuration.size.height
+          WidgetsBinding.instance.renderViews.first.configuration.logicalConstraints.biggest.height
     };
     SchedulerBinding.instance.removeTimingsCallback(timing);
     runApp(const SizedBox.shrink());

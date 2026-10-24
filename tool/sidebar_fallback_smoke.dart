@@ -20,7 +20,7 @@ class FallbackBinding extends WidgetsFlutterBinding {
       ParityMessenger(super.createBinaryMessenger());
   @override
   ViewConfiguration createViewConfigurationFor(RenderView view) =>
-      const ViewConfiguration(size: Size(1800, 900), devicePixelRatio: 1);
+      ViewConfiguration(logicalConstraints: BoxConstraints.tight(Size(1800, 900)), physicalConstraints: BoxConstraints.tight(Size(1800, 900)), devicePixelRatio: 1);
 }
 
 void check(bool ok, String reason) {

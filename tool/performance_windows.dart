@@ -150,7 +150,7 @@ Future<void> main() async {
               BoardGeometry(editorSession.document).cellCenter(i ~/ 9, i % 9);
           final position = board.localToGlobal(local);
           final viewport =
-              WidgetsBinding.instance.renderViews.first.configuration.size;
+              WidgetsBinding.instance.renderViews.first.configuration.logicalConstraints.biggest;
           if (!(Offset.zero & viewport).contains(position)) {
             throw StateError(
                 'Board pointer $position outside native viewport $viewport');
@@ -205,8 +205,8 @@ Future<void> main() async {
     report['flutterErrors'] = errors;
     final view = WidgetsBinding.instance.renderViews.first.configuration;
     report['view'] = {
-      'width': view.size.width,
-      'height': view.size.height,
+      'width': view.logicalConstraints.biggest.width,
+      'height': view.logicalConstraints.biggest.height,
       'devicePixelRatio': view.devicePixelRatio
     };
     await helpers.write('$directory/report.json', report);

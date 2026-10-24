@@ -20,7 +20,7 @@ class TitleBinding extends WidgetsFlutterBinding {
       ParityMessenger(super.createBinaryMessenger());
   @override
   ViewConfiguration createViewConfigurationFor(RenderView view) =>
-      ViewConfiguration(size: viewport, devicePixelRatio: 1);
+      ViewConfiguration(logicalConstraints: BoxConstraints.tight(viewport), physicalConstraints: BoxConstraints.tight(viewport), devicePixelRatio: 1);
 }
 
 void check(bool good, String message) {

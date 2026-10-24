@@ -22,7 +22,7 @@ class ResponsiveBinding extends ParityBinding {
   Size viewport = const Size(1240, 800);
   @override
   ViewConfiguration createViewConfigurationFor(RenderView view) =>
-      ViewConfiguration(size: viewport, devicePixelRatio: 1);
+      ViewConfiguration(logicalConstraints: BoxConstraints.tight(viewport), physicalConstraints: BoxConstraints.tight(viewport), devicePixelRatio: 1);
 }
 
 Future<void> main() async {
@@ -738,7 +738,7 @@ Future<void> main() async {
     binding.handleMetricsChanged();
     await h.settle();
     await h.settle();
-    h.expect(binding.renderViews.single.configuration.size.width == 390,
+    h.expect(binding.renderViews.single.configuration.logicalConstraints.biggest.width == 390,
         'Narrow regression did not resize actual rendering viewport');
     page.selectToolboxTab(2);
     await h.settle();

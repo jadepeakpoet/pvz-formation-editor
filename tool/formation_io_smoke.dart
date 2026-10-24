@@ -26,7 +26,7 @@ class Binding extends WidgetsFlutterBinding {
       dialogs = Dialogs(super.createBinaryMessenger());
   @override
   ViewConfiguration createViewConfigurationFor(RenderView view) =>
-      const ViewConfiguration(size: Size(1240, 800), devicePixelRatio: 1);
+      ViewConfiguration(logicalConstraints: BoxConstraints.tight(Size(1240, 800)), physicalConstraints: BoxConstraints.tight(Size(1240, 800)), devicePixelRatio: 1);
 }
 
 class Dialogs extends BinaryMessenger {

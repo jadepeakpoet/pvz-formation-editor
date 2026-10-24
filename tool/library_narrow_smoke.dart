@@ -18,7 +18,7 @@ import 'parity_support.dart';
 class Binding extends ParityBinding {
   @override
   ViewConfiguration createViewConfigurationFor(RenderView view) =>
-      const ViewConfiguration(size: Size(410, 640), devicePixelRatio: 1);
+      ViewConfiguration(logicalConstraints: BoxConstraints.tight(Size(410, 640)), physicalConstraints: BoxConstraints.tight(Size(410, 640)), devicePixelRatio: 1);
 }
 
 Element? find(bool Function(Widget) predicate) {

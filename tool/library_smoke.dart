@@ -24,7 +24,7 @@ class DesktopBinding extends WidgetsFlutterBinding {
       ParityMessenger(super.createBinaryMessenger());
   @override
   ViewConfiguration createViewConfigurationFor(RenderView view) =>
-      ViewConfiguration(size: desktopSize, devicePixelRatio: 1);
+      ViewConfiguration(logicalConstraints: BoxConstraints.tight(desktopSize), physicalConstraints: BoxConstraints.tight(desktopSize), devicePixelRatio: 1);
 }
 
 void walk(Element e, void Function(Element) f) {

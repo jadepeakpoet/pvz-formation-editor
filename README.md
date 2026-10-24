@@ -77,7 +77,7 @@
 
 ## Flutter 开发与构建
 
-项目名为 `pvz_formation_editor`。界面使用 Flutter Widget，阵图使用 Canvas 绘制，本地存档使用 SQLite。构建基线为 Flutter **3.19.2 stable** / Dart **3.3.0**，依赖版本记录在 `pubspec.lock`。
+项目名为 `pvz_formation_editor`。界面使用 Flutter Widget，阵图使用 Canvas 绘制，本地存档使用 SQLite。构建基线为 Flutter **3.47.8 stable** / Dart **3.13.7**，依赖版本记录在 `pubspec.lock`。
 
 ```sh
 flutter pub get

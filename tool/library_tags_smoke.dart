@@ -14,11 +14,11 @@ import 'parity_support.dart';
 class Binding extends ParityBinding {
   @override
   ViewConfiguration createViewConfigurationFor(RenderView view) =>
-      ViewConfiguration(
-          size: Size(
+      ViewConfiguration(logicalConstraints: BoxConstraints.tight(Size(
               double.parse(Platform.environment['PVZ_TAGS_WIDTH'] ?? '410'),
-              700),
-          devicePixelRatio: 1);
+              700)), physicalConstraints: BoxConstraints.tight(Size(
+              double.parse(Platform.environment['PVZ_TAGS_WIDTH'] ?? '410'),
+              700)), devicePixelRatio: 1);
 }
 
 class LibraryHarness extends ParityHarness {

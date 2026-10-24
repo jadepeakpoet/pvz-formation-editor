@@ -18,7 +18,7 @@ class Binding extends WidgetsFlutterBinding {
       fake = FakeGame(super.createBinaryMessenger());
   @override
   ViewConfiguration createViewConfigurationFor(RenderView view) =>
-      const ViewConfiguration(size: Size(900, 650), devicePixelRatio: 1);
+      ViewConfiguration(logicalConstraints: BoxConstraints.tight(Size(900, 650)), physicalConstraints: BoxConstraints.tight(Size(900, 650)), devicePixelRatio: 1);
 }
 
 class FakeGame extends BinaryMessenger {

@@ -13,7 +13,7 @@ class Binding extends WidgetsFlutterBinding {
   Size viewport = const Size(1000, 760);
   @override
   ViewConfiguration createViewConfigurationFor(RenderView view) =>
-      ViewConfiguration(size: viewport, devicePixelRatio: 1);
+      ViewConfiguration(logicalConstraints: BoxConstraints.tight(viewport), physicalConstraints: BoxConstraints.tight(viewport), devicePixelRatio: 1);
 }
 
 void check(bool value, String message) {

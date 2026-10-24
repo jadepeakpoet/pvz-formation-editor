@@ -1,6 +1,7 @@
 #include <flutter/dart_project.h>
 #include <flutter/flutter_view_controller.h>
 #include <windows.h>
+#include <cwchar>
 
 #include "flutter_window.h"
 #include "utils.h"
@@ -18,6 +19,12 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   ::CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
 
   flutter::DartProject project(L"data");
+  // Local renderer A/B testing; secondary windows copy this project setting.
+  wchar_t renderer[16]{};
+  if (::GetEnvironmentVariableW(L"PVZ_RENDERER", renderer, 16) > 0 &&
+      std::wcscmp(renderer, L"skia") == 0) {
+    project.set_impeller_switch(flutter::ImpellerSwitch::Disabled);
+  }
 
   std::vector<std::string> command_line_arguments =
       GetCommandLineArguments();

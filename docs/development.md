@@ -4,7 +4,7 @@
 
 ## 工具链
 
-当前构建基线为 Flutter 3.19.2 stable / Dart 3.3.0，依赖由 `pubspec.lock` 锁定。
+当前构建基线为 Flutter 3.47.8 stable / Dart 3.13.7，依赖由 `pubspec.lock` 锁定，`.fvmrc` 固定 SDK 版本。
 
 | 目标 | 宿主与工具 |
 | --- | --- |
@@ -60,3 +60,7 @@ node website/test-download.mjs
 应用版本统一记录在 `pubspec.yaml`、`lib/platform/app_info.dart`，Windows 资源版本由 Flutter 构建配置生成。`tool/package_windows_release.py` 从 `pubspec.yaml` 读取发布版本，将 Release 程序、资源和本地 MSVC 运行库打包到 `release/<version>/`。
 
 GitHub Release 提供 Windows 绿色包、源码归档和 SHA-256 校验文件。官网提供绿色包与文档，源码入口指向 GitHub。官网部署说明见 [website/README](../website/README.md)。
+
+## Windows 渲染后端对照
+
+默认跟随 Flutter SDK 的渲染后端。启动前设置当前进程环境变量 `PVZ_RENDERER=skia` 可使用 Skia 进行性能对照，主窗口与侧窗采用同一设置。环境变量仅影响该次进程启动。

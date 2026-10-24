@@ -7,7 +7,7 @@ import 'package:pvz_formation_editor/widgets/app_dropdown.dart';
 class Binding extends WidgetsFlutterBinding {
   @override
   ViewConfiguration createViewConfigurationFor(RenderView view) =>
-      const ViewConfiguration(size: Size(360, 640), devicePixelRatio: 1);
+      ViewConfiguration(logicalConstraints: BoxConstraints.tight(Size(360, 640)), physicalConstraints: BoxConstraints.tight(Size(360, 640)), devicePixelRatio: 1);
 }
 
 void check(bool condition, String message) {

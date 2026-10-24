@@ -77,7 +77,7 @@ Choose complete projects to retain all editor fields. Collections carry current 
 
 ## Development
 
-Project name: `pvz_formation_editor`. Flutter widgets provide the UI, Canvas renders formations, and SQLite stores local archives. Baseline: Flutter **3.19.2 stable**, Dart **3.3.0**, dependencies in `pubspec.lock`.
+Project name: `pvz_formation_editor`. Flutter widgets provide the UI, Canvas renders formations, and SQLite stores local archives. Baseline: Flutter **3.47.8 stable**, Dart **3.13.7**, dependencies in `pubspec.lock`.
 
 ```sh
 flutter pub get
