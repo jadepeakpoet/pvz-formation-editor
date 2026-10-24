@@ -1072,7 +1072,7 @@ class _LibraryPageState extends State<LibraryPage> {
       final game = await chooseRunningGame(context, read: false);
       if (game == null) return;
       await GameWrites(Directory.systemTemp).apply(game.pid, target);
-      if (mounted) message(context, PlacementLayout.completion('已应用到游戏', target));
+      if (mounted) message(context, PlacementLayout.completion('已应用到游戏', target, game: true));
     } catch (e) {
       if (mounted) message(context, '应用失败：$e');
     } finally {
@@ -4054,7 +4054,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
           : (Platform.isMacOS ? '撤销上一步操作（⌘Z）' : '撤销上一步操作（Ctrl+Z）'));
 
   bool gameBusy = false;
-  Future<void> gameFormationAction({required bool read}) async {
+  Future<void> gameFormationAction({required bool read, bool includeZombies = false}) async {
     if (gameBusy) return;
     setState(() => gameBusy = true);
     try {
@@ -4062,14 +4062,15 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
       final selected = await chooseRunningGame(context, read: read);
       if (selected == null) return;
       if (read) {
-        final current = await GameBridge.readFormation(selected.pid);
+        final current = await GameBridge.readFormation(selected.pid,
+            includeZombies: includeZombies);
         final code = FormationExchange.encodeGameRead(current.formation);
         if (!mounted) return;
         inputFormation.text = code;
         message(context, '已获取游戏阵型，可点击“载入布阵器”');
       } else {
         await GameWrites(Directory.systemTemp).apply(selected.pid, target!);
-        if (mounted) message(context, PlacementLayout.completion('已应用到游戏', target));
+        if (mounted) message(context, PlacementLayout.completion('已应用到游戏', target, game: true));
       }
     } catch (e) {
       if (mounted) message(context, '${read ? '获取' : '应用'}失败：$e');
@@ -4587,8 +4588,13 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
         Text(AppLanguage.text('1.载入和导出布阵字符串')),
         const SizedBox(height: 4),
         if (Platform.isWindows)
-          classicButton('从游戏获取', gameBusy ? null : () => gameFormationAction(read: true),
-              key: const ValueKey('formation-read-game')),
+          Wrap(children: [
+            classicButton('从游戏获取', gameBusy ? null : () => gameFormationAction(read: true),
+                key: const ValueKey('formation-read-game')),
+            classicButton('获取含僵尸布局', gameBusy ? null :
+                () => gameFormationAction(read: true, includeZombies: true),
+                key: const ValueKey('formation-read-full-game')),
+          ]),
         TextField(
             controller: inputFormation,
             minLines: 2,
@@ -4639,9 +4645,12 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                       const TextStyle(fontSize: 12, color: Colors.deepOrange))),
         ],
         if (outputLayoutNotice.isNotEmpty)
-          Text('复制或应用时：$outputLayoutNotice；原阵图保留。',
+          Text('Toolkit 阵型码：$outputLayoutNotice；原阵图保留，游戏应用可包含僵尸。',
               key: const ValueKey('formation-layout-notice'),
               style: const TextStyle(fontSize: 12, color: Colors.deepOrange)),
+        if (s.document.pieces.any((p) => p.spec.category == '僵尸'))
+          const Text('应用时同时放置僵尸；僵尸按种类和位置生成，动作由游戏运行。',
+              style: TextStyle(fontSize: 12, color: Color(0xff63755f))),
         Wrap(children: [
           classicButton('复制', outputEncodingError != null ? null : () async {
             await Clipboard.setData(ClipboardData(text: outputFormation.text));

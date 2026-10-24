@@ -2,6 +2,7 @@
 #define RUNNER_GAME_X86_H_
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
 #include <vector>
 struct GameX86 {
   std::vector<uint8_t> bytes;
@@ -84,6 +85,39 @@ struct GameX86 {
       Byte(0x50); Push(asleep ? 1u : 0u); Call(0x45e860); Byte(0x58);
     }
     SetVisualState(type,visualState,asleep);
+  }
+  void EaxField(uint32_t offset,uint32_t value) {
+    Byte(0xc7); Byte(0x80); Dword(offset); Dword(value);
+  }
+  void EaxByte(uint32_t offset,uint8_t value) {
+    Byte(0xc6); Byte(0x80); Dword(offset); Byte(value);
+  }
+  void RemoveZombie(uint32_t zombie) {
+    Byte(0xb9); Dword(zombie); Call(0x530510);
+  }
+  void PutZombie(uint32_t board,int row,int type,float canvasX,
+                 bool pool,int frameRow,int frameCol) {
+    // 1051 Board::AddZombieInRow: EAX=board, EBX=from-wave, stack=type,row.
+    Push(static_cast<uint32_t>(row)); Push(static_cast<uint32_t>(type));
+    MovEax(board); Byte(0x31); Byte(0xdb); Call(0x40ddc0);
+    const float x=canvasX-40.0f;
+    uint32_t bits; std::memcpy(&bits,&x,sizeof(bits));
+    EaxField(0x2c,bits); EaxField(8,static_cast<uint32_t>(static_cast<int>(x)));
+    bool walking=false;
+    if(type==14 && pool && (row==2 || row==3) && frameRow>0) {
+      EaxField(0x28,frameCol==2 ? 55u : 53u);
+      EaxByte(0xbd,1); EaxByte(0xbc,frameCol==2 ? 0 : 1);
+      EaxField(0x64,0); EaxField(0x84,0); walking=true;
+    } else if(type==11 && pool && (row==2 || row==3)) {
+      EaxField(0x28,59); EaxByte(0xbd,1);
+      EaxField(0x64,0); EaxField(0x84,0); walking=true;
+    } else if(type==17) {
+      EaxField(0x28,37); EaxField(0x64,0); EaxField(0x84,0); walking=true;
+    }
+    if(walking) {
+      // StartWalkAnim takes blend time in ESI and returns with plain RET.
+      Byte(0x50); Byte(0x31); Byte(0xf6); Call(0x52f2e0); Byte(0x58);
+    }
   }
   void PutRake(uint32_t board,int row,int col) {
     // Enter the original constructor after random row selection and inventory

@@ -1,5 +1,6 @@
 import 'formation.dart';
 import 'website_codec.dart';
+import 'zombie_layout.dart';
 
 /// Extracts the executable layout without modifying the editor document.
 /// Toolkit's website importer skips IDs above 0x32 and ignores visual styling.
@@ -7,28 +8,39 @@ class PlacementLayout {
   final Formation document;
   final int skippedObjects, simplifiedAppearances;
   const PlacementLayout._(
-      this.document, this.skippedObjects, this.simplifiedAppearances);
+    this.document,
+    this.skippedObjects,
+    this.simplifiedAppearances,
+  );
 
   String get notice {
     final parts = <String>[
       if (skippedObjects > 0) '已忽略 $skippedObjects 个僵尸或装饰对象',
-      if (simplifiedAppearances > 0)
-        '已忽略 $simplifiedAppearances 个对象的图像特效或外观变换',
+      if (simplifiedAppearances > 0) '已忽略 $simplifiedAppearances 个对象的图像特效或外观变换',
     ];
     return parts.join('；');
   }
 
-  static String completion(String action, Formation source) {
-    final detail = prepare(source).notice;
+  static String completion(
+    String action,
+    Formation source, {
+    bool game = false,
+  }) {
+    final detail = prepare(source, includeZombies: game).notice;
     return detail.isEmpty ? action : '$action（$detail）';
   }
 
-  static PlacementLayout prepare(Formation source) {
+  static PlacementLayout prepare(
+    Formation source, {
+    bool includeZombies = false,
+  }) {
     var skipped = 0, simplified = 0;
     final pieces = <Piece>[];
     for (final piece in source.pieces) {
       final websiteId = WebsiteCodec.indexForType(piece.type);
-      if (websiteId > 0x32) {
+      final zombie =
+          includeZombies && ZombieLayout.gameType(piece.type) != null;
+      if (websiteId > 0x32 && !zombie) {
         skipped++;
         continue;
       }
@@ -36,10 +48,13 @@ class PlacementLayout {
         pieces.add(piece);
         continue;
       }
-      final styled = piece.scale != 1 || piece.opacity != 1 ||
-          piece.flipped || piece.flippedVertical ||
+      final styled = piece.scale != 1 ||
+          piece.opacity != 1 ||
+          piece.flipped ||
+          piece.flippedVertical ||
           piece.layer != piece.spec.layer ||
-          piece.websitePixelX != null || piece.websitePixelY != null ||
+          !zombie &&
+              (piece.websitePixelX != null || piece.websitePixelY != null) ||
           piece.effects.any((effect) => effect != '模仿者');
       if (!styled) {
         pieces.add(piece);
@@ -47,7 +62,6 @@ class PlacementLayout {
       }
       simplified++;
       final data = piece.toJson()
-        ..remove('websiteFields')
         ..remove('websiteEffects')
         ..remove('websitePixelX')
         ..remove('websitePixelY')
@@ -57,12 +71,15 @@ class PlacementLayout {
         ..['flipped'] = false
         ..['flippedVertical'] = false
         ..['effects'] = [if (piece.effects.contains('模仿者')) '模仿者'];
+      if (!zombie) data.remove('websiteFields');
       // Keep the final frame: mushroom sleep and stable plant states are
       // interpreted by the game writer, independently of decorative styling.
       pieces.add(Piece.fromJson(data));
     }
     return PlacementLayout._(
-        skipped == 0 && simplified == 0 ? source : source.copy(pieces: pieces),
-        skipped, simplified);
+      skipped == 0 && simplified == 0 ? source : source.copy(pieces: pieces),
+      skipped,
+      simplified,
+    );
   }
 }

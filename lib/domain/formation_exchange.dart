@@ -1,4 +1,5 @@
 import 'dart:convert';
+
 import 'formation.dart';
 import 'toolkit_codec.dart';
 import 'website_codec.dart';
@@ -40,6 +41,9 @@ class FormationExchange {
   /// Keep game appearances that the compact Toolkit layout cannot express.
   static String encodeGameRead(Formation document) {
     final compact = layoutDocument(document);
+    if (compact.pieces.length != document.pieces.length) {
+      return encode(document, format: FormationFormat.website);
+    }
     for (var i = 0; i < document.pieces.length; i++) {
       if (PlantGameState.of(document.pieces[i]) !=
           PlantGameState.of(compact.pieces[i])) {
@@ -76,8 +80,10 @@ class FormationExchange {
 
   /// Placement-code exports intentionally omit editor/game session metadata.
   /// Project export preserves the original document unchanged.
-  static Formation layoutDocument(Formation document,
-      {FormationFormat format = FormationFormat.toolkit}) {
+  static Formation layoutDocument(
+    Formation document, {
+    FormationFormat format = FormationFormat.toolkit,
+  }) {
     if (format == FormationFormat.project) return document;
     if (format == FormationFormat.toolkit) {
       document = PlacementLayout.prepare(document).document;
@@ -95,8 +101,10 @@ class FormationExchange {
                 // Strip animation frames without discarding the state that
                 // was expressed by a mushroom's visible row.
                 ..['asleep'] = piece.asleep
-                ..['frameRow'] = Piece.mushroomTypes.contains(piece.type) &&
-                        !piece.asleep ? 1 : 0
+                ..['frameRow'] =
+                    Piece.mushroomTypes.contains(piece.type) && !piece.asleep
+                        ? 1
+                        : 0
                 ..['frameCol'] = 0;
               return Piece.fromJson(json);
             }).toList()
@@ -104,8 +112,10 @@ class FormationExchange {
     );
   }
 
-  static String encode(Formation document,
-      {FormationFormat format = FormationFormat.toolkit}) {
+  static String encode(
+    Formation document, {
+    FormationFormat format = FormationFormat.toolkit,
+  }) {
     document = layoutDocument(document, format: format);
     switch (format) {
       case FormationFormat.toolkit:
@@ -117,8 +127,10 @@ class FormationExchange {
     }
   }
 
-  static List<String> exportIssues(Formation document,
-      {FormationFormat format = FormationFormat.toolkit}) {
+  static List<String> exportIssues(
+    Formation document, {
+    FormationFormat format = FormationFormat.toolkit,
+  }) {
     document = layoutDocument(document, format: format);
     switch (format) {
       case FormationFormat.toolkit:

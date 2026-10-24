@@ -2,11 +2,14 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
+
 import 'package:crypto/crypto.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
+
 import '../domain/formation.dart';
+import '../domain/zombie_layout.dart';
 
 /// Versioned, reproducible PNGs. Cache failure never changes or blocks archives.
 class ThumbnailStore {
@@ -23,18 +26,23 @@ class ThumbnailStore {
   static const maximumDiskBytes = 64 << 20;
   static const maximumFiles = 2048;
   static String key(Formation document) => sha256
-      .convert(utf8.encode(jsonEncode({
-        'renderer': rendererVersion,
-        'size': [256, 192],
-        'map': document.mapId,
-        'objects': [
-          for (final piece in document.pieces)
-            Map<String, dynamic>.from(piece.toJson())
-              ..remove('id')
-              // Frame already captures the visible sleep/awake appearance.
-              ..remove('asleep')
-        ],
-      })))
+      .convert(
+        utf8.encode(
+          jsonEncode({
+            'renderer': rendererVersion,
+            'size': [256, 192],
+            if (ZombieLayout.contains(document)) 'zombieAnchors': 1,
+            'map': document.mapId,
+            'objects': [
+              for (final piece in document.pieces)
+                Map<String, dynamic>.from(piece.toJson())
+                  ..remove('id')
+                  // Frame already captures the visible sleep/awake appearance.
+                  ..remove('asleep'),
+            ],
+          }),
+        ),
+      )
       .toString();
   static Future<Directory?> directory() async {
     if (directoryOverride != null) {
@@ -61,8 +69,9 @@ class ThumbnailStore {
     if (await marker.exists()) return;
     try {
       preparationProgress.value = 0;
-      final index = jsonDecode(await rootBundle
-          .loadString('assets/original/thumbnails/index.json')) as Map;
+      final index = jsonDecode(
+        await rootBundle.loadString('assets/original/thumbnails/index.json'),
+      ) as Map;
       final keys = Set<String>.from(index['keys'] as List);
       final keyPattern = RegExp(r'^[0-9a-f]{64}$');
       if (index['version'] != 3 ||
@@ -104,15 +113,18 @@ class ThumbnailStore {
   static Future<ui.Image?> _readBundled(String key) async {
     try {
       final keys = await (_bundledKeys ??= (() async {
-        final data = jsonDecode(await rootBundle
-            .loadString('assets/original/thumbnails/index.json')) as Map;
+        final data = jsonDecode(
+          await rootBundle.loadString('assets/original/thumbnails/index.json'),
+        ) as Map;
         return Set<String>.from(data['keys'] as List);
       })());
       if (!keys.contains(key)) return null;
-      final data =
-          await rootBundle.load('assets/original/thumbnails/$key.webp');
+      final data = await rootBundle.load(
+        'assets/original/thumbnails/$key.webp',
+      );
       final image = await _decodePreview(
-          data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes));
+        data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes),
+      );
       bundledHits++;
       return image;
     } catch (_) {

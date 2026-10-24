@@ -17,116 +17,277 @@ class BoardMap {
 
   /// Zero-based logical plant rows on partially sodded original maps.
   final List<int>? activePlantRows;
-  const BoardMap(this.id, this.name, this.rows, this.columns,
-      {this.roof = false,
-      this.waterRows = const [],
-      this.activePlantRows,
-      this.geometryVerified = true,
-      this.originalIndex,
-      this.background});
+  const BoardMap(
+    this.id,
+    this.name,
+    this.rows,
+    this.columns, {
+    this.roof = false,
+    this.waterRows = const [],
+    this.activePlantRows,
+    this.geometryVerified = true,
+    this.originalIndex,
+    this.background,
+  });
   static const all = [
-    BoardMap('pool', '白天泳池', 6, 9,
-        originalIndex: 0, background: 'background3.png', waterRows: [2, 3]),
-    BoardMap('fog', '夜晚泳池', 6, 9,
-        originalIndex: 1, background: 'background4.png', waterRows: [2, 3]),
-    BoardMap('day', '白天草地', 5, 9,
-        originalIndex: 2, background: 'background1.jpg'),
-    BoardMap('night', '夜晚草地', 5, 9,
-        originalIndex: 3, background: 'background2.jpg'),
-    BoardMap('roof', '白天屋顶', 5, 9,
-        originalIndex: 4, background: 'background5.jpg', roof: true),
-    BoardMap('moonRoof', '夜晚屋顶', 5, 9,
-        originalIndex: 5, background: 'background6boss.jpg', roof: true),
-    BoardMap('day6', '白天六行草地', 6, 9,
-        originalIndex: 6, background: 'D6E.jpg', geometryVerified: false),
-    BoardMap('night6', '夜晚六行草地', 6, 9,
-        originalIndex: 7, background: 'N6E.jpg', geometryVerified: false),
-    BoardMap('roof6', '白天六行屋顶', 6, 9,
-        originalIndex: 8,
-        background: 'R6E.jpg',
-        roof: true,
-        geometryVerified: false),
-    BoardMap('moonRoof6', '夜晚六行屋顶', 6, 9,
-        originalIndex: 9,
-        background: 'M6E.jpg',
-        roof: true,
-        geometryVerified: false),
-    BoardMap('highland', '高地', 6, 9,
-        originalIndex: 10, background: 'highland.gif', geometryVerified: false),
-    BoardMap('day3', '三行草地', 5, 9,
-        originalIndex: 11,
-        background: 'background1unsodded2.jpg',
-        geometryVerified: false,
-        activePlantRows: [1, 2, 3]),
-    BoardMap('night3', '三行草地(夜晚)', 5, 9,
-        originalIndex: 12,
-        background: 'N3E.jpg',
-        geometryVerified: false,
-        activePlantRows: [1, 2, 3]),
-    BoardMap('day1', '单行草地', 5, 9,
-        originalIndex: 13,
-        background: 'background1unsodded_1.jpg',
-        geometryVerified: false,
-        activePlantRows: [2]),
-    BoardMap('night1', '单行草地(夜晚)', 5, 9,
-        originalIndex: 14,
-        background: 'N1E.jpg',
-        geometryVerified: false,
-        activePlantRows: [2]),
-    BoardMap('barren', '荒芜草地', 5, 9,
-        originalIndex: 15,
-        background: 'background1unsodded.jpg',
-        geometryVerified: false),
-    BoardMap('barrenNight', '荒芜草地(夜晚)', 5, 9,
-        originalIndex: 16, background: 'N0E.jpg', geometryVerified: false),
-    BoardMap('greenhouse', '温室花园', 5, 9,
-        originalIndex: 17,
-        background: 'Background_Greenhouse.jpg',
-        geometryVerified: false),
-    BoardMap('mushroomGarden', '蘑菇园', 5, 9,
-        originalIndex: 18,
-        background: 'Background_MushroomGarden.jpg',
-        geometryVerified: false),
-    BoardMap('aquarium', '水族馆', 5, 9,
-        originalIndex: 19,
-        background: 'aquarium1.jpg',
-        geometryVerified: false),
-    BoardMap('allWater', '全水路', 6, 9,
-        originalIndex: 20,
-        background: 'background7.jpg',
-        geometryVerified: false),
-    BoardMap('flood', '洪水', 6, 9,
-        originalIndex: 21,
-        background: 'background8.jpg',
-        geometryVerified: false),
-    BoardMap('reversal', '水路反转', 6, 9,
-        originalIndex: 22,
-        background: 'background9.jpg',
-        geometryVerified: false),
-    BoardMap('fogShimmer', '订制夜晚泳池(波光)', 6, 9,
-        originalIndex: 23,
-        background: 'background10.png',
-        waterRows: [2, 3],
-        geometryVerified: false),
-    BoardMap('mushroomGardenRestricted', '订制蘑菇园(背景蘑菇处不能种植)', 5, 9,
-        originalIndex: 24,
-        background: 'Background_MushroomGarden.jpg',
-        geometryVerified: false),
-    BoardMap('greenhouseRestricted', '订制温室花园(中间列不能种植)', 5, 9,
-        originalIndex: 25,
-        background: 'Background_Greenhouse.jpg',
-        geometryVerified: false),
+    BoardMap(
+      'pool',
+      '白天泳池',
+      6,
+      9,
+      originalIndex: 0,
+      background: 'background3.png',
+      waterRows: [2, 3],
+    ),
+    BoardMap(
+      'fog',
+      '夜晚泳池',
+      6,
+      9,
+      originalIndex: 1,
+      background: 'background4.png',
+      waterRows: [2, 3],
+    ),
+    BoardMap(
+      'day',
+      '白天草地',
+      5,
+      9,
+      originalIndex: 2,
+      background: 'background1.jpg',
+    ),
+    BoardMap(
+      'night',
+      '夜晚草地',
+      5,
+      9,
+      originalIndex: 3,
+      background: 'background2.jpg',
+    ),
+    BoardMap(
+      'roof',
+      '白天屋顶',
+      5,
+      9,
+      originalIndex: 4,
+      background: 'background5.jpg',
+      roof: true,
+    ),
+    BoardMap(
+      'moonRoof',
+      '夜晚屋顶',
+      5,
+      9,
+      originalIndex: 5,
+      background: 'background6boss.jpg',
+      roof: true,
+    ),
+    BoardMap(
+      'day6',
+      '白天六行草地',
+      6,
+      9,
+      originalIndex: 6,
+      background: 'D6E.jpg',
+      geometryVerified: false,
+    ),
+    BoardMap(
+      'night6',
+      '夜晚六行草地',
+      6,
+      9,
+      originalIndex: 7,
+      background: 'N6E.jpg',
+      geometryVerified: false,
+    ),
+    BoardMap(
+      'roof6',
+      '白天六行屋顶',
+      6,
+      9,
+      originalIndex: 8,
+      background: 'R6E.jpg',
+      roof: true,
+      geometryVerified: false,
+    ),
+    BoardMap(
+      'moonRoof6',
+      '夜晚六行屋顶',
+      6,
+      9,
+      originalIndex: 9,
+      background: 'M6E.jpg',
+      roof: true,
+      geometryVerified: false,
+    ),
+    BoardMap(
+      'highland',
+      '高地',
+      6,
+      9,
+      originalIndex: 10,
+      background: 'highland.gif',
+      geometryVerified: false,
+    ),
+    BoardMap(
+      'day3',
+      '三行草地',
+      5,
+      9,
+      originalIndex: 11,
+      background: 'background1unsodded2.jpg',
+      geometryVerified: false,
+      activePlantRows: [1, 2, 3],
+    ),
+    BoardMap(
+      'night3',
+      '三行草地(夜晚)',
+      5,
+      9,
+      originalIndex: 12,
+      background: 'N3E.jpg',
+      geometryVerified: false,
+      activePlantRows: [1, 2, 3],
+    ),
+    BoardMap(
+      'day1',
+      '单行草地',
+      5,
+      9,
+      originalIndex: 13,
+      background: 'background1unsodded_1.jpg',
+      geometryVerified: false,
+      activePlantRows: [2],
+    ),
+    BoardMap(
+      'night1',
+      '单行草地(夜晚)',
+      5,
+      9,
+      originalIndex: 14,
+      background: 'N1E.jpg',
+      geometryVerified: false,
+      activePlantRows: [2],
+    ),
+    BoardMap(
+      'barren',
+      '荒芜草地',
+      5,
+      9,
+      originalIndex: 15,
+      background: 'background1unsodded.jpg',
+      geometryVerified: false,
+    ),
+    BoardMap(
+      'barrenNight',
+      '荒芜草地(夜晚)',
+      5,
+      9,
+      originalIndex: 16,
+      background: 'N0E.jpg',
+      geometryVerified: false,
+    ),
+    BoardMap(
+      'greenhouse',
+      '温室花园',
+      5,
+      9,
+      originalIndex: 17,
+      background: 'Background_Greenhouse.jpg',
+      geometryVerified: false,
+    ),
+    BoardMap(
+      'mushroomGarden',
+      '蘑菇园',
+      5,
+      9,
+      originalIndex: 18,
+      background: 'Background_MushroomGarden.jpg',
+      geometryVerified: false,
+    ),
+    BoardMap(
+      'aquarium',
+      '水族馆',
+      5,
+      9,
+      originalIndex: 19,
+      background: 'aquarium1.jpg',
+      geometryVerified: false,
+    ),
+    BoardMap(
+      'allWater',
+      '全水路',
+      6,
+      9,
+      originalIndex: 20,
+      background: 'background7.jpg',
+      geometryVerified: false,
+    ),
+    BoardMap(
+      'flood',
+      '洪水',
+      6,
+      9,
+      originalIndex: 21,
+      background: 'background8.jpg',
+      geometryVerified: false,
+    ),
+    BoardMap(
+      'reversal',
+      '水路反转',
+      6,
+      9,
+      originalIndex: 22,
+      background: 'background9.jpg',
+      geometryVerified: false,
+    ),
+    BoardMap(
+      'fogShimmer',
+      '订制夜晚泳池(波光)',
+      6,
+      9,
+      originalIndex: 23,
+      background: 'background10.png',
+      waterRows: [2, 3],
+      geometryVerified: false,
+    ),
+    BoardMap(
+      'mushroomGardenRestricted',
+      '订制蘑菇园(背景蘑菇处不能种植)',
+      5,
+      9,
+      originalIndex: 24,
+      background: 'Background_MushroomGarden.jpg',
+      geometryVerified: false,
+    ),
+    BoardMap(
+      'greenhouseRestricted',
+      '订制温室花园(中间列不能种植)',
+      5,
+      9,
+      originalIndex: 25,
+      background: 'Background_Greenhouse.jpg',
+      geometryVerified: false,
+    ),
   ];
-  static BoardMap byId(String id) => all.firstWhere((m) => m.id == id,
-      orElse: () => throw FormatException('未知地图：$id'));
+  static BoardMap byId(String id) => all.firstWhere(
+        (m) => m.id == id,
+        orElse: () => throw FormatException('未知地图：$id'),
+      );
 }
 
 class ObjectSpec {
   final String id, name, category;
   final int layer, width;
   final int color;
-  const ObjectSpec(this.id, this.name, this.category, this.layer, this.color,
-      {this.width = 1});
+  const ObjectSpec(
+    this.id,
+    this.name,
+    this.category,
+    this.layer,
+    this.color, {
+    this.width = 1,
+  });
   static const all = [
     ObjectSpec('lily', '睡莲', '植物', 0, 0xff63ab58),
     ObjectSpec('pot', '花盆', '植物', 0, 0xffbf7952),
@@ -231,20 +392,28 @@ class ObjectSpec {
     ObjectSpec('iceTrail', '冰道', '特效', -2, 0xffb3dfeb),
     ObjectSpec('explosion', '爆炸标记', '特效', 50, 0xffef9057),
   ];
-  static ObjectSpec byId(String id) => all.firstWhere((s) => s.id == id,
-      orElse: () => throw FormatException('未知对象：$id'));
+  static ObjectSpec byId(String id) => all.firstWhere(
+        (s) => s.id == id,
+        orElse: () => throw FormatException('未知对象：$id'),
+      );
 }
 
 class Piece {
   // Original ArrayDesign sprite row zero is asleep; subsequent rows are awake.
   static const mushroomTypes = {
-    'puff', 'sunshroom', 'fume', 'hypno', 'scaredy',
-    'ice', 'doom', 'seashroom', 'magnet', 'gloom'
+    'puff',
+    'sunshroom',
+    'fume',
+    'hypno',
+    'scaredy',
+    'ice',
+    'doom',
+    'seashroom',
+    'magnet',
+    'gloom',
   };
   static (int, int) defaultPlantFrame(String type) =>
-      type == 'fume' || type == 'gloom' || type == 'magnet'
-          ? (1, 0)
-          : (0, 0);
+      type == 'fume' || type == 'gloom' || type == 'magnet' ? (1, 0) : (0, 0);
   final String id, type;
   final int row, col, layer;
   final int frameRow, frameCol;
@@ -258,24 +427,24 @@ class Piece {
   bool get asleep => mushroomTypes.contains(type) ? frameRow == 0 : _asleep;
   final Set<String> effects;
   final String appearance;
-  Piece(
-      {required this.id,
-      required this.type,
-      required this.row,
-      required this.col,
-      required this.layer,
-      this.scale = 1,
-      double? opacity,
-      int? frameRow,
-      this.frameCol = 0,
-      this.websiteEffects = '0',
-      List<String>? websiteFields,
-      bool? asleep,
-      this.flipped = false,
-      this.flippedVertical = false,
-      Set<String> effects = const {},
-      this.appearance = '默认'})
-      : frameRow = frameRow ??
+  Piece({
+    required this.id,
+    required this.type,
+    required this.row,
+    required this.col,
+    required this.layer,
+    this.scale = 1,
+    double? opacity,
+    int? frameRow,
+    this.frameCol = 0,
+    this.websiteEffects = '0',
+    List<String>? websiteFields,
+    bool? asleep,
+    this.flipped = false,
+    this.flippedVertical = false,
+    Set<String> effects = const {},
+    this.appearance = '默认',
+  })  : frameRow = frameRow ??
             (mushroomTypes.contains(type) && asleep == false ? 1 : 0),
         _asleep = asleep ?? false,
         opacity = opacity ?? (effects.contains('半透明') ? .5 : 1),
@@ -284,67 +453,89 @@ class Piece {
         effects = Set.unmodifiable(normalizeEffects(effects));
 
   /// Raw site placement coordinates, preserved for original positioned props.
-  double? get websitePixelX =>
-      websiteFields != null && websiteFields!.length >= 9
-          ? double.tryParse(websiteFields![websiteFields!.length - 2])
-          : null;
-  double? get websitePixelY =>
-      websiteFields != null && websiteFields!.length >= 9
-          ? double.tryParse(websiteFields!.last)
-          : null;
+  int get _websitePositionIndex {
+    final fields = websiteFields;
+    if (fields == null || fields.length < 7) return 8;
+    final seventh = double.tryParse(fields[6]) ?? 0;
+    final legacyZombieX = fields.length == 8 &&
+        spec.category == '僵尸' &&
+        !{'0', '1', '2', '3'}.contains(fields[7]);
+    return seventh > 0 && seventh <= 1 && !legacyZombieX ? 8 : 7;
+  }
+
+  double? get websitePixelX {
+    final fields = websiteFields;
+    final index = _websitePositionIndex;
+    return fields != null && fields.length > index
+        ? double.tryParse(fields[index])
+        : null;
+  }
+
+  double? get websitePixelY {
+    final fields = websiteFields;
+    final index = _websitePositionIndex + 1;
+    return fields != null && fields.length > index
+        ? double.tryParse(fields[index])
+        : null;
+  }
+
   ObjectSpec get spec => ObjectSpec.byId(type);
-  Piece copy(
-          {int? row,
-          int? col,
-          int? layer,
-          double? scale,
-          double? opacity,
-          int? frameRow,
-          int? frameCol,
-          String? websiteEffects,
-          List<String>? websiteFields,
-          bool? asleep,
-          bool? flipped,
-          bool? flippedVertical,
-          Set<String>? effects,
-          String? appearance}) =>
+  Piece copy({
+    int? row,
+    int? col,
+    int? layer,
+    double? scale,
+    double? opacity,
+    int? frameRow,
+    int? frameCol,
+    String? websiteEffects,
+    List<String>? websiteFields,
+    bool? asleep,
+    bool? flipped,
+    bool? flippedVertical,
+    Set<String>? effects,
+    String? appearance,
+  }) =>
       Piece(
-          id: id,
-          type: type,
-          row: row ?? this.row,
-          col: col ?? this.col,
-          layer: layer ?? this.layer,
-          scale: scale ?? this.scale,
-          opacity: opacity ??
-              (effects == null
-                  ? this.opacity
-                  : effects.contains('半透明')
-                      ? .5
-                      : this.effects.contains('半透明')
-                          ? 1
-                          : this.opacity),
-          frameRow: frameRow ??
-              (asleep != null && mushroomTypes.contains(type)
-                  ? asleep ? 0 : max(1, this.frameRow)
-                  : this.frameRow),
-          frameCol: frameCol ?? this.frameCol,
-          websiteEffects: websiteEffects ??
-              (effects == null
-                  ? this.websiteEffects
-                  : encodeWebsiteEffects(effects)),
-          websiteFields: websiteFields ??
-              ((row != null && row != this.row) ||
-                      (col != null && col != this.col)
-                  ? null
-                  : this.websiteFields),
-          asleep: asleep ?? _asleep,
-          flipped: flipped ?? this.flipped,
-          flippedVertical: flippedVertical ?? this.flippedVertical,
-          effects: effects ??
-              (websiteEffects == null
-                  ? this.effects
-                  : decodeWebsiteEffects(websiteEffects)),
-          appearance: appearance ?? this.appearance);
+        id: id,
+        type: type,
+        row: row ?? this.row,
+        col: col ?? this.col,
+        layer: layer ?? this.layer,
+        scale: scale ?? this.scale,
+        opacity: opacity ??
+            (effects == null
+                ? this.opacity
+                : effects.contains('半透明')
+                    ? .5
+                    : this.effects.contains('半透明')
+                        ? 1
+                        : this.opacity),
+        frameRow: frameRow ??
+            (asleep != null && mushroomTypes.contains(type)
+                ? asleep
+                    ? 0
+                    : max(1, this.frameRow)
+                : this.frameRow),
+        frameCol: frameCol ?? this.frameCol,
+        websiteEffects: websiteEffects ??
+            (effects == null
+                ? this.websiteEffects
+                : encodeWebsiteEffects(effects)),
+        websiteFields: websiteFields ??
+            ((row != null && row != this.row) ||
+                    (col != null && col != this.col)
+                ? null
+                : this.websiteFields),
+        asleep: asleep ?? _asleep,
+        flipped: flipped ?? this.flipped,
+        flippedVertical: flippedVertical ?? this.flippedVertical,
+        effects: effects ??
+            (websiteEffects == null
+                ? this.effects
+                : decodeWebsiteEffects(websiteEffects)),
+        appearance: appearance ?? this.appearance,
+      );
   Map<String, dynamic> toJson() => {
         'id': id,
         'type': type,
@@ -363,7 +554,7 @@ class Piece {
         'flipped': flipped,
         'flippedVertical': flippedVertical,
         'effects': effects.toList()..sort(),
-        'appearance': appearance
+        'appearance': appearance,
       };
   static const websiteEffectNames = [
     '模仿者',
@@ -372,7 +563,7 @@ class Piece {
     '高亮',
     '阴影',
     '灰烬',
-    '半透明'
+    '半透明',
   ];
   static const allowedEffects = [...websiteEffectNames, '我是僵尸'];
 
@@ -465,29 +656,31 @@ class Piece {
                     .asMap()
                     .entries
                     .where((e) => e.key != 0 && e.key != 5)
-                    .any((e) =>
-                        !RegExp(r'^-?\d+(?:\.\d+)?$').hasMatch(e.value))))) {
+                    .any(
+                      (e) => !RegExp(r'^-?\d+(?:\.\d+)?$').hasMatch(e.value),
+                    )))) {
       throw const FormatException('原站外表或保留字段无效');
     }
     final id = j['id'] as String;
     if (id.isEmpty || id.length > 128) throw const FormatException('对象 ID 无效');
     return Piece(
-        id: id,
-        type: spec.id,
-        row: row,
-        col: col,
-        layer: layer,
-        scale: scale,
-        opacity: opacity,
-        frameRow: frameRow,
-        frameCol: frameCol,
-        websiteEffects: websiteEffects,
-        websiteFields: websiteFields,
-        asleep: j['asleep'] as bool?,
-        flipped: j['flipped'] as bool,
-        flippedVertical: (j['flippedVertical'] ?? false) as bool,
-        effects: effects,
-        appearance: j['appearance'] as String);
+      id: id,
+      type: spec.id,
+      row: row,
+      col: col,
+      layer: layer,
+      scale: scale,
+      opacity: opacity,
+      frameRow: frameRow,
+      frameCol: frameCol,
+      websiteEffects: websiteEffects,
+      websiteFields: websiteFields,
+      asleep: j['asleep'] as bool?,
+      flipped: j['flipped'] as bool,
+      flippedVertical: (j['flippedVertical'] ?? false) as bool,
+      effects: effects,
+      appearance: j['appearance'] as String,
+    );
   }
 }
 
@@ -501,26 +694,28 @@ class Formation {
   final Set<int> imitaterSeedSlots;
   final List<Piece> pieces;
   final Map<String, bool> display;
-  Formation(
-      {this.mapId = 'pool',
-      this.sunValue = 9990,
-      this.fogColumns = 0,
-      List<String> seedSlots = const [],
-      Set<int> imitaterSeedSlots = const {},
-      List<Piece> pieces = const [],
-      Map<String, bool> display = const {
-        '坐标': false,
-        '阳光': true,
-        '卡槽': true,
-        '小推车': true,
-        '脑子': false,
-        '迷雾': false,
-        '继续标识': false,
-        '泥土': false
-      }})
-      : seedSlots = List.unmodifiable(seedSlots),
-        imitaterSeedSlots =
-            _validateImitaterSlots(imitaterSeedSlots, seedSlots.length),
+  Formation({
+    this.mapId = 'pool',
+    this.sunValue = 9990,
+    this.fogColumns = 0,
+    List<String> seedSlots = const [],
+    Set<int> imitaterSeedSlots = const {},
+    List<Piece> pieces = const [],
+    Map<String, bool> display = const {
+      '坐标': false,
+      '阳光': true,
+      '卡槽': true,
+      '小推车': true,
+      '脑子': false,
+      '迷雾': false,
+      '继续标识': false,
+      '泥土': false,
+    },
+  })  : seedSlots = List.unmodifiable(seedSlots),
+        imitaterSeedSlots = _validateImitaterSlots(
+          imitaterSeedSlots,
+          seedSlots.length,
+        ),
         pieces = List.unmodifiable(pieces),
         display = Map.unmodifiable(display);
   static Set<int> _validateImitaterSlots(Set<int> indices, int slotCount) {
@@ -531,22 +726,24 @@ class Formation {
   }
 
   BoardMap get map => BoardMap.byId(mapId);
-  Formation copy(
-          {String? mapId,
-          int? sunValue,
-          int? fogColumns,
-          List<String>? seedSlots,
-          Set<int>? imitaterSeedSlots,
-          List<Piece>? pieces,
-          Map<String, bool>? display}) =>
+  Formation copy({
+    String? mapId,
+    int? sunValue,
+    int? fogColumns,
+    List<String>? seedSlots,
+    Set<int>? imitaterSeedSlots,
+    List<Piece>? pieces,
+    Map<String, bool>? display,
+  }) =>
       Formation(
-          mapId: mapId ?? this.mapId,
-          sunValue: sunValue ?? this.sunValue,
-          fogColumns: fogColumns ?? this.fogColumns,
-          seedSlots: seedSlots ?? this.seedSlots,
-          imitaterSeedSlots: imitaterSeedSlots ?? this.imitaterSeedSlots,
-          pieces: pieces ?? this.pieces,
-          display: display ?? this.display);
+        mapId: mapId ?? this.mapId,
+        sunValue: sunValue ?? this.sunValue,
+        fogColumns: fogColumns ?? this.fogColumns,
+        seedSlots: seedSlots ?? this.seedSlots,
+        imitaterSeedSlots: imitaterSeedSlots ?? this.imitaterSeedSlots,
+        pieces: pieces ?? this.pieces,
+        display: display ?? this.display,
+      );
   Map<String, dynamic> toJson() => {
         'schemaVersion': 1,
         'map': mapId,
@@ -557,7 +754,7 @@ class Formation {
           'imitaterSeedSlots': imitaterSeedSlots.toList()..sort(),
         'board': {'rows': map.rows, 'columns': map.columns},
         'objects': pieces.map((e) => e.toJson()).toList(),
-        'display': display
+        'display': display,
       };
   String get fingerprint => jsonEncode(toJson());
   bool fits(Piece p, BoardMap m) =>
@@ -587,7 +784,9 @@ class Formation {
       throw const FormatException('模仿者卡槽必须是至多一个整数索引');
     }
     final imitaterSeedSlots = _validateImitaterSlots(
-        rawImitater.cast<int>().toSet(), seedSlots.length);
+      rawImitater.cast<int>().toSet(),
+      seedSlots.length,
+    );
     final map = BoardMap.byId(j['map'] as String);
     if (j['board']['rows'] != map.rows ||
         j['board']['columns'] != map.columns) {
@@ -602,18 +801,20 @@ class Formation {
       throw const FormatException('对象 ID 重复');
     }
     final display = Map<String, bool>.from(j['display']);
-    if (display.keys.any((k) =>
-        !['坐标', '阳光', '卡槽', '小推车', '脑子', '迷雾', '继续标识', '泥土'].contains(k))) {
+    if (display.keys.any(
+      (k) => !['坐标', '阳光', '卡槽', '小推车', '脑子', '迷雾', '继续标识', '泥土'].contains(k),
+    )) {
       throw const FormatException('未知显示设置');
     }
     final result = Formation(
-        mapId: map.id,
-        sunValue: sunValue,
-        fogColumns: fogColumns,
-        seedSlots: seedSlots,
-        imitaterSeedSlots: imitaterSeedSlots,
-        pieces: pieces,
-        display: display);
+      mapId: map.id,
+      sunValue: sunValue,
+      fogColumns: fogColumns,
+      seedSlots: seedSlots,
+      imitaterSeedSlots: imitaterSeedSlots,
+      pieces: pieces,
+      display: display,
+    );
     if (pieces.any((p) => !result.fits(p, map))) {
       throw const FormatException('对象越界');
     }
@@ -628,7 +829,7 @@ class ProjectCodec {
         'format': 'pvz-formation-project',
         'version': 1,
         'resources': {'kind': 'builtin-vector', 'catalogVersion': 1},
-        'document': f.toJson()
+        'document': f.toJson(),
       });
   static Formation decode(String text) {
     if (utf8.encode(text).length > maxBytes) {

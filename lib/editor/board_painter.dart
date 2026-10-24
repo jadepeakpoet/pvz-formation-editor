@@ -1,7 +1,9 @@
 import 'dart:typed_data';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
+
 import '../domain/formation.dart';
 import 'original_assets.dart';
 import 'sprite_presentation.dart';
@@ -31,17 +33,27 @@ class BoardGeometry {
     return document.map.roof && column < 5.5 ? (5.5 - column) * 20 : 0;
   }
 
-  Offset cellCenter(int row, int col) => Offset(40 + (col + .5) * cellWidth,
-      boardTop + (row + .5) * cellHeight + slope(col + .5));
+  Offset cellCenter(int row, int col) => Offset(
+        40 + (col + .5) * cellWidth,
+        boardTop + (row + .5) * cellHeight + slope(col + .5),
+      );
   Path cellPath(int row, int col) => Path()
-    ..moveTo(40 + col * cellWidth,
-        boardTop + row * cellHeight + slope(col.toDouble()))
-    ..lineTo(40 + (col + 1) * cellWidth,
-        boardTop + row * cellHeight + slope(col + 1.0))
-    ..lineTo(40 + (col + 1) * cellWidth,
-        boardTop + (row + 1) * cellHeight + slope(col + 1.0))
-    ..lineTo(40 + col * cellWidth,
-        boardTop + (row + 1) * cellHeight + slope(col.toDouble()))
+    ..moveTo(
+      40 + col * cellWidth,
+      boardTop + row * cellHeight + slope(col.toDouble()),
+    )
+    ..lineTo(
+      40 + (col + 1) * cellWidth,
+      boardTop + row * cellHeight + slope(col + 1.0),
+    )
+    ..lineTo(
+      40 + (col + 1) * cellWidth,
+      boardTop + (row + 1) * cellHeight + slope(col + 1.0),
+    )
+    ..lineTo(
+      40 + col * cellWidth,
+      boardTop + (row + 1) * cellHeight + slope(col.toDouble()),
+    )
     ..close();
   Offset pieceCenter(Piece p) {
     final name = OriginalAssets.names[p.type] ?? p.type;
@@ -50,15 +62,24 @@ class BoardGeometry {
     final onPot = (kind == 'Plant' || kind == 'Shell') &&
         _potCells.contains((p.row, p.col));
     final lift = onPot ? const Offset(0, -5) : Offset.zero;
+    // ArrayDesign has separate zombie and plant row anchors (Y versus YP).
+    final zombieLift = kind == 'Zombies'
+        ? (document.map.roof && p.col < 5 ? 40.0 : 30.0)
+        : 0.0;
+    final defaultCenter = cellCenter(p.row, p.col) - Offset(0, zombieLift);
     // The source stores unlifted canvas Y in its protocol. A pot adjusts Plant
     // and Shell CSS top by -5; props (including ladders) keep their own top.
-    if (sprite != null && p.websitePixelX != null && p.websitePixelY != null) {
-      return Offset(p.websitePixelX!,
-              p.websitePixelY! + (sprite['py'] as num).toDouble() - 37.5) +
+    if (sprite != null && p.websitePixelX != null) {
+      return Offset(
+            p.websitePixelX!,
+            p.websitePixelY != null
+                ? p.websitePixelY! + (sprite['py'] as num).toDouble() - 37.5
+                : defaultCenter.dy,
+          ) +
           lift;
     }
     return (sprite != null
-            ? cellCenter(p.row, p.col)
+            ? defaultCenter
             : (cellCenter(p.row, p.col) +
                     cellCenter(p.row, p.col + p.spec.width - 1)) /
                 2) +
@@ -76,23 +97,26 @@ class BoardGeometry {
         final w = (part['w'] as num).toDouble(),
             h = (part['h'] as num).toDouble();
         final rect = Rect.fromLTRB(
-            (p.flipped ? -x - w : x) * p.scale,
-            (p.flippedVertical ? -y - h : y) * p.scale,
-            (p.flipped ? -x : x + w) * p.scale,
-            (p.flippedVertical ? -y : y + h) * p.scale);
+          (p.flipped ? -x - w : x) * p.scale,
+          (p.flippedVertical ? -y - h : y) * p.scale,
+          (p.flipped ? -x : x + w) * p.scale,
+          (p.flippedVertical ? -y : y + h) * p.scale,
+        );
         bounds = bounds == null ? rect : bounds.expandToInclude(rect);
       }
       if (bounds != null) return bounds.shift(pieceCenter(p));
     }
     return Rect.fromCenter(
-        center: pieceCenter(p) +
-            Offset(
-                0,
-                p.layer <= 0
-                    ? cellHeight * .25 * p.scale * (p.flippedVertical ? -1 : 1)
-                    : 0),
-        width: cellWidth * .72 * p.spec.width * p.scale,
-        height: cellHeight * (p.layer <= 0 ? .24 : .68) * p.scale);
+      center: pieceCenter(p) +
+          Offset(
+            0,
+            p.layer <= 0
+                ? cellHeight * .25 * p.scale * (p.flippedVertical ? -1 : 1)
+                : 0,
+          ),
+      width: cellWidth * .72 * p.spec.width * p.scale,
+      height: cellHeight * (p.layer <= 0 ? .24 : .68) * p.scale,
+    );
   }
 
   /// Match the rendered frame, anchor, scale and flips; transparent pixels
@@ -104,8 +128,9 @@ class BoardGeometry {
     if (data == null) return pieceBounds(piece).contains(point);
     final delta = point - pieceCenter(piece);
     final local = Offset(
-        delta.dx / (piece.flipped ? -piece.scale : piece.scale),
-        delta.dy / (piece.flippedVertical ? -piece.scale : piece.scale) - 37.5);
+      delta.dx / (piece.flipped ? -piece.scale : piece.scale),
+      delta.dy / (piece.flippedVertical ? -piece.scale : piece.scale) - 37.5,
+    );
     for (final part in data['images'] as List) {
       final path = part['path'] as String;
       if (path.endsWith('/shadow.png')) continue;
@@ -121,7 +146,12 @@ class BoardGeometry {
       final sx = ((local.dx - x) * rw / w).floor();
       final sy = ((local.dy - y) * rh / h).floor();
       if (OriginalAssets.frameOpaqueAt(
-          part, piece.frameRow, piece.frameCol, sx, sy)) return true;
+        part,
+        piece.frameRow,
+        piece.frameCol,
+        sx,
+        sy,
+      )) return true;
     }
     return false;
   }
@@ -159,16 +189,24 @@ class GrowthEffect {
   static const frameCount = 6;
   final int row, col, frame;
   final bool? water;
-  const GrowthEffect(
-      {required this.row, required this.col, required this.frame, this.water})
-      : assert(frame >= 0 && frame < frameCount);
+  const GrowthEffect({
+    required this.row,
+    required this.col,
+    required this.frame,
+    this.water,
+  }) : assert(frame >= 0 && frame < frameCount);
 }
 
 class FogTile {
   final int row, column, maskFrame, textureFrame;
   final double opacity;
   const FogTile(
-      this.row, this.column, this.maskFrame, this.textureFrame, this.opacity);
+    this.row,
+    this.column,
+    this.maskFrame,
+    this.textureFrame,
+    this.opacity,
+  );
   Rect get rect =>
       Rect.fromLTWH(-12 + column * 80.0, 20 + row * 85.0, 210, 190);
 }
@@ -196,8 +234,10 @@ class FogGeometry {
       for (var row = firstRow; row <= lastRow; row++) {
         final corner =
             row == firstRow && minRow >= 0 || row == lastRow && maxRow < 10;
-        final first =
-            math.max(math.max(0, minCol + (corner ? 1 : 0)), firstColumn);
+        final first = math.max(
+          math.max(0, minCol + (corner ? 1 : 0)),
+          firstColumn,
+        );
         final last = math.min(9, maxCol - (corner ? 1 : 0));
         for (var col = first; col <= last; col++) {
           result.add((row, col));
@@ -216,8 +256,13 @@ class FogGeometry {
       for (var col = first; col <= 9; col++)
         for (var row = 0; row <= 6; row++)
           if (!hidden.contains((row, col)))
-            FogTile(row, col, (row * 31 + col * 17) & 7,
-                (row * 13 + col * 7 + 3) & 7, col == first ? .78 * .78 : 1),
+            FogTile(
+              row,
+              col,
+              (row * 31 + col * 17) & 7,
+              (row * 13 + col * 7 + 3) & 7,
+              col == first ? .78 * .78 : 1,
+            ),
     ];
   }
 }
@@ -243,34 +288,45 @@ class BoardPainter extends CustomPainter {
   final String? selectedId, stateHoverId;
   final bool background, helpers, paintSunValue;
   final double resourceScale;
-  BoardPainter(
-      {required this.document,
-      this.spritePresentation,
-      this.plantingPreview,
-      this.plantingSupportPreviews = const [],
-      this.plantingPosition,
-      this.shovelPreview = false,
-      this.shovelTargetIds = const {},
-      this.growthEffects = const [],
-      this.selectedCells = const {},
-      this.selectedId,
-      this.stateHoverId,
-      this.resourceScale = 1,
-      this.background = true,
-      this.paintSunValue = true,
-      this.helpers = true})
-      : super(repaint: OriginalAssets.revision);
-  void label(Canvas canvas, String text, Offset center, double fontSize,
-      {Color color = Colors.white}) {
+  BoardPainter({
+    required this.document,
+    this.spritePresentation,
+    this.plantingPreview,
+    this.plantingSupportPreviews = const [],
+    this.plantingPosition,
+    this.shovelPreview = false,
+    this.shovelTargetIds = const {},
+    this.growthEffects = const [],
+    this.selectedCells = const {},
+    this.selectedId,
+    this.stateHoverId,
+    this.resourceScale = 1,
+    this.background = true,
+    this.paintSunValue = true,
+    this.helpers = true,
+  }) : super(repaint: OriginalAssets.revision);
+  void label(
+    Canvas canvas,
+    String text,
+    Offset center,
+    double fontSize, {
+    Color color = Colors.white,
+  }) {
     final painter = TextPainter(
-        text: TextSpan(
-            text: text,
-            style: TextStyle(
-                color: color, fontSize: fontSize, fontWeight: FontWeight.w600)),
-        textDirection: TextDirection.ltr)
-      ..layout(maxWidth: 240);
+      text: TextSpan(
+        text: text,
+        style: TextStyle(
+          color: color,
+          fontSize: fontSize,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout(maxWidth: 240);
     painter.paint(
-        canvas, center - Offset(painter.width / 2, painter.height / 2));
+      canvas,
+      center - Offset(painter.width / 2, painter.height / 2),
+    );
   }
 
   @override
@@ -285,10 +341,10 @@ class BoardPainter extends CustomPainter {
         document.mapId == 'moonRoof';
     if (background) {
       canvas.drawRect(
-          Offset.zero & g.size,
-          Paint()
-            ..color =
-                night ? const Color(0xff182b35) : const Color(0xffd5dfb2));
+        Offset.zero & g.size,
+        Paint()
+          ..color = night ? const Color(0xff182b35) : const Color(0xffd5dfb2),
+      );
     }
     final layers = OriginalAssets.maps[document.map.name] as List?;
     final hasMap = layers != null;
@@ -300,15 +356,21 @@ class BoardPainter extends CustomPainter {
           final sourceSize = OriginalAssets.sourceSize(path) ??
               ui.Size(image.width.toDouble(), image.height.toDouble());
           canvas.drawImageRect(
-              image,
-              Rect.fromLTWH(
-                  0, 0, image.width.toDouble(), image.height.toDouble()),
-              Rect.fromLTWH(
-                  (layer['x'] as num).toDouble(),
-                  (layer['y'] as num).toDouble(),
-                  sourceSize.width,
-                  sourceSize.height),
-              Paint());
+            image,
+            Rect.fromLTWH(
+              0,
+              0,
+              image.width.toDouble(),
+              image.height.toDouble(),
+            ),
+            Rect.fromLTWH(
+              (layer['x'] as num).toDouble(),
+              (layer['y'] as num).toDouble(),
+              sourceSize.width,
+              sourceSize.height,
+            ),
+            Paint(),
+          );
         }
       }
     }
@@ -323,31 +385,39 @@ class BoardPainter extends CustomPainter {
                   ? const Color(0xff428fa6)
                   : const Color(0xff6e9f51);
           canvas.drawPath(
-              path,
-              Paint()
-                ..color = Color.lerp(color, night ? Colors.black : Colors.white,
-                    (r + c).isEven ? .06 : .14)!);
+            path,
+            Paint()
+              ..color = Color.lerp(
+                color,
+                night ? Colors.black : Colors.white,
+                (r + c).isEven ? .06 : .14,
+              )!,
+          );
         }
         if (helpers) {
           if (document.display['坐标'] == true) {
             canvas.drawPath(
-                path,
-                Paint()
-                  ..color = Colors.white.withOpacity(.18)
-                  ..style = PaintingStyle.stroke);
+              path,
+              Paint()
+                ..color = Colors.white.withOpacity(.18)
+                ..style = PaintingStyle.stroke,
+            );
           }
           if (selectedCells.contains((r, c))) {
-            canvas.drawPath(path,
-                Paint()..color = const Color(0xff4f9a68).withOpacity(.22));
+            canvas.drawPath(
+              path,
+              Paint()..color = const Color(0xff4f9a68).withOpacity(.22),
+            );
           }
           if (document.display['坐标'] == true) {
             label(
-                canvas,
-                '${r + 1},${c + 1}',
-                g.cellCenter(r, c) +
-                    Offset(-g.cellWidth * .32, -g.cellHeight * .35),
-                12,
-                color: Colors.white70);
+              canvas,
+              '${r + 1},${c + 1}',
+              g.cellCenter(r, c) +
+                  Offset(-g.cellWidth * .32, -g.cellHeight * .35),
+              12,
+              color: Colors.white70,
+            );
           }
         }
       }
@@ -357,16 +427,18 @@ class BoardPainter extends CustomPainter {
       final seed = OriginalAssets.image('image/Seed.png')!;
       canvas.drawImage(seed, const Offset(11, 0), Paint());
       for (var i = 0; i < document.seedSlots.length && i < 10; i++) {
-        final path = OriginalAssets.cardPath(document.seedSlots[i],
-                imitater: document.imitaterSeedSlots.contains(i))
-            .replaceFirst('assets/original/', '');
+        final path = OriginalAssets.cardPath(
+          document.seedSlots[i],
+          imitater: document.imitaterSeedSlots.contains(i),
+        ).replaceFirst('assets/original/', '');
         final mimic = document.imitaterSeedSlots.contains(i);
         final grayCard = OriginalAssets.image(path);
         final card = grayCard ??
             (mimic
                 ? OriginalAssets.image(
                     OriginalAssets.cardPath(document.seedSlots[i])
-                        .replaceFirst('assets/original/', ''))
+                        .replaceFirst('assets/original/', ''),
+                  )
                 : null);
         final paint = Paint();
         if (mimic && grayCard == null) {
@@ -390,38 +462,43 @@ class BoardPainter extends CustomPainter {
             0,
             0,
             1,
-            0
+            0,
           ]);
         }
         if (card != null) {
           canvas.drawImageRect(
-              card,
-              Rect.fromLTWH(
-                  0, 0, card.width.toDouble(), card.height.toDouble()),
-              seedSlotBounds(i),
-              paint);
+            card,
+            Rect.fromLTWH(0, 0, card.width.toDouble(), card.height.toDouble()),
+            seedSlotBounds(i),
+            paint,
+          );
         }
       }
     } else if (document.display['卡槽'] == true) {
       for (var i = 0; i < 8; i++) {
         canvas.drawRRect(
-            RRect.fromRectAndRadius(Rect.fromLTWH(280 + i * 75, 25, 64, 80),
-                const Radius.circular(8)),
-            Paint()..color = const Color(0xff967553));
+          RRect.fromRectAndRadius(
+            Rect.fromLTWH(280 + i * 75, 25, 64, 80),
+            const Radius.circular(8),
+          ),
+          Paint()..color = const Color(0xff967553),
+        );
         label(canvas, '${i + 1}', Offset(312 + i * 75, 64), 20);
       }
     }
     if (paintSunValue && document.display['阳光'] == true) {
       final sunlight = TextPainter(
-          text: TextSpan(
-              text: '${document.sunValue}',
-              style: const TextStyle(
-                  fontFamily: 'Continuum Bold',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.black)),
-          textDirection: TextDirection.ltr)
-        ..layout();
+        text: TextSpan(
+          text: '${document.sunValue}',
+          style: const TextStyle(
+            fontFamily: 'Continuum Bold',
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: Colors.black,
+          ),
+        ),
+        textDirection: TextDirection.ltr,
+      )..layout();
       sunlight.paint(canvas, const Offset(30, 62));
     }
     final menu = document.display['\u9633\u5149'] == true ||
@@ -458,7 +535,8 @@ class BoardPainter extends CustomPainter {
         // Source lawn equipment uses pc=0, one roof slope step left of plants.
         final ground =
             g.cellCenter(row, 0).dy + 37.5 + (document.map.roof ? 20 : 0);
-        visualPieces.add(Piece(
+        visualPieces.add(
+          Piece(
             id: 'decoration:mower:$row',
             type: type,
             row: row,
@@ -474,13 +552,16 @@ class BoardPainter extends CustomPainter {
               '1',
               '0',
               '15',
-              '${ground - (data['py'] as num)}'
-            ]));
+              '${ground - (data['py'] as num)}',
+            ],
+          ),
+        );
       }
     }
     for (final original in document.pieces) {
       final presented = spritePresentation == null
-          ? original : spritePresentation!.resolve(original);
+          ? original
+          : spritePresentation!.resolve(original);
       if (presented == null) continue;
       var piece = helpers && shovelTargetIds.contains(original.id)
           ? presented.copy(effects: {...presented.effects, '高亮'})
@@ -490,16 +571,19 @@ class BoardPainter extends CustomPainter {
       }
       final name = OriginalAssets.names[piece.type] ?? piece.type;
       if (name == 'Pumpkin') {
-        visualPieces
-            .add(_addon(piece, 'Pumpkin_back', piece.layer - 11, frameRow: 0));
+        visualPieces.add(
+          _addon(piece, 'Pumpkin_back', piece.layer - 11, frameRow: 0),
+        );
       } else if (name == 'ScaryPot') {
-        visualPieces
-            .add(_addon(piece, 'ScaryPot_back', piece.layer - 1, frameRow: 0));
+        visualPieces.add(
+          _addon(piece, 'ScaryPot_back', piece.layer - 1, frameRow: 0),
+        );
       }
       visualPieces.add(piece);
       if (name == 'Gloomshroom') {
-        visualPieces.add(_addon(piece, 'GloomPuff', piece.layer + 40,
-            noDiscoloration: true));
+        visualPieces.add(
+          _addon(piece, 'GloomPuff', piece.layer + 40, noDiscoloration: true),
+        );
       }
     }
     final entries = visualPieces.asMap().entries.toList()
@@ -516,8 +600,10 @@ class BoardPainter extends CustomPainter {
       final center = g.pieceCenter(p);
       canvas.save();
       canvas.translate(center.dx, center.dy);
-      canvas.scale(p.flipped ? -p.scale : p.scale,
-          p.flippedVertical ? -p.scale : p.scale);
+      canvas.scale(
+        p.flipped ? -p.scale : p.scale,
+        p.flippedVertical ? -p.scale : p.scale,
+      );
       if (_sprite(canvas, p)) {
         canvas.restore();
         continue;
@@ -537,42 +623,55 @@ class BoardPainter extends CustomPainter {
       final w = g.cellWidth * .72 * p.spec.width;
       final h = g.cellHeight * (p.layer <= 0 ? .24 : .68);
       final rect = Rect.fromCenter(
-          center: Offset(0, p.layer <= 0 ? g.cellHeight * .25 : 0),
-          width: w,
-          height: h);
+        center: Offset(0, p.layer <= 0 ? g.cellHeight * .25 : 0),
+        width: w,
+        height: h,
+      );
       if (p.effects.contains('高亮')) {
         canvas.drawOval(
-            rect.inflate(8), Paint()..color = Colors.yellow.withOpacity(.7));
+          rect.inflate(8),
+          Paint()..color = Colors.yellow.withOpacity(.7),
+        );
       }
       final shape = RRect.fromRectAndRadius(
-          rect, Radius.circular(p.spec.category == '僵尸' ? 8 : 24));
+        rect,
+        Radius.circular(p.spec.category == '僵尸' ? 8 : 24),
+      );
       if (p.effects.contains('我是僵尸')) {
         canvas.drawRRect(
-            shape.shift(const Offset(6, 8)), Paint()..color = Colors.black38);
+          shape.shift(const Offset(6, 8)),
+          Paint()..color = Colors.black38,
+        );
       }
       canvas.drawRRect(
-          shape,
-          Paint()
-            ..color = color
-            ..style =
-                p.appearance == '轮廓' ? PaintingStyle.stroke : PaintingStyle.fill
-            ..strokeWidth = 4);
+        shape,
+        Paint()
+          ..color = color
+          ..style =
+              p.appearance == '轮廓' ? PaintingStyle.stroke : PaintingStyle.fill
+          ..strokeWidth = 4,
+      );
       canvas.drawRRect(
-          shape,
-          Paint()
-            ..color = Colors.black38
-            ..style = PaintingStyle.stroke
-            ..strokeWidth = 2);
+        shape,
+        Paint()
+          ..color = Colors.black38
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2,
+      );
       // A visible asymmetric mark makes horizontal flips meaningful.
-      canvas.drawCircle(Offset(rect.right - 10, rect.center.dy - 7), 4,
-          Paint()..color = Colors.white);
+      canvas.drawCircle(
+        Offset(rect.right - 10, rect.center.dy - 7),
+        4,
+        Paint()..color = Colors.white,
+      );
       canvas.restore();
       label(
-          canvas,
-          p.spec.name,
-          center + Offset(0, p.layer <= 0 ? g.cellHeight * .25 : 0),
-          g.cellWidth < 85 ? 11 : 14,
-          color: const Color(0xff182619));
+        canvas,
+        p.spec.name,
+        center + Offset(0, p.layer <= 0 ? g.cellHeight * .25 : 0),
+        g.cellWidth < 85 ? 11 : 14,
+        color: const Color(0xff182619),
+      );
     }
     if (document.display['泥土'] == true && growthEffects.isNotEmpty) {
       final sheet = OriginalAssets.image('image/GrowPlant.png');
@@ -587,10 +686,11 @@ class BoardPainter extends CustomPainter {
           final origin =
               g.cellCenter(effect.row, effect.col) + const Offset(-30, 17.5);
           canvas.drawImageRect(
-              sheet,
-              Rect.fromLTWH(effect.frame * 61.0, water ? 34 : 0, 61, 34),
-              origin & const Size(61, 34),
-              Paint()..filterQuality = FilterQuality.none);
+            sheet,
+            Rect.fromLTWH(effect.frame * 61.0, water ? 34 : 0, 61, 34),
+            origin & const Size(61, 34),
+            Paint()..filterQuality = FilterQuality.none,
+          );
         }
       }
     }
@@ -600,17 +700,23 @@ class BoardPainter extends CustomPainter {
     if (document.display['继续标识'] == true) {
       final banner = OriginalAssets.image('image/ClickToContinue.png');
       if (banner != null) {
-        canvas.drawRect(const Rect.fromLTWH(40, 518, 760, 53),
-            Paint()..color = const Color(0x66000000));
+        canvas.drawRect(
+          const Rect.fromLTWH(40, 518, 760, 53),
+          Paint()..color = const Color(0x66000000),
+        );
         canvas.drawImage(banner, const Offset(285, 525), Paint());
       }
     }
     if (helpers && plantingPreview != null && plantingPosition != null) {
       final p = plantingPreview!;
-      canvas.drawPath(g.cellPath(p.row, p.col),
-          Paint()..color = Colors.white.withOpacity(.18));
+      canvas.drawPath(
+        g.cellPath(p.row, p.col),
+        Paint()..color = Colors.white.withOpacity(.18),
+      );
       canvas.saveLayer(
-          Offset.zero & g.size, Paint()..color = Colors.white.withOpacity(.65));
+        Offset.zero & g.size,
+        Paint()..color = Colors.white.withOpacity(.65),
+      );
       for (final support in plantingSupportPreviews) {
         final center = g.pieceCenter(support);
         canvas.save();
@@ -619,16 +725,20 @@ class BoardPainter extends CustomPainter {
         canvas.restore();
       }
       canvas.translate(plantingPosition!.dx, plantingPosition!.dy);
-      canvas.scale(p.flipped ? -p.scale : p.scale,
-          p.flippedVertical ? -p.scale : p.scale);
+      canvas.scale(
+        p.flipped ? -p.scale : p.scale,
+        p.flippedVertical ? -p.scale : p.scale,
+      );
       final name = OriginalAssets.names[p.type] ?? p.type;
       if (name == 'Pumpkin') {
         _sprite(canvas, _addon(p, 'Pumpkin_back', p.layer - 11, frameRow: 0));
       }
       _sprite(canvas, p);
       if (name == 'Gloomshroom') {
-        _sprite(canvas,
-            _addon(p, 'GloomPuff', p.layer + 40, noDiscoloration: true));
+        _sprite(
+          canvas,
+          _addon(p, 'GloomPuff', p.layer + 40, noDiscoloration: true),
+        );
       }
       canvas.restore();
     }
@@ -642,11 +752,16 @@ class BoardPainter extends CustomPainter {
         final left = (position.dx - 12).clamp(0.0, g.size.width - side);
         final top = (position.dy - 55).clamp(0.0, g.size.height - side);
         canvas.drawImageRect(
-            shovel,
-            Rect.fromLTWH(
-                0, 0, shovel.width.toDouble(), shovel.height.toDouble()),
-            Rect.fromLTWH(left, top, side, side),
-            Paint()..filterQuality = FilterQuality.medium);
+          shovel,
+          Rect.fromLTWH(
+            0,
+            0,
+            shovel.width.toDouble(),
+            shovel.height.toDouble(),
+          ),
+          Rect.fromLTWH(left, top, side, side),
+          Paint()..filterQuality = FilterQuality.medium,
+        );
       }
     }
     canvas.restore();
@@ -686,43 +801,65 @@ class BoardPainter extends CustomPainter {
     for (final tile in FogGeometry(document).tiles) {
       final rect = tile.rect;
       canvas.saveLayer(
-          rect, Paint()..color = Colors.white.withOpacity(tile.opacity));
-      canvas.drawImageRect(texture,
-          Rect.fromLTWH(tile.textureFrame * 210.0, 0, 210, 190), rect, Paint());
-      canvas.drawImageRect(mask,
-          Rect.fromLTWH(tile.maskFrame * 210.0, 0, 210, 190), rect, maskPaint);
+        rect,
+        Paint()..color = Colors.white.withOpacity(tile.opacity),
+      );
+      canvas.drawImageRect(
+        texture,
+        Rect.fromLTWH(tile.textureFrame * 210.0, 0, 210, 190),
+        rect,
+        Paint(),
+      );
+      canvas.drawImageRect(
+        mask,
+        Rect.fromLTWH(tile.maskFrame * 210.0, 0, 210, 190),
+        rect,
+        maskPaint,
+      );
       canvas.restore();
     }
   }
 
   // Pumpkin/ScaryPot backs track columns only; GloomPuff tracks both axes.
-  Piece _addon(Piece master, String type, int layer,
-          {int? frameRow, bool noDiscoloration = false}) =>
+  Piece _addon(
+    Piece master,
+    String type,
+    int layer, {
+    int? frameRow,
+    bool noDiscoloration = false,
+  }) =>
       Piece(
-          id: '${master.id}:$type',
-          type: type,
-          row: master.row,
-          col: master.col,
-          layer: layer,
-          scale: master.scale,
-          opacity: master.opacity,
-          flipped: master.flipped,
-          flippedVertical: master.flippedVertical,
-          frameRow: frameRow ?? master.frameRow,
-          frameCol: master.frameCol,
-          websiteFields: master.websiteFields,
-          effects: noDiscoloration
-              ? master.effects.difference({'模仿者', '灰烬', '冰冻', '魅惑'})
-              : master.effects);
+        id: '${master.id}:$type',
+        type: type,
+        row: master.row,
+        col: master.col,
+        layer: layer,
+        scale: master.scale,
+        opacity: master.opacity,
+        flipped: master.flipped,
+        flippedVertical: master.flippedVertical,
+        frameRow: frameRow ?? master.frameRow,
+        frameCol: master.frameCol,
+        websiteFields: master.websiteFields,
+        effects: noDiscoloration
+            ? master.effects.difference({'模仿者', '灰烬', '冰冻', '魅惑'})
+            : master.effects,
+      );
 
   bool _sprite(Canvas canvas, Piece p) {
     final data = OriginalAssets.sprites[OriginalAssets.names[p.type] ?? p.type];
     if (data == null) return false;
     final parts = data['images'] as List;
-    if (!parts.any((part) =>
-        OriginalAssets.spriteImage(part as Map, p.frameRow, p.frameCol,
-            scale: resourceScale) !=
-        null)) {
+    if (!parts.any(
+      (part) =>
+          OriginalAssets.spriteImage(
+            part as Map,
+            p.frameRow,
+            p.frameCol,
+            scale: resourceScale,
+          ) !=
+          null,
+    )) {
       return false;
     }
     // Sprite anchors are local to each part. Preview addons share a canvas,
@@ -743,8 +880,10 @@ class BoardPainter extends CustomPainter {
         effectPaint.color = Color.fromRGBO(255, 255, 255, p.opacity);
       }
       if (p.effects.contains('灰烬')) {
-        effectPaint.colorFilter =
-            const ColorFilter.mode(Colors.black, BlendMode.srcIn);
+        effectPaint.colorFilter = const ColorFilter.mode(
+          Colors.black,
+          BlendMode.srcIn,
+        );
       } else {
         var red = 1.0, green = 1.0, blue = 1.0;
         if (p.effects.contains('冰冻')) {
@@ -794,30 +933,38 @@ class BoardPainter extends CustomPainter {
     for (final part in parts) {
       final path = part['path'] as String;
       final image = OriginalAssets.spriteImage(
-          part as Map, p.frameRow, p.frameCol,
-          scale: resourceScale,
-          imitation: p.effects.contains('\u6a21\u4eff\u8005')
-              ? OriginalAssets.names[p.type] ?? p.type
-              : null);
+        part as Map,
+        p.frameRow,
+        p.frameCol,
+        scale: resourceScale,
+        imitation: p.effects.contains('\u6a21\u4eff\u8005')
+            ? OriginalAssets.names[p.type] ?? p.type
+            : null,
+      );
       if (image == null) continue;
       final shadow = path.endsWith('/shadow.png');
       final w =
           shadow && part['w'] == 100 ? 86.0 : (part['w'] as num).toDouble();
       final h =
           shadow && part['h'] == 100 ? 36.0 : (part['h'] as num).toDouble();
-      final source =
-          Rect.fromLTWH(0, 0, image.width.toDouble(), image.height.toDouble());
+      final source = Rect.fromLTWH(
+        0,
+        0,
+        image.width.toDouble(),
+        image.height.toDouble(),
+      );
       final target = Rect.fromLTWH(
-          (part['x'] as num).toDouble() - (data['px'] as num),
-          (part['y'] as num).toDouble() - (data['py'] as num),
-          w,
-          h);
+        (part['x'] as num).toDouble() - (data['px'] as num),
+        (part['y'] as num).toDouble() - (data['py'] as num),
+        w,
+        h,
+      );
       if (!shadow && dropShadow && !p.effects.contains('灰烬')) {
         const offsets = [Offset(-3, -1), Offset(3, 1), Offset(4, 2)];
         const colors = [
           Color(0xffa18e73),
           Color(0xffb08d75),
-          Color(0xff805b3b)
+          Color(0xff805b3b),
         ];
         // CSS applies its three drop-shadow filters in sequence, so each later
         // shadow also includes the earlier shadows' alpha silhouettes.
@@ -831,17 +978,24 @@ class BoardPainter extends CustomPainter {
             }
           }
           canvas.drawImageRect(
-              image,
-              source,
-              target.shift(offset),
-              Paint()
-                ..colorFilter = ColorFilter.mode(colors[last], BlendMode.srcIn)
-                ..maskFilter = MaskFilter.blur(
-                    BlurStyle.normal, math.sqrt(count.toDouble())));
+            image,
+            source,
+            target.shift(offset),
+            Paint()
+              ..colorFilter = ColorFilter.mode(colors[last], BlendMode.srcIn)
+              ..maskFilter = MaskFilter.blur(
+                BlurStyle.normal,
+                math.sqrt(count.toDouble()),
+              ),
+          );
         }
       }
       canvas.drawImageRect(
-          image, source, target, Paint()..filterQuality = FilterQuality.medium);
+        image,
+        source,
+        target,
+        Paint()..filterQuality = FilterQuality.medium,
+      );
     }
     if (translucent || tinted) canvas.restore();
     canvas.restore();
@@ -852,39 +1006,55 @@ class BoardPainter extends CustomPainter {
   bool shouldRepaint(covariant BoardPainter oldDelegate) => true;
 }
 
-Future<Uint8List> exportPng(Formation document,
-        {double multiplier = 1,
-        bool background = true,
-        bool pokerWidth = false}) =>
-    OriginalAssets.images.retainDuring(() =>
-        OriginalAssets.retainImitationDuring(() => _exportPng(document,
-            multiplier: multiplier,
-            background: background,
-            pokerWidth: pokerWidth)));
+Future<Uint8List> exportPng(
+  Formation document, {
+  double multiplier = 1,
+  bool background = true,
+  bool pokerWidth = false,
+}) =>
+    OriginalAssets.images.retainDuring(
+      () => OriginalAssets.retainImitationDuring(
+        () => _exportPng(
+          document,
+          multiplier: multiplier,
+          background: background,
+          pokerWidth: pokerWidth,
+        ),
+      ),
+    );
 
-Future<Uint8List> _exportPng(Formation document,
-    {double multiplier = 1,
-    bool background = true,
-    bool pokerWidth = false}) async {
+Future<Uint8List> _exportPng(
+  Formation document, {
+  double multiplier = 1,
+  bool background = true,
+  bool pokerWidth = false,
+}) async {
   if (!multiplier.isFinite || multiplier < .25 || multiplier > 4) {
     throw ArgumentError.value(multiplier, 'multiplier', '输出倍率必须在 0.25～4 之间');
   }
   await OriginalAssets.ensureBoardImages(document.map.name, document.seedSlots);
   await OriginalAssets.ensurePieceImages(document.pieces);
   if (document.display['\u5c0f\u63a8\u8f66'] == true) {
-    await OriginalAssets.ensureSpriteTypes(
-        ['Lawnmower', 'Poolcleaner', 'Roofcleaner']);
+    await OriginalAssets.ensureSpriteTypes([
+      'Lawnmower',
+      'Poolcleaner',
+      'Roofcleaner',
+    ]);
   }
   final size = BoardGeometry(document).size;
   final recorder = ui.PictureRecorder();
   final widthScale = pokerWidth ? 917 / 800 : 1.0;
   final canvas = Canvas(recorder)..scale(multiplier * widthScale, multiplier);
-  BoardPainter(document: document, background: background, helpers: false)
-      .paint(canvas, size);
+  BoardPainter(
+    document: document,
+    background: background,
+    helpers: false,
+  ).paint(canvas, size);
   final picture = recorder.endRecording();
   final image = await picture.toImage(
-      (size.width * widthScale * multiplier).round(),
-      (size.height * multiplier).round());
+    (size.width * widthScale * multiplier).round(),
+    (size.height * multiplier).round(),
+  );
   try {
     final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
     if (bytes == null) throw StateError('PNG 编码失败');
@@ -897,25 +1067,31 @@ Future<Uint8List> _exportPng(Formation document,
 
 /// A list preview only decodes small shared map/sprite resources. No card bank,
 /// sun text, fog atlas, mower artwork, or full-image export pipeline is involved.
-Future<ui.Image?> renderThumbnail(Formation document,
-        {bool Function()? isNeeded}) =>
-    OriginalAssets.images.retainDuring(() =>
-        OriginalAssets.retainImitationDuring(() async {
-          const scale = .32;
-          if (isNeeded != null && !isNeeded()) return null;
-          await OriginalAssets.ensureMapImages(document.map.name, scale: scale);
-          if (isNeeded != null && !isNeeded()) return null;
-          await OriginalAssets.ensurePieceImages(document.pieces, scale: scale);
-          if (isNeeded != null && !isNeeded()) return null;
-          final preview = document.copy(display: const {});
-          final recorder = ui.PictureRecorder();
-          final canvas = Canvas(recorder)..scale(scale);
-          BoardPainter(document: preview, helpers: false, resourceScale: scale)
-              .paint(canvas, const Size(800, 600));
-          final picture = recorder.endRecording();
-          try {
-            return await picture.toImage(256, 192);
-          } finally {
-            picture.dispose();
-          }
-        }));
+Future<ui.Image?> renderThumbnail(
+  Formation document, {
+  bool Function()? isNeeded,
+}) =>
+    OriginalAssets.images.retainDuring(
+      () => OriginalAssets.retainImitationDuring(() async {
+        const scale = .32;
+        if (isNeeded != null && !isNeeded()) return null;
+        await OriginalAssets.ensureMapImages(document.map.name, scale: scale);
+        if (isNeeded != null && !isNeeded()) return null;
+        await OriginalAssets.ensurePieceImages(document.pieces, scale: scale);
+        if (isNeeded != null && !isNeeded()) return null;
+        final preview = document.copy(display: const {});
+        final recorder = ui.PictureRecorder();
+        final canvas = Canvas(recorder)..scale(scale);
+        BoardPainter(
+          document: preview,
+          helpers: false,
+          resourceScale: scale,
+        ).paint(canvas, const Size(800, 600));
+        final picture = recorder.endRecording();
+        try {
+          return await picture.toImage(256, 192);
+        } finally {
+          picture.dispose();
+        }
+      }),
+    );

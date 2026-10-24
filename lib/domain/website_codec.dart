@@ -1,8 +1,8 @@
 import 'dart:convert';
+
 import 'formation.dart';
 
-/// Conservative subset verified through the ArrayDesign Load/Save form and DOM.
-/// This is not a claim of complete source-protocol or PvZ Toolkit compatibility.
+/// ArrayDesign interchange, retaining appearance, effects and positioned objects.
 class WebsiteCodec {
   static const maxBytes = 8 * 1024 * 1024;
   static const mapIds = [
@@ -31,7 +31,7 @@ class WebsiteCodec {
     'reversal',
     'fogShimmer',
     'mushroomGardenRestricted',
-    'greenhouseRestricted'
+    'greenhouseRestricted',
   ];
   static const plantIds = [
     'pea',
@@ -81,7 +81,7 @@ class WebsiteCodec {
     'winter',
     'goldmagnet',
     'spike',
-    'cob'
+    'cob',
   ];
   static const extraIds = <int, String>{
     0x30: 'ladder',
@@ -113,15 +113,17 @@ class WebsiteCodec {
     0x5E: 'dolphin',
     0x5F: 'jack',
     0x60: 'balloon',
-    0x61: 'digger'
+    0x61: 'digger',
   };
   static String? typeForIndex(int index) =>
       index >= 0 && index < plantIds.length ? plantIds[index] : extraIds[index];
   static int indexForType(String type) => plantIds.contains(type)
       ? plantIds.indexOf(type)
       : extraIds.entries
-          .firstWhere((e) => e.value == type,
-              orElse: () => const MapEntry(-1, ''))
+          .firstWhere(
+            (e) => e.value == type,
+            orElse: () => const MapEntry(-1, ''),
+          )
           .key;
   static String _kind(String type) {
     if (ObjectSpec.byId(type).category == '僵尸') return 'Zombies';
@@ -139,7 +141,7 @@ class WebsiteCodec {
       'BungeeTarget' ||
       'Ice' =>
         'Prop:$type',
-      _ => 'Plant'
+      _ => 'Plant',
     };
   }
 
@@ -176,7 +178,7 @@ class WebsiteCodec {
         issues.add('$label：此效果没有原站对应位');
       }
       final slot = '${p.row}:${p.col}:${_kind(p.type)}';
-      if (!occupied.add(slot)) {
+      if (spec.category != '僵尸' && !occupied.add(slot)) {
         issues.add('$label：同格同类别 ${_kind(p.type)} 重叠无法保留');
       }
     }
@@ -222,6 +224,19 @@ class WebsiteCodec {
         fields[0] = '1';
         fields.insert(1, '1');
       }
+      if (p.spec.category == '僵尸') {
+        // Current ArrayDesign expects opacity, side, then an explicit X.
+        // Without X its zombie loader uses the current mouse position.
+        final x = p.websitePixelX ?? (40 + (p.col + .5) * 80);
+        fields
+          ..clear()
+          ..addAll([
+            (p.effects.contains('半透明') ? .5 : p.opacity).toString(),
+            p.flipped ? '1' : '0',
+            x.toString(),
+            if (p.websitePixelY != null) p.websitePixelY.toString(),
+          ]);
+      }
 
       final rawEffects = Piece.decodeWebsiteEffects(p.websiteEffects);
       final grayEffects = p.effects.difference({'半透明'});
@@ -230,7 +245,8 @@ class WebsiteCodec {
           ? p.websiteEffects
           : Piece.encodeWebsiteEffects(p.effects);
       out.write(
-          ',$hex ${p.row + 1} ${p.col + 1} ${p.frameRow} ${p.frameCol} $effect ${fields.join(' ')} ');
+        ',$hex ${p.row + 1} ${p.col + 1} ${p.frameRow} ${p.frameCol} $effect ${fields.join(' ')} ',
+      );
     }
     final result = out.toString();
     if (utf8.encode(result).length > maxBytes) {
@@ -286,15 +302,20 @@ class WebsiteCodec {
       if (tokens.length >= 7 && (numbers[5] < 0 || numbers[5] > 1)) {
         throw FormatException('第 $index 条：第七字段仅验证默认值 1');
       }
-      final currentFormat =
-          tokens.length >= 7 && numbers[5] > 0 && numbers[5] <= 1;
+      final spec = ObjectSpec.byId(typeForIndex(typeIndex)!);
+      final legacyZombieX = spec.category == '僵尸' &&
+          tokens.length == 8 &&
+          !{'0', '1', '2', '3'}.contains(tokens[7]);
+      final currentFormat = tokens.length >= 7 &&
+          numbers[5] > 0 &&
+          numbers[5] <= 1 &&
+          !legacyZombieX;
       if (currentFormat &&
           tokens.length >= 8 &&
           tokens[7] != '0' &&
           tokens[7] != '1') {
         throw FormatException('第 $index 条：翻转字段仅验证0或1');
       }
-      final spec = ObjectSpec.byId(typeForIndex(typeIndex)!);
       final row = numbers[0].toInt() - 1, col = numbers[1].toInt() - 1;
       if (row < 0 ||
           row >= map.rows ||
@@ -302,16 +323,22 @@ class WebsiteCodec {
           col + spec.width > map.columns) {
         throw FormatException('第 $index 条：坐标或占格越界');
       }
-      if (!occupied.add('$row:$col:${_kind(spec.id)}')) {
+      if (spec.category != '僵尸' &&
+          !occupied.add('$row:$col:${_kind(spec.id)}')) {
         throw FormatException('第 $index 条：同格同类别重叠，无法无损导入');
       }
-      pieces.add(Piece(
+      pieces.add(
+        Piece(
           id: newId(),
           type: spec.id,
           row: row,
           col: col,
           layer: spec.layer,
-          flipped: currentFormat && tokens.length >= 8 && tokens[7] == '1',
+          flipped: currentFormat && tokens.length >= 8 && tokens[7] == '1' ||
+              !currentFormat &&
+                  spec.category == '僵尸' &&
+                  tokens.length >= 8 &&
+                  tokens[6] == '1',
           frameRow: numbers[2].toInt(),
           frameCol: numbers[3].toInt(),
           websiteEffects: tokens[5],
@@ -319,8 +346,10 @@ class WebsiteCodec {
           opacity: currentFormat ? numbers[5].toDouble() : 1,
           effects: {
             ...Piece.decodeWebsiteEffects(tokens[5]),
-            if (currentFormat && numbers[5] == .5) '半透明'
-          }));
+            if (currentFormat && numbers[5] == .5) '半透明',
+          },
+        ),
+      );
     }
     return Formation(mapId: map.id, pieces: pieces);
   }

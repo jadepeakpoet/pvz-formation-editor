@@ -1,31 +1,54 @@
 import 'dart:io';
+
 import '../domain/formation.dart';
 import '../domain/placement_layout.dart';
+import '../domain/zombie_layout.dart';
 import 'game_bridge.dart';
 
 /// Serializes live writes. Only the current consistency snapshot is retained.
 class GameWrites {
   final Directory directory;
+  final bool _nativeRead;
   final Future<GameFormationSnapshot> Function(int) read;
   final Future<GameFormationSnapshot> Function(
-      int, Formation, GameFormationSnapshot) write;
+    int,
+    Formation,
+    GameFormationSnapshot,
+  ) write;
   static final Map<int, Future<void>> _operations = {};
-  GameWrites(this.directory,
-      {Future<GameFormationSnapshot> Function(int)? read,
-      Future<GameFormationSnapshot> Function(
-              int, Formation, GameFormationSnapshot)?
-          write})
-      : read = read ?? GameBridge.readFormation,
+  GameWrites(
+    this.directory, {
+    Future<GameFormationSnapshot> Function(int)? read,
+    Future<GameFormationSnapshot> Function(
+      int,
+      Formation,
+      GameFormationSnapshot,
+    )? write,
+  })  : _nativeRead = read == null,
+        read = read ?? GameBridge.readFormation,
         write = write ?? GameBridge.applyFormation;
-  Future<GameFormationSnapshot> apply(int pid, Formation target) {
-    final layout = PlacementLayout.prepare(target).document;
-    final operation =
-        (_operations[pid] ?? Future<void>.value()).then((_) async {
-      final current = await read(pid);
+  Future<GameFormationSnapshot> apply(
+    int pid,
+    Formation target, {
+    bool includeZombies = false,
+  }) {
+    final full = includeZombies || ZombieLayout.contains(target);
+    final layout = PlacementLayout.prepare(
+      target,
+      includeZombies: full,
+    ).document;
+    final operation = (_operations[pid] ?? Future<void>.value()).then((
+      _,
+    ) async {
+      final current = _nativeRead && full
+          ? await GameBridge.readFormation(pid, includeZombies: true)
+          : await read(pid);
       return write(pid, layout, current);
     });
-    _operations[pid] =
-        operation.then<void>((_) {}, onError: (Object _, StackTrace __) {});
+    _operations[pid] = operation.then<void>(
+      (_) {},
+      onError: (Object _, StackTrace __) {},
+    );
     return operation;
   }
 

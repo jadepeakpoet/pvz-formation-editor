@@ -62,6 +62,20 @@ void CheckPeEntries() {
                "incompatible version/machine/section rejection passed\n";
 }
 int main() {
+  GameX86 zombie;
+  zombie.PutZombie(0x12345678,2,14,287.0f,true,1,2);
+  assert(Decode(zombie.bytes,1)==2 && Decode(zombie.bytes,6)==14);
+  assert(zombie.calls.size()==2 && zombie.calls[0].target==0x40ddc0 &&
+         zombie.calls[1].target==0x52f2e0);
+  zombie.Relocate(0x2000000);
+  const auto walk=zombie.calls[1].offset;
+  assert(zombie.bytes[walk-3]==0x31 && zombie.bytes[walk-2]==0xf6);
+  for(const auto& fixup:zombie.calls)
+    assert(uint32_t(0x2000000+fixup.offset+4+Decode(zombie.bytes,fixup.offset))==fixup.target);
+  GameX86 zombieDelete;
+  zombieDelete.RemoveZombie(0x01020304);
+  assert(zombieDelete.bytes[0]==0xb9 && Decode(zombieDelete.bytes,1)==0x01020304 &&
+         zombieDelete.calls[0].target==0x530510);
   GameX86 dayGloom;
   dayGloom.PutPlant(0x12345678,2,3,42,false,true);
   assert(dayGloom.calls.size()==2 && dayGloom.calls[0].target==0x40d120 &&

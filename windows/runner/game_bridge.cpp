@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <atomic>
 #include <climits>
+#include <cmath>
 #include <cstring>
 #include <flutter/standard_method_codec.h>
 #include <fstream>
@@ -180,7 +181,7 @@ uintptr_t CobTrackColor(HANDLE process, uintptr_t animation) {
   }
   throw std::runtime_error("未找到玉米炮弹头动画轨道");
 }
-M ReadBoard(DWORD pid) {
+M ReadBoard(DWORD pid,bool includeZombies=false) {
   HWND w = FindPid(pid);
   if (!w)
     throw std::runtime_error("游戏已退出");
@@ -265,13 +266,32 @@ M ReadBoard(DWORD pid) {
     pieces.push_back(
         V(M{{V("gridType"), V(type)}, {V("row"), V(row)}, {V("col"), V(col)}}));
   }
+  if(includeZombies) {
+    const auto zombies=Read<uint32_t>(p.h,board+0x90), capacity=Read<uint32_t>(p.h,board+0x94);
+    if(capacity>4096 || (capacity && !zombies)) throw std::runtime_error("僵尸数组无效");
+    for(uint32_t i=0;i<capacity;i++) {
+      const uintptr_t a=zombies+i*0x15c;
+      if(Read<uint8_t>(p.h,a+0xec)) continue;
+      const int type=Read<int32_t>(p.h,a+0x24), row=Read<int32_t>(p.h,a+0x1c);
+      const float x=Read<float>(p.h,a+0x2c)+40.0f;
+      if(type<0 || type>32 || row<0 || row>5 || !std::isfinite(x) || x< -200 || x>1200)
+        throw std::runtime_error("僵尸类型或坐标无效");
+      const int phase=Read<int32_t>(p.h,a+0x28);
+      const int col=std::clamp(static_cast<int>(std::floor((x-40.0f)/80.0f)),0,8);
+      int fr=0,fc=0;
+      if(type==14 && (phase==53 || phase==55)) { fr=1; fc=phase==55 ? 2 : 1; }
+      pieces.push_back(V(M{{V("zombieType"),V(type)},{V("row"),V(row)},{V("col"),V(col)},
+          {V("x"),V(static_cast<double>(x))},{V("phase"),V(phase)},
+          {V("frameRow"),V(fr)},{V("frameCol"),V(fc)}}));
+    }
+  }
   if (Read<uint32_t>(p.h, lawn + 0x768) != board)
     throw std::runtime_error("读取期间场景发生变化，请重试");
   return M{{V("pid"), V(static_cast<int64_t>(pid))},
            {V("version"), V("1.0.0.1051 en")},
            {V("map"), V(maps[scene])},
            {V("sunValue"), V(Read<int32_t>(p.h, board + 0x5560))},
-           {V("pieces"), V(pieces)}};
+           {V("pieces"), V(pieces)}, {V("includeZombies"),V(includeZombies)}};
 }
 std::wstring Wide(const std::string &value) {
   const int n = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, value.data(),
@@ -339,6 +359,14 @@ bool Flag(const M &value, const char *key) {
   return it != value.end() && std::get_if<bool>(&it->second) &&
          std::get<bool>(it->second);
 }
+double Real(const M& value,const char* key) {
+  const auto& v=Field(value,key);
+  double result;
+  if(const auto p=std::get_if<double>(&v)) result=*p;
+  else result=Number(value,key);
+  if(!std::isfinite(result)) throw std::runtime_error("无效浮点坐标");
+  return result;
+}
 void RequireRepresentable(const M &snapshot) {
   const auto &map = std::get<std::string>(Field(snapshot, "map"));
   const auto &pieces = std::get<L>(Field(snapshot, "pieces"));
@@ -346,6 +374,14 @@ void RequireRepresentable(const M &snapshot) {
     throw std::runtime_error("当前一次最多应用512个植物");
   for (const auto &item : pieces) {
     const auto &p = Object(item);
+    if(p.find(V("zombieType"))!=p.end()) {
+      const int type=Number(p,"zombieType"),row=Number(p,"row"),col=Number(p,"col");
+      const double x=Real(p,"x");
+      if(!Flag(snapshot,"includeZombies") || type<0 || type>24 || type==10 || type==12 || type==13 || type==20 ||
+          row<0 || row>(map=="pool" || map=="fog" ? 5 : 4) || col<0 || col>8 || x< -200 || x>1200)
+        throw std::runtime_error("僵尸类型或坐标尚不支持");
+      continue;
+    }
     if (p.find(V("gridType")) != p.end()) {
       const int kind=Number(p,"gridType"), row=Number(p,"row"), col=Number(p,"col");
       if((kind!=1 && kind!=3 && kind!=11) || row<0 || row>(map=="pool" || map=="fog" ? 5 : 4) || col<0 || col>8 || Flag(p,"imitater"))
@@ -367,13 +403,18 @@ void RequireRepresentable(const M &snapshot) {
   }
 }
 
-std::vector<std::tuple<int, int, int, bool, bool>>
+std::vector<std::tuple<int, int, int, bool, bool, int>>
 Composition(const M &snapshot) {
-  std::vector<std::tuple<int, int, int, bool, bool>> value;
+  std::vector<std::tuple<int, int, int, bool, bool, int>> value;
   for (const auto &p : std::get<L>(Field(snapshot, "pieces"))) {
     const auto &m = Object(p);
+    if(m.find(V("zombieType"))!=m.end()) {
+      value.emplace_back(100+Number(m,"zombieType"),Number(m,"row"),Number(m,"col"),false,false,
+          static_cast<int>(std::lround(Real(m,"x")*4)));
+      continue;
+    }
     value.emplace_back(m.find(V("gridType"))==m.end() ? Number(m,"type") : 48+Number(m,"gridType"), Number(m, "row"), Number(m, "col"),
-                       Flag(m, "imitater"), Flag(m, "asleep"));
+                       Flag(m, "imitater"), Flag(m, "asleep"),0);
   }
   std::sort(value.begin(), value.end());
   return value;
@@ -511,6 +552,11 @@ M ApplyBoard(DWORD pid, const M &target, const M &expected) {
   if (!t.supported || !process.h || !WriteCompatible(process.h, t.path))
     throw std::runtime_error("当前原版1051的运行内存或调用入口校验未通过");
   RequireRepresentable(target);
+  const bool includeZombies=Flag(target,"includeZombies");
+  if(includeZombies) {
+    for(uint32_t address:{0x40ddc0u,0x530510u,0x52f2e0u})
+      if(!RuntimeEntryCompatible(process.h,address)) throw std::runtime_error("僵尸函数入口校验失败");
+  }
   const uint32_t lawn = Read<uint32_t>(process.h, 0x6a9ec0),
                  board = Read<uint32_t>(process.h, lawn + 0x768);
   const int mode = Read<int32_t>(process.h, lawn + 0x7f8);
@@ -525,7 +571,7 @@ M ApplyBoard(DWORD pid, const M &target, const M &expected) {
   Sleep(static_cast<DWORD>(duration * 2 + 20));
   if (Read<uint32_t>(process.h, lawn + 0x768) != board)
     throw std::runtime_error("游戏场地在操作前发生变化，未应用阵型");
-  const M before = ReadBoard(pid);
+  const M before = ReadBoard(pid,includeZombies);
   if (std::get<std::string>(Field(before, "map")) !=
           std::get<std::string>(Field(expected, "map")) ||
       Composition(before) != Composition(expected) ||
@@ -537,6 +583,14 @@ M ApplyBoard(DWORD pid, const M &target, const M &expected) {
     throw std::runtime_error("目标阳光值无效");
   X86 code;
   code.Byte(0x60); // Preserve registers for the remote thread entry.
+  if(includeZombies) {
+    const auto zombies=Read<uint32_t>(process.h,board+0x90),capacity=Read<uint32_t>(process.h,board+0x94);
+    if(capacity>4096 || (capacity && !zombies)) throw std::runtime_error("僵尸数组无效");
+    for(uint32_t i=0;i<capacity;i++) {
+      const uint32_t address=zombies+i*0x15c;
+      if(!Read<uint8_t>(process.h,address+0xec)) code.RemoveZombie(address);
+    }
+  }
   const auto plants = Read<uint32_t>(process.h, board + 0xac),
              count = Read<uint32_t>(process.h, board + 0xb0);
   for (uint32_t i = 0; i < count; i++) {
@@ -607,12 +661,17 @@ M ApplyBoard(DWORD pid, const M &target, const M &expected) {
   };
   std::stable_sort(pieces.begin(), pieces.end(), [&](const V &a, const V &b) {
     const auto rank=[&](const V& value) { const auto& p=Object(value);
+      if(p.find(V("zombieType"))!=p.end()) return 5;
       return p.find(V("gridType"))!=p.end() ? 4 : order(Number(p,"type")); };
     return rank(a)<rank(b);
   });
   for (const auto &item : pieces) {
     const auto &p = Object(item);
-    if(p.find(V("gridType"))!=p.end()) {
+    if(p.find(V("zombieType"))!=p.end()) {
+      code.PutZombie(board,Number(p,"row"),Number(p,"zombieType"),
+          static_cast<float>(Real(p,"x")),targetScene==2 || targetScene==3,
+          Number(p,"frameRow"),Number(p,"frameCol"));
+    } else if(p.find(V("gridType"))!=p.end()) {
       const int kind=Number(p,"gridType");
       code.Byte(0xbf); code.Dword(static_cast<uint32_t>(Number(p,"row")));
       if(kind==3) {
@@ -720,7 +779,7 @@ M ApplyBoard(DWORD pid, const M &target, const M &expected) {
     thread = nullptr;
     VirtualFreeEx(process.h, allocation, 0, MEM_RELEASE);
     allocation = nullptr;
-    const M after = ReadBoard(pid);
+    const M after = ReadBoard(pid,includeZombies);
     VerifyVisualStates(target,after);
     if (std::get<std::string>(Field(after,"map")) != targetMap ||
         Composition(after) != Composition(target) ||
@@ -869,7 +928,7 @@ RegisterGameBridge(flutter::BinaryMessenger *messenger) {
               pid = *widePid;
             if (pid <= 0 || pid > MAXDWORD)
               throw std::runtime_error("游戏进程无效");
-            result->Success(V(ReadBoard(static_cast<DWORD>(pid))));
+            result->Success(V(ReadBoard(static_cast<DWORD>(pid),Flag(*args,"includeZombies"))));
             return;
           }
           result->NotImplemented();
