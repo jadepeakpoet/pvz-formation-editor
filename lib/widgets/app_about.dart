@@ -10,6 +10,15 @@ void showAppAbout(BuildContext context) => showAboutDialog(
         children: [
           Text(AppLanguage.text('作者：越小梦')),
           const SizedBox(height: 8),
+          Text(AppLanguage.text(
+              '基于 Flutter Widget / Canvas 的本地布阵器，提供阵型编辑、自动存档、阵型码交换和图片导出。')),
+          const SizedBox(height: 8),
+          Text(AppLanguage.text(
+              'Windows 为主要平台，Release 构建及真实游戏阵型读写已验证。Windows 专属功能包括游戏阵型读取、应用与游戏存档接入。')),
+          const SizedBox(height: 8),
+          Text(AppLanguage.text(
+              '提供 Windows、macOS、Linux、Android、iOS 工程。macOS 已有构建与桌面交互验证；Linux、Android、iOS 待设备验证。')),
+          const SizedBox(height: 8),
           Text(AppLanguage.text('快链')),
           Wrap(spacing: 8, children: [
             TextButton(
@@ -38,9 +47,9 @@ void showAppAbout(BuildContext context) => showAboutDialog(
           Text(AppLanguage.text('技术参考项目')),
           TextButton(
               onPressed: () =>
-                  openAppLink(context, 'https://pvz.lmintlcx.com/toolkit/'),
+                  openAppLink(context, 'https://pvz.tools/toolkit/'),
               child: const Text('PvZ Toolkit — lmintlcx ↗')),
-          const SelectableText('https://pvz.lmintlcx.com/toolkit/'),
+          const SelectableText('https://pvz.tools/toolkit/'),
           TextButton(
               onPressed: () => openAppLink(
                   context, 'https://github.com/wszqkzqk/PvZ-Portable'),

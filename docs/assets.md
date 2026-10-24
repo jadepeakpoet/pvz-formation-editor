@@ -1,13 +1,17 @@
-# 原站素材
+# 素材与图片资源
 
-2026-10-20，通过原站页面的图片资源导出接口，保存了初始248张图片以及全部26种地图对应的底图、透明叠加层。文件在 `assets/original/image/`，URL和本地路径保留在 `assets/original/manifest.json`；地图配置在 `maps.json`，97个DOM外观模板的帧尺寸和锚点在 `sprites.json`。
+地图、植物、僵尸、卡片和音效主要参考 [jspvz 网页布阵器](http://jspvz.com/ArrayDesign/)。来源 URL 和本地路径记录在 `assets/original/manifest.json`；地图图层在 `maps.json`，外观帧尺寸与锚点在 `sprites.json`。
 
-来源：<http://jspvz.com/ArrayDesign/>。
+## 本地渲染
 
-地图和角色渲染优先使用本地图片，PNG导出先等待图片解码完成。原站不存在的应用对象仍用程序绘制。图片加载的是指定静态帧，不能据此声称原站全部动态效果已复刻。内置背景音乐和种植音效，使用本地静态音频文件。
+地图与角色图片由 Canvas 绘制。植物外观以当前帧按需解码，相同像素内容复用同一文件；图鉴卡片、模仿者效果与编辑命中掩码分别管理。
 
-2026-10-23：顶部铲子区新增 ShovelBank.png，根据原版游戏素材核对，未修改原图。位置与铲子相对偏移参照 PvZ Portable；资源来源、哈希及使用边界见 [种植覆盖与叠加](planting-rules.md)。
+`assets/original/frames` 保存预裁切帧与压缩的一位透明掩码，`tool/prepare_sprite_frames.py` 用于生成资源。完整精灵图用于外观选择，阵图绘制使用所需帧。
 
-## 应用 Logo
+`assets/original/thumbnails` 随包保存 363 张 256×192 WebP 缩略图，合计约 7.49 MiB。`tool/prepare_builtin_thumbnails.dart` 和 `tool/compress_builtin_thumbnails.py` 提供生成流程。自定义阵型缩略图按画面内容生成并缓存到本地。
 
-应用使用已确认的 PVZ 幼苗九宫格图标，原图与图标生成方法见 [branding](../assets/branding/README.md)。该图为用户最终提供的 PNG，与此前 imagegen 设计预览及上述原站素材分开保存。运行 `swift tool/generate_app_icons.swift` 可从原图生成 macOS、Windows、iOS 和 Android 的图标资源。
+## 应用图标与权利
+
+应用图标使用 `assets/branding/app-logo.png`，各平台图标与生成说明见 [branding](../assets/branding/README.md)。
+
+植物大战僵尸相关素材的权利属于原权利人；项目源码与素材分别适用各自的许可声明。第三方项目与作者见 [鸣谢](../ACKNOWLEDGMENTS.md)。

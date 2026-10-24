@@ -1,5 +1,11 @@
 /// English labels for the library, dialogs, and editor widgets.
 const Map<String, String> widgetTranslations = {
+  '基于 Flutter Widget / Canvas 的本地布阵器，提供阵型编辑、自动存档、阵型码交换和图片导出。':
+      'A local Flutter Widget / Canvas formation editor with editing, autosave, formation codes and image export.',
+  'Windows 为主要平台，Release 构建及真实游戏阵型读写已验证。Windows 专属功能包括游戏阵型读取、应用与游戏存档接入。':
+      'Windows is the primary platform, with verified Release builds and live game integration. Game formation read/apply and game-save integration are Windows-specific.',
+  '提供 Windows、macOS、Linux、Android、iOS 工程。macOS 已有构建与桌面交互验证；Linux、Android、iOS 待设备验证。':
+      'Projects are included for Windows, macOS, Linux, Android and iOS. macOS has prior build and desktop interaction verification; Linux, Android and iOS await device validation.',
   '默认使用文稿目录下的“PvzFormationEditor”文件夹。每次导出时仍可更改保存位置。':
       'Uses Documents/PvzFormationEditor by default. You can choose another folder for each export.',
   '布阵器专用目录': 'Formation editor folder',
@@ -59,7 +65,6 @@ const Map<String, String> widgetTranslations = {
   '保存中': 'Saving',
   '已保存': 'Saved',
   '保存失败': 'Save failed',
-  '草稿已保存': 'Draft saved',
   '只读预览': 'Read-only preview',
   'Windows 游戏与存档': 'Windows game and saves',
   '刷新': 'Refresh',

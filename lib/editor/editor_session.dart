@@ -230,8 +230,8 @@ class EditorSession extends ChangeNotifier {
               updateId: _archiveExists ? sourceArchiveId : null,
               name: snapshot.name,
               document: snapshot.document.toJson(),
-              expectedFingerprint: _archiveExists ? savedFingerprint : null,
-              expectedName: _archiveExists ? _persistedName : null,
+              // Autosave always persists the current edit. The repository
+              // archives the latest database head before replacing it.
               preserveMetadata: true,
               uniqueName: !_archiveExists);
           final oldName = snapshot.name;
@@ -340,7 +340,7 @@ class EditorSession extends ChangeNotifier {
       saveState = revision == 0
           ? '尚无修改'
           : revision == _savedRevision
-              ? '草稿已保存'
+              ? '已保存'
               : error == null
                   ? '保存中'
                   : '保存失败';

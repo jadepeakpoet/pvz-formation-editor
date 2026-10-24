@@ -1,23 +1,23 @@
-# PvZ Toolkit RFC1437 interoperability
+# 阵型码与完整项目
 
-`lib/domain/toolkit_codec.dart` independently implements the [primary RFC1437 specification](https://github.com/lmintlcx/pvztoolkit/blob/master/docs/rfc1437.txt). The [Toolkit lineup implementation](https://github.com/lmintlcx/pvztoolkit/blob/master/src/lineup.cpp), [sleepable-plant declaration](https://github.com/lmintlcx/pvztoolkit/blob/master/inc/lineup.h), and [game placement implementation](https://github.com/lmintlcx/pvztoolkit/blob/master/src/pvz.cpp) were consulted to resolve Windows little-endian cells, mushroom applicability and the rake's fixed eighth column. GPL source code was not copied into this implementation.
+## PvZ Toolkit 阵型码
 
-The transport is Base64 (standard or URL-safe, padding optional on import). XOR each decoded byte with 0x54. The final byte is the scene/rake metadata; preceding bytes are a zlib stream. Scene indices are day/night/pool/fog/roof/moonRoof. The zlib output is exactly 45 or 54 little-endian uint16 grid cells. Each cell has a main plant, base, pumpkin, coffee and ladder slot, with independent supported imitater flags. Export uses zlib level 9 and standard padded Base64.
+`lib/domain/toolkit_codec.dart` 实现 [RFC1437](https://github.com/lmintlcx/pvztoolkit/blob/master/docs/rfc1437.txt)。传输层使用 Base64，导入兼容 URL-safe 和省略填充的文本；字节经 XOR 0x54 还原，末字节记录场景及钉耙，其余为 zlib 压缩数据。解压结果为 45 或 54 个小端 uint16 格位。
 
-`ToolkitCodec.decode(String)` returns a Formation; `encode(Formation)` throws a FormatException when `exportIssues(Formation)` is nonempty. Sleep is represented by `Piece.asleep`, preserved in project JSON and copy. Awake bits on non-sleepable plants or nighttime scenes do not affect game state and are semantically normalized. Plant IDs are the original 48-item ordering. Rake rows are one-based in the metadata; its column is always eight. Pool water rows cannot contain a rake.
+格位保存主植物、底座、南瓜、咖啡豆、梯子及适用的模仿者、蘑菇睡眠标记。钉耙位于第八列，行号记录在元数据中。场景顺序为白天、黑夜、泳池、浓雾、屋顶、月夜屋顶。
 
-Unsupported scene variants, zombies/decorations, duplicate slots, custom layers, sprite frames, positioned offsets, unsupported visual effects, transforms, opacity, incompatible sleeping state, multiple/mispositioned rakes, selected cards, custom sun and custom fog produce export issues instead of being discarded. View-only display toggles are not part of the game lineup format. Object identity strings and UI state are not encoded; project JSON is the lossless editor document format.
+`decode` 返回 `Formation`；`encode` 在 `exportIssues` 非空时抛出格式异常。输入上限为 164 个编码字符、122 个传输字节和 108 个解压字节。解析检查编码、场景、格位标记、zlib 校验和与压缩流结束位置。
 
-Input is bounded at 164 encoded characters, 122 decoded transport bytes and 108 decompressed bytes. Validation covers Base64 padding/canonical trailing bits, scene/rake bounds, exact grid length, invalid/orphan flags, zlib header and Adler32, and RFC1951 block/Huffman structure through the actual end marker. The boundary parser forbids missing end markers and trailing compressed data even when Dart's streaming decoder emits apparently complete output. It does not allocate expanded input beyond 108 bytes.
+## 外观与睡眠
 
-## Verification evidence
+蘑菇睡眠以最终外观帧为准。选卡默认值用于新摆放，大喷菇、忧郁蘑菇和磁力菇默认唤醒；载入已有阵型保留其状态。Toolkit 导入将睡眠标记还原为相应外观行，导出保留该语义。
 
-`test/toolkit_codec_test.dart` includes six hard-coded empty-grid vectors and a layered, sleeping imitater Gloom-shroom/lily/pumpkin/coffee/ladder plus rake vector. These were generated independently using Python standard-library `struct.pack('<H')`, `zlib.compress(data,9)` and `base64.b64encode`, from the RFC bit definitions. They are independent implementation vectors, **not** published Toolkit example codes; no published example was located in the primary README/spec. Coverage also includes all 48 plants, URL-safe/unpadded input, malformed encodings, invalid grid flags, byte truncations, oversized expansion and unsupported export diagnostics. Live Windows Toolkit import/export acceptance has not been executed here.
+Toolkit 文本适合交换格位布局与睡眠状态。玉米炮装填、植物耐久等运行状态通过编辑器文档直接应用到游戏；完整项目和网页阵型码保留各自支持的外观字段。
 
-## Application export policy: placement code versus full project
+## 导出策略
 
-The export format dialog describes the distinction before export. `FormationExchange.layoutDocument` applies the application's explicit **placement-only** policy for text lineup codes: remove selected/imitater cards, reset sun to 9990 and fog to zero, and reset view toggles to defaults. For Toolkit only, reset animation frame indices and remove original-site pixel-pose fields while retaining grid row/column. Toolkit cannot represent those visual poses. The source Formation is immutable and is not edited by export.
+`FormationExchange.layoutDocument` 为布局码导出生成独立文档：清除选卡，恢复默认阳光、雾和显示设置。Toolkit 导出还归一化动画帧及原网页像素姿态，同时保留蘑菇睡眠。网页阵型码保留支持的视觉字段，包括蘑菇睡眠外观。
 
-This normalization does **not** remove or coerce unsupported objects, effects, scale, opacity, flips, custom layers or sleeping state; those still produce diagnostics. Website text preserves its supported original visual fields, but exporting a sleeping Piece is rejected because a corresponding website protocol field has not been verified. Full project JSON bypasses normalization and preserves the complete editor document. The low-level ToolkitCodec API remains strict; callers asking it to encode session metadata directly still receive export issues.
+无法表达的对象、变换或特效通过具体诊断提示处理。完整项目 JSON 保存编辑文档、选卡、显示设置及对象属性，适合后续编辑与备份。所有导出均保留源文档。
 
-Exchange tests cover game sun=50, selected/imitater seeds, fog/display settings, built-in preset zero with original pose frames, source-document immutability, website visual preservation, sleeping-state behavior and genuinely unsupported objects/attributes. These tests distinguish intentional, described placement-code omissions from unsupported content that must not be discarded silently.
+编解码测试见 `test/toolkit_codec_test.dart` 和阵型交换测试；开发运行方式见 [开发指南](development.md)。

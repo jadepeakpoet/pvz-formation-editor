@@ -122,7 +122,53 @@ Future<void> main() async {
               9990,
           'old target unchanged');
     });
-    await test('conflicting-edit-and-rename-do-not-overwrite',
+    await test('legacy-sleep-defaults-autosave-without-false-conflict',
+        (repo, path, sessions) async {
+      final original = Formation(pieces: [
+        Piece(id: 'ice', type: 'ice', row: 0, col: 0, layer: 10),
+      ]);
+      final legacy = original.toJson();
+      for (final p in legacy['objects'] as List) {
+        (p as Map).remove('asleep');
+      }
+      final archive = await repo.saveArchive(
+          id: 'legacy', name: 'Legacy', document: legacy);
+      final loaded = Formation.fromJson(archive.document);
+      check(jsonEncode(archive.document) != loaded.fingerprint,
+          'Fixture contains an omitted legacy sleep default');
+      final s = EditorSession(repo,
+          id: archive.id,
+          document: loaded,
+          name: archive.name,
+          sourceArchiveId: archive.id,
+          savedFingerprint: loaded.fingerprint);
+      sessions.add(s);
+      s.execute('edit', loaded.copy(sunValue: 123));
+      await s.flush();
+      check(s.error == null, 'Legacy normalization is not a competing edit');
+      final saved = (await repo.listArchives()).single;
+      check(saved.document['sunValue'] == 123,
+          'Edit persists to the original archive');
+      check((await repo.listVersions('legacy')).length == 1,
+          'Original representation remains in history');
+      final stale = EditorSession(repo,
+          document: loaded,
+          name: archive.name,
+          sourceArchiveId: archive.id,
+          savedFingerprint: loaded.fingerprint);
+      sessions.add(stale);
+      stale.execute('stale', loaded.copy(sunValue: 456));
+      await stale.flush();
+      check(
+          stale.error == null &&
+              (await repo.listArchives()).single.document['sunValue'] == 456,
+          'Autosave persists current edits despite an older baseline');
+      check(
+          (await repo.listVersions('legacy'))
+              .any((v) => v.document['sunValue'] == 123),
+          'Replaced content remains recoverable in history');
+    });
+    await test('concurrent-autosave-updates-and-preserves-replaced-head',
         (repo, path, sessions) async {
       final a = EditorSession(repo);
       sessions.add(a);
@@ -137,12 +183,16 @@ Future<void> main() async {
       await a.flush(forceSave: true);
       b.execute('stale', b.document.copy(sunValue: 1));
       await b.flush(forceSave: true);
-      check(b.error != null && b.document.sunValue == 1,
-          'stale in-memory edits retained with error');
+      check(b.error == null && b.document.sunValue == 1,
+          'Current edits save successfully without a conflict veto');
       check(
-          (await repo.listArchives()).single.name == 'A新名' &&
-              (await repo.listArchives()).single.document['sunValue'] == 9990,
-          'stale snapshot never overwrites');
+          (await repo.listArchives()).single.name == b.name &&
+              (await repo.listArchives()).single.document['sunValue'] == 1,
+          'Latest autosave becomes the current head');
+      check(
+          (await repo.listVersions(a.sourceArchiveId!))
+              .any((v) => v.name == 'A新名' && v.document['sunValue'] == 9990),
+          'Concurrent rename and content remain available in history');
     });
     await test('write-failure-keeps-all-snapshots-for-ordered-retry',
         (repo, path, sessions) async {

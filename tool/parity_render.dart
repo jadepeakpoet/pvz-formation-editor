@@ -1,4 +1,4 @@
-// Compile/run with the real Flutter engine using the commands in docs/parity-render.md.
+// Compile/run with the real Flutter engine using the commands in docs/development.md.
 import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import '../domain/formation.dart';
 import 'mobile_db_stub.dart' if (dart.library.ui) 'mobile_db_flutter.dart';
 import 'native_sqlite.dart';
 
@@ -465,6 +466,24 @@ class FormationRepository {
 
   static String _canonicalJson(Object? value) => jsonEncode(_canonical(value));
 
+  static bool _matchesFingerprint(Object? stored, String expected) {
+    if (stored == expected) return true;
+    // Older documents may omit defaults now derived from visible frames.
+    // Compare their loaded meaning, just as EditorSession computes its baseline.
+    try {
+      return Formation.fromJson(Map<String, dynamic>.from(
+                  jsonDecode(stored as String) as Map))
+              .fingerprint ==
+          expected;
+    } on FormatException {
+      return false;
+    } on TypeError {
+      return false;
+    } on RangeError {
+      return false;
+    }
+  }
+
   static String _duplicateContent(Map<String, Object?> row) {
     final document = jsonDecode(row['document'] as String) as Map;
     final content = Map<String, dynamic>.from(document);
@@ -609,10 +628,11 @@ class FormationRepository {
             }
             if (previous.isNotEmpty &&
                 ((expectedFingerprint != null &&
-                        previous.single['document'] != expectedFingerprint) ||
+                        !_matchesFingerprint(previous.single['document'],
+                            expectedFingerprint)) ||
                     (expectedName != null &&
                         previous.single['name'] != expectedName))) {
-              throw StateError('存档已在其他窗口更新，请重新打开后再编辑');
+              throw StateError('存档版本与编辑基准不一致，当前修改已保留，请另存为副本或重新载入');
             }
             if (previous.isEmpty && uniqueName) {
               final names = (await _query(
@@ -668,9 +688,10 @@ class FormationRepository {
             if (currentRows.isEmpty) throw StateError('来源存档已不存在');
             final current = currentRows.single;
             if ((expectedFingerprint != null &&
-                    current['document'] != expectedFingerprint) ||
+                    !_matchesFingerprint(
+                        current['document'], expectedFingerprint)) ||
                 (expectedName != null && current['name'] != expectedName)) {
-              throw StateError('存档已在其他窗口更新，请重新打开后再编辑');
+              throw StateError('存档版本与编辑基准不一致，当前修改已保留，请另存为副本或重新载入');
             }
             final versions = await _query(
                 'SELECT * FROM archive_versions WHERE id=${_q(versionId)} AND archive_id=${_q(archiveId)}');

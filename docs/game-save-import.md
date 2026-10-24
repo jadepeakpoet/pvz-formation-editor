@@ -1,32 +1,15 @@
-# PC endless-save research and experimental placement import
+# 原版游戏存档接入
 
-The [jspvz home page](http://jspvz.com/) links to its [resource page](http://jspvz.com/download.htm). The resource catalog exposes **Win电脑版存档** at [1代PC版游戏存档](http://jspvz.com/ResDownload/1_PC_Save.htm). That page explicitly separates gold/silver profile progress from endless battle saves and instructs users to rename endless files to `game*_13.dat`. It lists 1.0.0.1051 separately from 1.2.0.1065/1073. This is original PC binary save data, not the browser clone's JSON or ArrayDesign text.
+Windows 游戏面板提供存档目录浏览、原文件备份、另存及支持的无尽存档布阵提取。
 
-## Primary structural evidence
+## 导入为阵图
 
-Read-only public sources consulted:
+选择原版 PC 无尽存档后，应用校验文件头、尺寸、场地、植物和场地物品记录，再生成可编辑阵图。提取范围包括六种标准场地、植物格位、睡眠、模仿者、墓碑、弹坑、梯子与钉耙。
 
-- [SaveGame.cpp](https://github.com/map220v/LawnCPP/blob/pvz_windows-dx8/Lawn/System/SaveGame.cpp): length-prefixed header/board records, v2 FEEDDEAD magic, DataArray serialization order, final magic.
-- [Board.h](https://github.com/map220v/LawnCPP/blob/pvz_windows-dx8/Lawn/Board.h): paused-tail origin 0x164, scene 0x554c, sun 0x5560, board extent 0x57b0.
-- [Board.cpp](https://github.com/map220v/LawnCPP/blob/pvz_windows-dx8/Lawn/Board.cpp): standard row and grid terrain initialization.
-- [Plant.h](https://github.com/map220v/LawnCPP/blob/pvz_windows-dx8/Lawn/Plant.h), [GameObject.h](https://github.com/map220v/LawnCPP/blob/pvz_windows-dx8/Lawn/GameObject.h), [GridItem.h](https://github.com/map220v/LawnCPP/blob/pvz_windows-dx8/Lawn/GridItem.h): seed/grid coordinates, sleeping/imitater/dead/on-board flags, field offsets.
-- [DataArray.h](https://github.com/map220v/LawnCPP/blob/pvz_windows-dx8/Sexy.TodLib/DataArray.h): trailing generation/index IDs identify allocated slots.
-- [ConstEnums.h](https://github.com/map220v/LawnCPP/blob/pvz_windows-dx8/ConstEnums.h): six standard background indices, original plant indices and grid item kinds.
+导入的目标是布阵编辑项目。继续游戏所需的完整战斗进度由原游戏存档文件保存，原文件备份用于迁移或恢复。
 
-The primary [Plant.cpp](https://github.com/map220v/LawnCPP/blob/pvz_windows-dx8/Lawn/Plant.cpp) transformation routine confirms that converted imitater plants have a normal seed ID and imitater marker 48; an unconverted seed ID 48 retains its target plant ID instead. Both representations are tested.
+## 文件保护
 
-The current Windows 1051 process bridge independently uses plant stride 0x14c and grid stride 0xec. The source's compile-date CRC is not treated as a verified 1051 build identifier; the importer returns the file's opaque `buildDate` unchanged and requires the supported record structure instead. No GPL implementation was copied; the extractor is independently written from the serialized field layout.
+读取前后会检查文件是否变化；备份记录大小和校验信息。原文件可完整另存，阵图可保存为本地存档或导出完整项目。
 
-## Import contract and limits
-
-`GameSaveCodec.decode(List<int>)` returns `GameSaveImport { Formation formation, List<String> warnings, int buildDate }`. It accepts at most 32 MiB and never writes files or attaches to a running game, so offline parsing works on every host platform.
-
-The extractor checks header/version, exact board-tail size, six supported scene/terrain matrices, bounded record lengths and array counts, expected first-six array strides, allocated-slot IDs/counts, boolean fields and placement bounds. It reads 48 plant types, converted/unconverted imitater, sleeping state, sun, graves, craters, ladders and rakes. Unsupported grid objects, plants or modified terrain are rejected explicitly. Freed/dead/squished/off-board plants and dead grid objects are not placements.
-
-This is a **placement extractor**, not a full game-save validator or emulator. Particle/reanimation/trail/attachment arrays are checked for framing/count/slot-ID consistency, but their runtime structures and following animation/cursor/seedbank/challenge/music body are not reconstructed or semantically validated; only a minimum trailing body and terminal magic are required. Wave counts, health, cooldowns, zombies, projectiles, coins, lawnmowers and effects are intentionally omitted and reported in warnings. A filename alone cannot prove the embedded battle was endless: mode is chosen by the original game's file slot, not this serialized board prefix.
-
-## Actual-file acceptance status
-
-The jspvz page's exact [合集 V3.0b download](https://pan.baidu.com/s/1rG3Gx) and [五行缺土 download](https://pan.baidu.com/s/1w0l0H) were fetched as public HTML. Their public listings identify `存档合集V3.0b.rar` (720439 bytes) and `五行缺土.rar` (142677 bytes). No direct archive download URL was exposed in these unauthenticated pages. The resource site's advertised direct mirror forwards to `https://pvz.766788.xyz/ziyuan/`, which returned HTTP 404. Bounded GitHub searches did not locate a public raw 1051 `game1_13.dat` fixture. No downloaded executable was run and no login was attempted.
-
-Tests therefore use explicitly synthetic vectors constructed from the primary schema, not real game captures. Five focused tests cover six scenes, all 48 plant IDs, sleeping/imitater, four grid object kinds, skipped dead objects, unchanged input, malformed headers/sizes/terrain/IDs/flags/coordinates and truncation/size bounds. Actual Windows 1051 file acceptance remains **not run** and the UI must label this import experimental. Source-supported structure tests must not be represented as live-game acceptance.
+格式实现位于 `lib/domain/game_save_codec.dart`，文件入口位于 `lib/library/game_panel.dart`，相关文件备份由 `lib/storage/file_backups.dart` 管理。

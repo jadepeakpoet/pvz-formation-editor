@@ -1,21 +1,14 @@
-# Automatic archive sessions (latest no-draft policy)
+# 自动保存实现
 
-The latest user instruction removes drafts from the product workflow. An untouched new blank page remains temporary: opening, switching, closing or quitting does not create an archive. Its first effective edit or rename starts automatic archive persistence; explicit Save also persists an untouched blank. Existing archives continue saving even when cleared or undone back to empty. Nondefault initial documents and names save automatically. `flush()` waits for queued writes/retries; `flush(forceSave: true)` explicitly saves a temporary blank. Read-only previews and `persistDraft:false` replica sessions do not persist. The legacy flag name remains for API compatibility; it now controls automatic archive persistence.
+编辑会话通过 `EditorSession` 管理文档、命令、当前存档关联和保存状态，`EditorTabsController` 管理标签及工作区快照，`FormationRepository` 负责 SQLite 持久化。
 
-Startup restores the last activated editable archive through a separate database preference, rather than archive update order. Tab switches, page navigation and final flush remember the active saved archive; temporary blanks and read-only pages do not replace that pointer. Missing/deleted targets fall back to existing work, preferring meaningful documents over old automatically generated blanks. No old archives are deleted. Restart restores saved document/name, not in-memory undo stacks or every open tab.
+- 名阵打开和有效修改进入串行保存队列。
+- 新建未修改空白页保持临时状态，首次有效操作后分配存档身份。
+- 更新同一存档时保留旧版本，另存为创建独立身份。
+- 切换、关闭标签和正常退出等待刷新，界面根据数据库提交结果显示保存状态。
+- 工作区快照记录打开的标签、当前页及文件关联；恢复时按存档 ID 取回文档。
+- 数据库版本 4 负责兼容旧版工作数据并采用自动存档模式。
 
-Each successful `execute`, `undo`, `redo` and `rename` captures an immutable document/name snapshot and immediately queues it. No 700 ms edit coalescing is used. The database saves each prior head into `archive_versions`; a gesture still produces one command, and transient animation/audio updates produce none. Failed writes retain the failed and following snapshots for ordered retry. Optimistic document-fingerprint and name guards reject stale sessions instead of overwriting a different saved head. Autosave preserves notes, tags and favorite metadata.
+面向用户的操作说明见 [我的存档](archive-workflow.md)。
 
-`markArchived(id,fingerprint,{name})` adopts an already-saved Save As target and canonical name without writing a duplicate version. `reloadSavedArchive(ArchiveRecord)` adopts a persisted history restore/rename, clears stale undo/redo and refreshes the optimistic baseline without writing another history entry. Both reject replacing a session with pending failed writes. Callers flush all relevant sessions before changing shared saved state.
-
-Schema v4 conservatively migrates each old draft into an independent archive. Existing personal archives and histories are untouched. A `legacy_draft_archives` mapping preserves old IDs even when archive-ID collisions require a new target ID. Duplicate names gain fullwidth suffixes. Old draft rows are removed without user-deletion tombstones. `EditorSession.fromDraft` resolves the mapping and does not create a second archive; subsequent edits append history to the migrated archive.
-
-`uniqueDocumentName(base,{reservedNames})` considers archived names, legacy draft names and caller-provided open-tab names. It uses `名称（2）` and increments an existing suffix rather than producing nested suffixes. First automatic archive insertion additionally uses transactional `saveArchive(uniqueName:true)` to protect naming between lookup and insert. The read-only name helper alone is not a reservation; manual new-file/import callers can request the same insert guard.
-
-`EditorTabsController.ready` completes initial persistence. New/replacement blank tabs persist before activation; opening another editable session waits for its persistence. Switching, closing or exiting is blocked on persistence failure. Existing archive associations are considered during tab reuse, including Save As sessions whose local session ID differs from their archive ID.
-
-Focused evidence: `tool/session_smoke.dart` **10 groups pass** (empty creation, unique names, rapid command history, read-only/replica guards, metadata preservation, Save As, stale conflicts, failed-write ordered retry, persisted restore adoption, suffix generation, legacy adoption); `tool/editor_tabs_smoke.dart` **12 cases pass**; `tool/empty_draft_smoke.dart` **3 checks pass**, retained as a compatibility entry point but now asserts automatic archives. Logs `/tmp/pvz-auto-{session_smoke,editor_tabs_smoke,empty_draft_smoke}.log`. The session groups include a legacy adoption check in addition to the named case runner, yielding ten report groups.
-
-Pure storage/preferences/migration/bundle tests **26/26 pass**: `test/storage_test.dart`, `test/preset_preferences_test.dart`, `test/auto_archive_migration_test.dart`, `test/archive_bundle_test.dart`. Log `/tmp/pvz-auto-storage-tests.log`. Affected Dart files analyze clean. These are temporary SQLite and headless Flutter checks; native sidebar and real user-library upgrade acceptance are separate.
-
-Late old-engine writes: every supported-version database open, including an already-v4 database, now checks for legacy draft rows and drains them in the same migration transaction. A changed late snapshot receives an independent archive and replaces only the legacy-ID mapping; an existing archive head and its history are never overwritten. An exactly identical mapped name/document is reused without resetting metadata or adding history. Focused tests simulate an old writer after v4 migration and after a current-archive edit, and verify repeated opens and identical late flushes. The 5-case migration suite passes; combined storage/migration/preferences coverage is 23 passing cases, with analyzer clean. Evidence `/tmp/pvz-late-draft-migration-tests.log`. Real user-library inspection/upgrade remains a separate native acceptance step.
+自动保存采用最后保存的编辑内容作为当前版本；覆盖前将数据库中的上一版本完整保留到历史。旧编辑基准或其他窗口更新不会阻止自动保存。备注、标签和收藏等存档元数据随记录保留。

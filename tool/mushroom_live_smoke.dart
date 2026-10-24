@@ -65,7 +65,8 @@ Future<void> main() async {
         result.runtimePieces.singleWhere((p) => p['type'] == 47);
     if (loadedRuntime['plantState'] != 37 ||
         loadedRuntime['stateCountdown'] != 0 ||
-        loadedRuntime['bodyFrameStart'] is! int) {
+        loadedRuntime['bodyFrameStart'] is! int ||
+        loadedRuntime['cobBrightness'] != 255) {
       throw StateError(
           'Loaded cannon is not already ready with an animation before resuming');
     }
@@ -95,6 +96,7 @@ Future<void> main() async {
       'testedMushrooms': types.length + 1,
       'stablePlantStates': 8,
       'loadedCannonReadyBeforeResume': true,
+      'loadedCannonBrightBeforeResume': loadedRuntime['cobBrightness'] == 255,
       'emptyCannonStartsCharging': true,
       'loadedAnimationFrameStart': loadedRuntime['bodyFrameStart'],
       'emptyAnimationFrameStart': emptyRuntime['bodyFrameStart'],

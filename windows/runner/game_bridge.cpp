@@ -156,6 +156,30 @@ HWND FindPid(DWORD pid) {
       reinterpret_cast<LPARAM>(&data));
   return found;
 }
+uintptr_t CobTrackColor(HANDLE process, uintptr_t animation) {
+  const auto definition = Read<uint32_t>(process, animation + 0xc);
+  const auto tracks = Read<uint32_t>(process, definition);
+  const auto count = Read<uint32_t>(process, definition + 4);
+  if (!tracks || count > 512)
+    throw std::runtime_error("玉米炮动画轨道无效");
+  for (uint32_t i = 0; i < count; ++i) {
+    const auto name = Read<uint32_t>(process, tracks + i * 12);
+    const char expected[] = "CobCannon_cob";
+    bool match = true;
+    for (size_t j = 0; j < sizeof(expected); ++j) {
+      if (Read<char>(process, name + j) != expected[j]) {
+        match = false;
+        break;
+      }
+    }
+    if (match) {
+      const auto instances = Read<uint32_t>(process, animation + 0x58);
+      if (!instances) break;
+      return instances + i * 0x60 + 0x4c;
+    }
+  }
+  throw std::runtime_error("未找到玉米炮弹头动画轨道");
+}
 M ReadBoard(DWORD pid) {
   HWND w = FindPid(pid);
   if (!w)
@@ -217,6 +241,8 @@ M ReadBoard(DWORD pid) {
         if(Read<uint32_t>(p.h,animation+0x9c)==id) {
           piece[V("bodyFrameStart")]=V(Read<int32_t>(p.h,animation+0x18));
           piece[V("bodyFrameCount")]=V(Read<int32_t>(p.h,animation+0x1c));
+          const auto color = CobTrackColor(p.h, animation);
+          piece[V("cobBrightness")]=V(Read<int32_t>(p.h,color));
         }
       }
     }
@@ -666,6 +692,30 @@ M ApplyBoard(DWORD pid, const M &target, const M &expected) {
       throw std::runtime_error(
           "游戏构造函数异常退出，可能已部分应用；请重新获取并注入阵型");
     WriteBytes(process.h, board + 0x5560, &sun, sizeof(sun));
+    // Start loaded cannons at the bright end of their normal ready pulse.
+    // The game's own subsequent updates retain the original flashing behavior.
+    const auto plantArray = Read<uint32_t>(process.h, board + 0xac);
+    const auto plantCount = Read<uint32_t>(process.h, board + 0xb0);
+    if (plantCount > 4096)
+      throw std::runtime_error("应用后植物数组无效");
+    const auto holder = Read<uint32_t>(process.h, lawn + 0x820);
+    const auto animations = Read<uint32_t>(process.h, holder + 8);
+    for (uint32_t i = 0; i < plantCount; ++i) {
+      const uintptr_t plant = plantArray + i * 0x14c;
+      if (Read<uint8_t>(process.h, plant + 0x141) ||
+          Read<uint8_t>(process.h, plant + 0x142) ||
+          Read<int32_t>(process.h, plant + 0x24) != 47 ||
+          Read<int32_t>(process.h, plant + 0x3c) != 37) continue;
+      const auto id = Read<uint32_t>(process.h, plant + 0x94);
+      const auto index = id & 0xffff;
+      if (!id || index >= Read<uint32_t>(process.h, animations + 8))
+        throw std::runtime_error("玉米炮动画身份无效");
+      const uintptr_t animation = Read<uint32_t>(process.h, animations) + index * 0xa0;
+      if (Read<uint32_t>(process.h, animation + 0x9c) != id)
+        throw std::runtime_error("玉米炮动画身份不一致");
+      const int32_t white[] = {255, 255, 255, 255};
+      WriteBytes(process.h, CobTrackColor(process.h, animation), white, sizeof(white));
+    }
     CloseHandle(thread);
     thread = nullptr;
     VirtualFreeEx(process.h, allocation, 0, MEM_RELEASE);

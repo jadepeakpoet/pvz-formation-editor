@@ -52,8 +52,7 @@ Future<void> main() async {
     ThumbnailStore.preparationProgress.addListener(updated);
     await ThumbnailStore.primeBuiltins();
     check(
-        (await temp.list().where((f) => f.path.endsWith('.webp')).length) ==
-            0,
+        (await temp.list().where((f) => f.path.endsWith('.webp')).length) == 0,
         'First-start registers bundled previews without copying/decoding 363 files');
     check(progress.first == 0 && progress.last == 1,
         'First-start progress completes');
@@ -62,7 +61,7 @@ Future<void> main() async {
     check(progress.isEmpty, 'Second start reuses completed cache');
     ThumbnailStore.preparationProgress.removeListener(updated);
     final controller = ScrollController();
-    final presets = LibraryPresets.all.take(90).toList();
+    final presets = LibraryPresets.all.toList();
     runApp(MaterialApp(
         home: Scaffold(
             body: ListView.builder(
@@ -101,6 +100,27 @@ Future<void> main() async {
         'Scroll-back never renders built-in previews');
     check(FormationThumbnail.cachedBytes <= (4 << 20),
         'Cold preview cache fits byte budget');
+    var peakPreviewBytes = FormationThumbnail.cachedBytes;
+    for (var round = 0; round < 3; round++) {
+      final steps = (controller.position.maxScrollExtent / 600).ceil();
+      for (var page = 0; page <= steps; page++) {
+        final offset =
+            (page * 600.0).clamp(0.0, controller.position.maxScrollExtent);
+        controller.jumpTo(round.isOdd
+            ? controller.position.maxScrollExtent - offset
+            : offset);
+        await WidgetsBinding.instance.endOfFrame;
+        await waitFor(() => visibleImages() >= 5,
+            'All-presets round $round page $page completes');
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+        final bytes = FormationThumbnail.cachedBytes;
+        if (bytes > peakPreviewBytes) peakPreviewBytes = bytes;
+        await waitFor(() => FormationThumbnail.cachedBytes <= (4 << 20),
+            'Repeated scrolling returns to its cache budget');
+      }
+    }
+    check(ThumbnailStore.generated == 0,
+        'Three full preset passes use bundled previews only');
     final base = presets.first.document;
     final custom = base.copy(pieces: [
       ...base.pieces,
@@ -141,6 +161,9 @@ Future<void> main() async {
       'diskHits': ThumbnailStore.diskHits,
       'generated': ThumbnailStore.generated,
       'previewBytes': FormationThumbnail.cachedBytes,
+      'presetCount': presets.length,
+      'fullScrollPasses': 3,
+      'peakPreviewBytes': peakPreviewBytes,
       'errors': errors
     }));
     exit(0);

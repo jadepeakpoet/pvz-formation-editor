@@ -108,11 +108,17 @@ class _FormationThumbnailState extends State<FormationThumbnail> {
           return null;
         }
         var result = await ThumbnailStore.read(key);
+        if (!needed()) {
+          result?.dispose();
+          ThumbnailStore.skipped++;
+          return null;
+        }
         if (result == null) {
           final source = document ?? loader?.call();
           if (source == null) throw StateError('Bundled preview unavailable');
           result = await renderThumbnail(source, isNeeded: needed);
-          if (result == null) {
+          if (result == null || !needed()) {
+            result?.dispose();
             ThumbnailStore.skipped++;
             return null;
           }
