@@ -4,6 +4,7 @@ import '../platform/app_language.dart';
 import 'package:flutter/material.dart';
 import '../domain/formation.dart';
 import 'library_presets.dart';
+import 'formation_thumbnail.dart';
 import '../editor/board_painter.dart';
 import '../storage/formation_repository.dart';
 
@@ -806,7 +807,7 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
     widget.onArchiveAction(value, e.archive!);
   }
 
-  Widget preview(_Entry e) {
+  Widget preview(_Entry e, {bool thumbnail = true}) {
     final f = e.formation;
     return AspectRatio(
         aspectRatio: 4 / 3,
@@ -819,9 +820,9 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
                         child: Icon(Icons.broken_image_outlined,
                             color: Colors.grey))
                     : RepaintBoundary(
-                        child: CustomPaint(
-                            painter:
-                                BoardPainter(document: f, helpers: false))))));
+                        child: thumbnail
+                            ? FormationThumbnail(document: f)
+                            : CustomPaint(painter: BoardPainter(document: f, helpers: false))))));
   }
 
   List<PopupMenuEntry<String>> menuItems(_Entry e) {
@@ -1263,9 +1264,9 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
                       SizedBox(
                           height: 180,
                           child: Center(
-                              child: SizedBox(width: 240, child: preview(e))))
+                              child: SizedBox(width: 240, child: preview(e, thumbnail: false))))
                     else
-                      preview(e),
+                      preview(e, thumbnail: false),
                     const SizedBox(height: 12),
                     Text(e.name,
                         key: const ValueKey('library-detail-name'),
@@ -1661,6 +1662,7 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
                           child: list.isEmpty
                               ? empty()
                               : ListView.builder(
+                        cacheExtent: 100,
                                   key: const ValueKey('library-results'),
                                   controller: narrowListScroll,
                                   padding:
@@ -1749,6 +1751,7 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
                 child: list.isEmpty
                     ? empty()
                     : ListView.builder(
+                        cacheExtent: 100,
                         key: const ValueKey('preset-picker-results'),
                         padding: const EdgeInsets.all(12),
                         itemCount: list.length,
@@ -1776,6 +1779,7 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
                     ? empty()
                     : LayoutBuilder(
                         builder: (context, inner) => ListView.builder(
+                        cacheExtent: 100,
                             key: const ValueKey('library-results'),
                             padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
                             itemCount: 1 +

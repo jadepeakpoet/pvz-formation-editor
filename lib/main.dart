@@ -35,6 +35,7 @@ import 'editor/archive_history_dialog.dart';
 import 'editor/shovel_targets.dart';
 import 'editor/classic_window.dart';
 import 'editor/original_assets.dart';
+import 'editor/resource_image.dart';
 import 'domain/original_catalog.dart';
 import 'editor/editor_session.dart';
 import 'editor/editor_tabs.dart';
@@ -44,6 +45,7 @@ import 'platform/original_audio.dart';
 import 'platform/window_bridge.dart';
 import 'storage/formation_repository.dart';
 import 'library/library_browser.dart';
+import 'library/formation_thumbnail.dart';
 import 'library/archive_tags_dialog.dart';
 import 'library/library_presets.dart';
 import 'library/archive_dedup_dialog.dart';
@@ -55,8 +57,7 @@ import 'storage/file_backups.dart';
 
 final List<Future<bool> Function()> exitGuards = [];
 
-Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+void initializeExitHandling() {
   const MethodChannel('pvz_formation_editor/lifecycle')
       .setMethodCallHandler((call) async {
     if (call.method != 'prepareExit') throw MissingPluginException();
@@ -65,6 +66,14 @@ Future<void> main() async {
     }
     return true;
   });
+}
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  PaintingBinding.instance.imageCache
+    ..maximumSizeBytes = 16 << 20
+    ..maximumSize = 120;
+  initializeExitHandling();
   runApp(_StartupApp(
       label: '正在打开庭院…',
       prepare: () async {
@@ -80,6 +89,9 @@ Future<void> main() async {
 @pragma('vm:entry-point')
 Future<void> toolboxMain() async {
   WidgetsFlutterBinding.ensureInitialized();
+  PaintingBinding.instance.imageCache
+    ..maximumSizeBytes = 16 << 20
+    ..maximumSize = 120;
   runApp(_StartupApp(
       label: '正在加载工具箱…',
       prepare: () async {
@@ -97,17 +109,53 @@ Future<void> toolboxMain() async {
                     useMaterial3: true,
                     inputDecorationTheme: const InputDecorationTheme(
                         border: OutlineInputBorder(), isDense: true)),
-                home: EditorPage(
-                    session: session,
-                    toolboxOnly: true,
-                    continueArchive: (_) async {})));
+                home: SidebarHost(session: session)));
       }));
+}
+
+/// Both sidebar pages share a single engine and decoded artwork cache on Windows.
+class SidebarHost extends StatefulWidget {
+  const SidebarHost({super.key, required this.session});
+  final EditorSession session;
+  @override
+  State<SidebarHost> createState() => _SidebarHostState();
+}
+
+class _SidebarHostState extends State<SidebarHost> {
+  bool libraryCreated = false;
+  @override
+  Widget build(BuildContext context) => ValueListenableBuilder<String>(
+      valueListenable: WindowBridge.sidebarPage,
+      builder: (context, page, _) {
+        final library = Platform.isWindows && page == 'library';
+        libraryCreated |= library;
+        return Stack(children: [
+          Offstage(
+              offstage: library,
+              child: TickerMode(
+                  enabled: !library,
+                  child: EditorPage(
+                      session: widget.session,
+                      toolboxOnly: true,
+                      continueArchive: (_) async {}))),
+          if (libraryCreated)
+            Offstage(
+                offstage: !library,
+                child: TickerMode(
+                    enabled: library,
+                    child: const LibraryPage(
+                        independent: true, showTitle: false))),
+        ]);
+      });
 }
 
 /// Paint a first frame before preparing a separate engine's artwork.
 @pragma('vm:entry-point')
 Future<void> libraryMain() async {
   WidgetsFlutterBinding.ensureInitialized();
+  PaintingBinding.instance.imageCache
+    ..maximumSizeBytes = 16 << 20
+    ..maximumSize = 120;
   runApp(_StartupApp(
       label: '正在加载存档库…',
       prepare: () async {
@@ -2225,7 +2273,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                           top: 0,
                           width: 810,
                           height: 635,
-                          child: RawImage(
+                          child: ResourceImage(
                               image: OriginalAssets.image(
                                   'image/window$windowStyle.png'),
                               key: ValueKey(
@@ -2261,7 +2309,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
       unawaited(OriginalAudio.setSoundVolume(soundLevel / 4));
     }
     s.addListener(update);
-    OriginalAssets.revision.addListener(update);
+    OriginalAssets.revision.addListener(updateArtwork);
     unawaited(OriginalAssets.ensureLoaded());
     unawaited(
         OriginalAssets.ensureHitMasks(s.document.pieces.map((p) => p.type)));
@@ -2327,6 +2375,17 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     queueWindowState();
   }
 
+  bool artworkRefreshScheduled = false;
+  void updateArtwork() {
+    if (!mounted || artworkRefreshScheduled) return;
+    artworkRefreshScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      artworkRefreshScheduled = false;
+      if (mounted) super.setState(() {});
+    });
+    WidgetsBinding.instance.scheduleFrame();
+  }
+
   void update() {
     if (growthMapId != null && growthMapId != s.document.mapId) {
       clearPlantingFeedback();
@@ -2360,7 +2419,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     WidgetsBinding.instance.removeObserver(this);
     exitGuards.remove(exitGuard);
     s.removeListener(update);
-    OriginalAssets.revision.removeListener(update);
+    OriginalAssets.revision.removeListener(updateArtwork);
     sunEditor.dispose();
     canvasFocus.dispose();
     inputFormation.dispose();
@@ -2370,6 +2429,12 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     }
     transform.dispose();
     super.dispose();
+  }
+
+  @override
+  void didHaveMemoryPressure() {
+    OriginalAssets.releaseColdImages();
+    FormationThumbnail.clearCache();
   }
 
   @override
@@ -3887,7 +3952,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                                                         top: 0,
                                                         width: 810,
                                                         height: 635,
-                                                        child: RawImage(
+                                                        child: ResourceImage(
                                                             image: OriginalAssets
                                                                 .image(
                                                                     'image/window$windowStyle.png'),
@@ -4785,7 +4850,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                                           ? Colors.red
                                           : Colors.transparent,
                                       width: 2)),
-                              child: RawImage(
+                              child: ResourceImage(
                                   image: OriginalAssets.image(
                                       'image/Card/${entry.value}.png'),
                                   fit: BoxFit.fill)))))
@@ -4964,6 +5029,8 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
       if (mounted) message(context, '此对象没有可选外表');
       return;
     }
+    await OriginalAssets.ensureTypes([type]);
+    if (!stillCurrent()) return;
     final layer = layers.last;
     final image = OriginalAssets.image(layer['path'] as String);
     if (image == null || !mounted) return;
@@ -5281,7 +5348,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                                   tool == '模仿' && p.id == 'Imitater'))
                           ? 2
                           : 1)),
-              child: RawImage(
+              child: ResourceImage(
                   image:
                       OriginalAssets.image(OriginalAssets.cardPath(p.id).replaceFirst('assets/original/', '')),
                   fit: BoxFit.fill))));
@@ -5398,7 +5465,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                   onTap: s.readOnly ? null : toggleBoardShovel,
                   child: Stack(clipBehavior: Clip.none, children: [
                     Positioned.fill(
-                        child: RawImage(
+                        child: ResourceImage(
                             image: OriginalAssets.image('image/ShovelBank.png'),
                             fit: BoxFit.fill)),
                     if (tool != '铲除' || s.readOnly)
@@ -5407,7 +5474,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                           top: -3,
                           width: 80,
                           height: 80,
-                          child: RawImage(
+                          child: ResourceImage(
                               image: OriginalAssets.image('image/Shovel.png'),
                               fit: BoxFit.fill)),
                   ])))));
@@ -5603,7 +5670,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                                       width: 64,
                                       height: 64,
                                       child: IgnorePointer(
-                                          child: RawImage(
+                                          child: ResourceImage(
                                               key: const ValueKey(
                                                   'board-shovel-cursor'),
                                               image: OriginalAssets.image(

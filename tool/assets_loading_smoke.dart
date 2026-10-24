@@ -18,6 +18,8 @@ Future<void> main() async {
     await OriginalAssets.ensureLoaded();
     stdout.writeln(
         'asset load ${watch.elapsedMilliseconds}ms, ${OriginalAssets.images.length} source images');
+    check(OriginalAssets.images.isEmpty, "Metadata startup must not decode images");
+    await OriginalAssets.ensureTypes(["pea", "sunflower"]);
     final realPath = ((OriginalAssets.sprites['Peashooter']['images'] as List)
         .first as Map)['path'] as String;
     check(OriginalAssets.grayImage('Peashooter', realPath) == null,

@@ -815,13 +815,27 @@ class BoardPainter extends CustomPainter {
 }
 
 Future<Uint8List> exportPng(Formation document,
+        {double multiplier = 1,
+        bool background = true,
+        bool pokerWidth = false}) =>
+    OriginalAssets.images.retainDuring(() =>
+        OriginalAssets.retainImitationDuring(() => _exportPng(document,
+            multiplier: multiplier,
+            background: background,
+            pokerWidth: pokerWidth)));
+
+Future<Uint8List> _exportPng(Formation document,
     {double multiplier = 1,
     bool background = true,
     bool pokerWidth = false}) async {
   if (!multiplier.isFinite || multiplier < .25 || multiplier > 4) {
     throw ArgumentError.value(multiplier, 'multiplier', '输出倍率必须在 0.25～4 之间');
   }
-  await OriginalAssets.ensureLoaded();
+  await OriginalAssets.ensureBoardImages(document.map.name, document.seedSlots);
+  await OriginalAssets.ensureTypes([
+    ...document.pieces.map((piece) => piece.type),
+    if (document.display['小推车'] == true) ...['Lawnmower', 'Poolcleaner', 'Roofcleaner'],
+  ]);
   await OriginalAssets.ensureImitationImages(document.pieces
       .where((piece) => piece.effects.contains('模仿者'))
       .map((piece) => piece.type));

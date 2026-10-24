@@ -5,10 +5,11 @@ import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import '../domain/original_catalog.dart';
+import 'image_resources.dart';
 
 /// Original site's local artwork and DOM sprite frame definitions.
 class OriginalAssets {
-  static final Map<String, ui.Image> images = {};
+  static final images = ImageResources(maximumBytes: 24 << 20);
   static final Map<String, Uint8List> _hitMasks = {};
   static final Map<String, Future<void>> _hitLoading = {};
 
@@ -22,25 +23,30 @@ class OriginalAssets {
           if (!(part['path'] as String).endsWith('/shadow.png'))
             part['path'] as String
     };
+    await Future.wait(paths.map(_loadImage));
     await Future.wait(
         paths.map((path) => _hitLoading.putIfAbsent(path, () async {
-              final source = images[path];
+              final source = images[path]?.clone();
               if (source == null) return;
-              final raw =
-                  await source.toByteData(format: ui.ImageByteFormat.rawRgba);
-              if (raw == null) return;
-              final rgba =
-                  raw.buffer.asUint8List(raw.offsetInBytes, raw.lengthInBytes);
-              final mask = Uint8List((source.width * source.height + 7) ~/ 8);
-              for (var pixel = 0;
-                  pixel < source.width * source.height;
-                  pixel++) {
-                if (rgba[pixel * 4 + 3] >= 16) {
-                  mask[pixel >> 3] |= 1 << (pixel & 7);
+              try {
+                final raw =
+                    await source.toByteData(format: ui.ImageByteFormat.rawRgba);
+                if (raw == null) return;
+                final rgba = raw.buffer
+                    .asUint8List(raw.offsetInBytes, raw.lengthInBytes);
+                final mask = Uint8List((source.width * source.height + 7) ~/ 8);
+                for (var pixel = 0;
+                    pixel < source.width * source.height;
+                    pixel++) {
+                  if (rgba[pixel * 4 + 3] >= 16) {
+                    mask[pixel >> 3] |= 1 << (pixel & 7);
+                  }
                 }
+                _hitMasks[path] = mask;
+                revision.value++;
+              } finally {
+                source.dispose();
               }
-              _hitMasks[path] = mask;
-              revision.value++;
             })));
   }
 
@@ -58,7 +64,13 @@ class OriginalAssets {
   }
 
   static final Map<String, dynamic> sprites = {};
-  static final Map<String, ui.Image> _grayImages = {};
+  static final _grayImages = ImageResources(maximumBytes: 8 << 20);
+  static void releaseColdImages() {
+    images.trim(minimumAge: Duration.zero, targetBytes: 0);
+    _grayImages.trim(minimumAge: Duration.zero, targetBytes: 0);
+  }
+  static Future<T> retainImitationDuring<T>(Future<T> Function() work) =>
+      _grayImages.retainDuring(work);
   static final Map<String, double> _lights = {};
   static final Map<String, String> kinds = {};
   static final Map<String, Future<void>> _grayLoading = {};
@@ -73,7 +85,8 @@ class OriginalAssets {
     if (cached != null) return cached;
     final source = images[path];
     if (source != null) {
-      _grayLoading.putIfAbsent(key, () => _loadGray(key, path, source, light));
+      _grayLoading.putIfAbsent(
+          key, () => _loadGray(key, path, source.clone(), light));
     }
     return null;
   }
@@ -81,7 +94,7 @@ class OriginalAssets {
   /// Prepare only the imitation types required for a one-shot image export.
   /// Interactive painters use [grayImage] and repaint when generation finishes.
   static Future<void> ensureImitationImages(Iterable<String> types) async {
-    await ensureLoaded();
+    await ensureTypes(types);
     final requested = <String>{};
     for (final type in types) {
       final name = names[type] ?? type;
@@ -125,6 +138,7 @@ class OriginalAssets {
     } catch (error) {
       debugPrint('Original imitation artwork $path: $error');
     } finally {
+      source.dispose();
       _grayLoading.remove(key);
     }
   }
@@ -213,7 +227,56 @@ class OriginalAssets {
   };
   static String cardPath(String type, {bool imitater = false}) =>
       'assets/original/image/Card/${type == 'grave' ? 'Tombstone' : names[type] ?? type}${imitater ? '_i' : ''}.png';
-  static ui.Image? image(String path) => images[path];
+  static final Map<String, Future<void>> _imageLoading = {};
+  static ui.Image? image(String path) {
+    final cached = images[path];
+    if (cached == null) unawaited(_loadImage(path));
+    return cached;
+  }
+
+  static Future<void> ensureTypes(Iterable<String> types) async {
+    await ensureLoaded();
+    final paths = <String>{};
+    for (final type in types) {
+      final name = names[type] ?? type;
+      for (final variant in [name, '${name}_back', if (name == 'Gloomshroom') 'GloomPuff']) {
+        for (final part in sprites[variant]?['images'] as List? ?? []) {
+          paths.add(part['path'] as String);
+        }
+      }
+    }
+    await Future.wait(paths.map(_loadImage));
+  }
+
+  static final _decodeSlots =
+      List<Future<void>>.generate(4, (_) => Future.value());
+  static int _decodeSlot = 0;
+  static Future<void> _loadImage(String path) {
+    if (images.containsKey(path)) return Future.value();
+    return _imageLoading.putIfAbsent(path, () {
+      final slot = _decodeSlot++ % _decodeSlots.length;
+      final job = _decodeSlots[slot].then((_) async {
+        try {
+          final data = await rootBundle.load('assets/original/$path');
+          final codec = await ui.instantiateImageCodec(
+              data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes));
+          try {
+            images[path] = (await codec.getNextFrame()).image;
+          } finally {
+            codec.dispose();
+          }
+          revision.value++;
+        } catch (error) {
+          debugPrint('Original artwork $path: $error');
+        } finally {
+          _imageLoading.remove(path);
+        }
+      });
+      _decodeSlots[slot] = job;
+      return job;
+    });
+  }
+
   static Future<void> ensureLoaded() => _loading ??= _load();
   static Future<void> _load() async {
     final continuum = FontLoader('Continuum Bold')
@@ -225,7 +288,7 @@ class OriginalAssets {
     sprites.addAll(
         jsonDecode(await rootBundle.loadString('assets/original/sprites.json'))
             as Map<String, dynamic>);
-    await _loadImages();
+
     // The original imitation filter uses HSL lightness, then the template's
     // light multiplier. Its min/max operation cannot be a linear color matrix.
     for (final template in OriginalCatalog.templates) {
@@ -240,27 +303,24 @@ class OriginalAssets {
     revision.value++;
   }
 
-  static Future<void> _loadImages() async {
-    final manifest =
-        jsonDecode(await rootBundle.loadString('assets/original/manifest.json'))
-            as List;
-    await Future.wait(manifest
-        .whereType<String>()
-        .where((path) =>
-            RegExp(r'\.(png|jpg|gif)$', caseSensitive: false).hasMatch(path))
-        .map((path) async {
-      try {
-        final data = await rootBundle.load('assets/original/$path');
-        final codec = await ui.instantiateImageCodec(
-            data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes));
-        try {
-          images[path] = (await codec.getNextFrame()).image;
-        } finally {
-          codec.dispose();
-        }
-      } catch (error) {
-        debugPrint('Original artwork $path: $error');
-      }
-    }));
+  static Future<void> ensureBoardImages(
+      String mapName, Iterable<String> seedTypes) async {
+    await ensureLoaded();
+    final paths = <String>{
+      for (final layer in maps[mapName] as List? ?? []) layer['path'] as String,
+      'image/Seed.png',
+      'image/Button.png',
+      'image/brain.png',
+      'image/Shovel.png',
+      'image/fog.jpg',
+      'image/fog_.jpg',
+      for (final type in seedTypes)
+        cardPath(type).replaceFirst('assets/original/', ''),
+      for (final type in seedTypes)
+        cardPath(type, imitater: true).replaceFirst('assets/original/', ''),
+    };
+    for (var i = 0; i < paths.length; i += 4) {
+      await Future.wait(paths.skip(i).take(4).map(_loadImage));
+    }
   }
 }

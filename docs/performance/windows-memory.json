@@ -1,0 +1,66 @@
+{
+  "date": "2026-10-24",
+  "platform": "Windows x64",
+  "flutter": "3.19.2",
+  "mode": "Release / AOT",
+  "displayScale": 1.5,
+  "metric": "process working set (resident memory), not Dart heap or private committed bytes",
+  "observationsMiB": {
+    "originalStartup": 855,
+    "firstLazyLoadingPass": 527,
+    "optimizedStartup": 213,
+    "emptySingleFlutterWindow": 120
+  },
+  "releaseScenario": "Complex built-in formation; switch library/toolbox six times, retaining two native windows and only two engines",
+  "releaseScenarioRssMiB": [
+    271.1,
+    319.5,
+    328.3,
+    311.8,
+    307.6,
+    311.8,
+    305.1,
+    309.4,
+    318.2,
+    308.2,
+    316.8,
+    306.9,
+    315.5
+  ],
+  "limits": {
+    "decodedSourceImagesPerEngineMiB": 24,
+    "derivedImitationImagesPerEngineMiB": 8,
+    "frameworkImageCachePerEngineMiB": 16,
+    "encodedListThumbnailsMiB": 8,
+    "thumbnailPixels": [
+      256,
+      192
+    ],
+    "concurrentImageDecodesPerEngine": 4
+  },
+  "budgetSemantics": "Cold decoded images are evicted by LRU. Current drawing/export leases and recently used images may temporarily exceed the source-image budget. Mounted widgets own independent image handles.",
+  "fixes": [
+    "Metadata-only asset initialization; image decode on demand",
+    "One shared sidebar engine for toolbox and library; preserve main/sidebar independent minimization",
+    "Virtual list with bounded PNG thumbnail cache and cancellation of jobs no longer requested",
+    "Keep selected detail preview full-resolution",
+    "Dispose codecs, temporary readback handles, evicted decoded images and unmounted widget handles",
+    "Memory-pressure cache trimming",
+    "Artwork completion repaints without serializing editor state or refreshing SQLite"
+  ],
+  "closeRootCause": "Win32Window::Create calls Destroy before OnCreate. This invalidated lifecycle_alive_ before first use. The prepareExit reply returned early, leaving close_pending_ true forever. OnCreate now establishes a fresh callback lifetime; approved close uses native destruction after the channel callback unwinds.",
+  "validation": [
+    "Flutter analyze: no issues",
+    "Native Debug: save veto preserves window, next close succeeds, SQLite final edit persists, six sidebar mode switches create no extra engine, no Flutter errors",
+    "Native Release: normal WM_CLOSE exits all engines; final SQLite rename persists",
+    "Resource cache: eviction, mounted-widget handle lifetime, export lease, 40 thumbnail renders, byte-identical full export after eviction/reload",
+    "Archive import/export, archive selection, template autosave, autosave UI, sidebar tabs, format IO and seed chooser smoke tests pass",
+    "Fog CPU/GPU test passes at <=4/255 tolerance; unchanged baseline renderer also measured 4/255 on this Windows software rasterizer"
+  ],
+  "limitations": [
+    "50 MiB total process memory was not achieved. Empty single-engine Release baseline itself measured approximately 120 MiB on this machine.",
+    "Startup observations and complex-document scenario are different workloads; they must not be presented as one fixed memory figure.",
+    "Six switching cycles establish a bounded short-run observation, not proof against every long-term leak.",
+    "macOS engine merging and runtime memory behavior were not tested on this Windows host."
+  ]
+}

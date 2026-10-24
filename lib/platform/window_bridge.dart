@@ -1,4 +1,5 @@
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
 
 /// Per-engine bridge between the fixed editor and its native toolbox window.
 ///
@@ -6,6 +7,7 @@ import 'package:flutter/services.dart';
 /// displayed. [latestState] is the latest local/received snapshot, not an
 /// acknowledgement that another engine applied it.
 class WindowBridge {
+  static final sidebarPage = ValueNotifier<String>('toolbox');
   static const channel = MethodChannel('pvz_formation_editor/windows');
   static bool _supported = false, _toolbox = false, _handlerInstalled = false;
   static int _generation = 0, _stateSequence = 0;
@@ -65,6 +67,10 @@ class WindowBridge {
         throw MissingPluginException('Window bridge is no longer active');
       }
       switch (call.method) {
+        case 'selectSidebarPage':
+          sidebarPage.value =
+              call.arguments == 'library' ? 'library' : 'toolbox';
+          return true;
         case 'receiveState':
         case 'applyToolboxState':
           if (call.arguments is! Map) {

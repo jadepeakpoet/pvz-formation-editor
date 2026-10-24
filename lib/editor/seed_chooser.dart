@@ -1,3 +1,4 @@
+import 'resource_image.dart';
 import '../platform/app_language.dart';
 import 'package:flutter/material.dart';
 import '../domain/formation.dart';
@@ -27,6 +28,17 @@ class OriginalSeedChooser extends StatefulWidget {
 
 class _OriginalSeedChooserState extends State<OriginalSeedChooser> {
   bool choosingImitater = false;
+  @override
+  void initState() {
+    super.initState();
+    OriginalAssets.revision.addListener(_artworkChanged);
+  }
+  void _artworkChanged() { if (mounted) setState(() {}); }
+  @override
+  void dispose() {
+    OriginalAssets.revision.removeListener(_artworkChanged);
+    super.dispose();
+  }
   int slot(String type, bool mimic) {
     final doc = widget.document;
     for (var i = 0; i < doc.seedSlots.length; i++) {
@@ -65,10 +77,10 @@ class _OriginalSeedChooserState extends State<OriginalSeedChooser> {
     final image =
         OriginalAssets.image(path.replaceFirst('assets/original/', ''));
     if (image != null) {
-      art = RawImage(
+      art = ResourceImage(
           image: image, fit: BoxFit.fill, filterQuality: FilterQuality.none);
     } else {
-      final fallback = RawImage(
+      final fallback = ResourceImage(
           image:
               OriginalAssets.image(normal.replaceFirst('assets/original/', '')),
           fit: BoxFit.fill,
@@ -136,7 +148,7 @@ class _OriginalSeedChooserState extends State<OriginalSeedChooser> {
           {BoxFit fit = BoxFit.fill,
           ImageRepeat repeat = ImageRepeat.noRepeat,
           Alignment alignment = Alignment.center}) =>
-      RawImage(
+      ResourceImage(
           image: OriginalAssets.image('image/$path'),
           fit: fit,
           repeat: repeat,

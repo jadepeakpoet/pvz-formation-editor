@@ -87,7 +87,7 @@ Future<void> main() async {
         key.currentContext!.findRenderObject() as RenderRepaintBoundary;
     final image = await render.toImage();
     final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
-    await File('/tmp/pvz-seed-chooser-$name.png')
+    await File('${Directory.systemTemp.path}/pvz-seed-chooser-$name.png')
         .writeAsBytes(bytes!.buffer.asUint8List());
     image.dispose();
   }
@@ -259,7 +259,7 @@ Future<void> main() async {
         'ROCK only closes overlay');
     results.add('ROCK close callback only, no document or route changes');
     check(errors.isEmpty, 'Flutter errors: $errors');
-    await File('/tmp/pvz-seed-chooser-report.json').writeAsString(jsonEncode({
+    await File('${Directory.systemTemp.path}/pvz-seed-chooser-report.json').writeAsString(jsonEncode({
       'pass': results,
       'errors': errors,
       'scope':

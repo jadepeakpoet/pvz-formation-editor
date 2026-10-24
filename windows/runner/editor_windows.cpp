@@ -69,10 +69,10 @@ class Sidebar : public Win32Window {
 struct EditorWindows::Impl {
   Win32Window* main;
   flutter::DartProject project;
-  std::unique_ptr<Channel> main_channel,toolbox_channel,library_channel,library_windows;
-  std::unique_ptr<Channel> toolbox_game,library_game;
+  std::unique_ptr<Channel> main_channel,toolbox_channel,library_channel;
+  std::unique_ptr<Channel> toolbox_game;
   std::unique_ptr<Sidebar> sidebar;
-  std::unique_ptr<flutter::FlutterViewController> toolbox,library;
+  std::unique_ptr<flutter::FlutterViewController> toolbox;
   V latest;
   M configuration;
   std::string mode="toolbox";
@@ -90,8 +90,8 @@ struct EditorWindows::Impl {
   ~Impl() {
     *alive=false;
     if(sidebar) sidebar->Destroy();
-    library_windows.reset(); library_channel.reset(); toolbox_channel.reset();
-    library_game.reset(); toolbox_game.reset(); library.reset(); toolbox.reset();
+    library_channel.reset(); toolbox_channel.reset();
+    toolbox_game.reset(); toolbox.reset();
   }
   void Configure(const M& args) {
     for(const char* key : {"dataPath","activeDraftId"}) {
@@ -138,16 +138,9 @@ struct EditorWindows::Impl {
     return true;
   }
   bool EnsureLibrary() {
-    if(library) return true;
-    if(Text(configuration,"dataPath").empty()) return false;
-    auto p=project; p.set_dart_entrypoint("libraryMain");
-    library=std::make_unique<flutter::FlutterViewController>(410,695,p);
-    if(!library->engine() || !library->view()) return false;
-    RegisterPlugins(library->engine());
-    auto messenger=library->engine()->messenger();
-    library_game=RegisterGameBridge(messenger);
-    library_windows=std::make_unique<Channel>(messenger,"pvz_formation_editor/windows",&flutter::StandardMethodCodec::GetInstance());
-    library_windows->SetMethodCallHandler([this](const Call& c,std::unique_ptr<Result> r){ Handle(c,std::move(r),true); });
+    if(library_channel) return true;
+    if(Text(configuration,"dataPath").empty() || !toolbox) return false;
+    auto messenger=toolbox->engine()->messenger();
     library_channel=std::make_unique<Channel>(messenger,"pvz_formation_editor/library",&flutter::StandardMethodCodec::GetInstance());
     library_channel->SetMethodCallHandler([this](const Call& call,std::unique_ptr<Result> result){
       const auto& method=call.method_name();
@@ -168,9 +161,8 @@ struct EditorWindows::Impl {
     if(selected!="toolbox" && selected!="library") return false;
     if(!EnsureSidebar() || (selected=="library" && !EnsureLibrary())) return false;
     mode=selected;
-    if(toolbox) ShowWindow(toolbox->view()->GetNativeWindow(),selected=="toolbox" ? SW_SHOW : SW_HIDE);
-    if(library) ShowWindow(library->view()->GetNativeWindow(),selected=="library" ? SW_SHOW : SW_HIDE);
-    sidebar->SetChildContent(selected=="toolbox" ? toolbox->view()->GetNativeWindow() : library->view()->GetNativeWindow());
+    sidebar->SetChildContent(toolbox->view()->GetNativeWindow());
+    toolbox_channel->InvokeMethod("selectSidebarPage",std::make_unique<V>(selected));
     SetWindowTextW(sidebar->GetHandle(),selected=="toolbox" ? L"布阵器工具箱" : L"存档库");
     if(show) { sidebar->Show(); SetForegroundWindow(sidebar->GetHandle()); }
     if(selected=="library") Refresh();
@@ -218,6 +210,13 @@ struct EditorWindows::Impl {
       else { main->Show(); SetForegroundWindow(main->GetHandle()); result->Success(V(true)); }
       return;
     }
+#ifndef NDEBUG
+    if(method=="requestCloseForTest") {
+      result->Success();
+      PostMessage(main->GetHandle(),WM_CLOSE,0,0);
+      return;
+    }
+#endif
     if(method=="diagnostics") {
       auto dimensions=[](HWND hwnd) {
         RECT r{}; if(hwnd) GetClientRect(hwnd,&r);
@@ -231,7 +230,7 @@ struct EditorWindows::Impl {
       };
       result->Success(V(M{{V("sharedSidebarWindow"),V(true)},
         {V("sidebarMode"),V(mode)},{V("hasToolboxEngine"),V(toolbox!=nullptr)},
-        {V("hasLibraryEngine"),V(library!=nullptr)},
+        {V("hasLibraryEngine"),V(false)},{V("sidebarEngineCount"),V(toolbox ? 1 : 0)},
         {V("toolboxReady"),V(toolbox_ready)},{V("libraryReady"),V(library_ready)},
         {V("mainContentSize"),V(dimensions(main->GetHandle()))},
         {V("sidebarContentSize"),V(dimensions(sidebar ? sidebar->GetHandle() : nullptr))},
