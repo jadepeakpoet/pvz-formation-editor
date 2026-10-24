@@ -4,8 +4,9 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import '../domain/formation.dart';
 import 'original_assets.dart';
+import 'sprite_presentation.dart';
 
-/// Canvas framing is local. Roof column delta is based on the 2026-10-20 DOM probe.
+/// Canvas coordinates follow the scene anchors and roof slope.
 class BoardGeometry {
   final Formation document;
   BoardGeometry(this.document);
@@ -231,6 +232,7 @@ class BoardPainter extends CustomPainter {
   }
 
   final Formation document;
+  final SpritePresentation? spritePresentation;
   final Piece? plantingPreview;
   final List<Piece> plantingSupportPreviews;
   final Offset? plantingPosition;
@@ -243,6 +245,7 @@ class BoardPainter extends CustomPainter {
   final double resourceScale;
   BoardPainter(
       {required this.document,
+      this.spritePresentation,
       this.plantingPreview,
       this.plantingSupportPreviews = const [],
       this.plantingPosition,
@@ -272,6 +275,7 @@ class BoardPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    spritePresentation?.retainOnly(document.pieces);
     final g = BoardGeometry(document);
     canvas.save();
     canvas.scale(size.width / g.size.width, size.height / g.size.height);
@@ -475,9 +479,12 @@ class BoardPainter extends CustomPainter {
       }
     }
     for (final original in document.pieces) {
+      final presented = spritePresentation == null
+          ? original : spritePresentation!.resolve(original);
+      if (presented == null) continue;
       var piece = helpers && shovelTargetIds.contains(original.id)
-          ? original.copy(effects: {...original.effects, '高亮'})
-          : original;
+          ? presented.copy(effects: {...presented.effects, '高亮'})
+          : presented;
       if (helpers && stateHoverId == original.id) {
         piece = piece.copy(opacity: piece.opacity * .55);
       }

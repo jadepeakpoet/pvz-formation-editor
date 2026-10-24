@@ -27,7 +27,7 @@ Future<void> main() async {
   final session = EditorSession(repo, persistDraft: false);
   final boundary = GlobalKey();
   final h = ParityHarness(boundary,
-      await Directory('/tmp/pvz-toolbox-state-guards').create(recursive: true));
+      await Directory.systemTemp.createTemp('pvz-toolbox-state-guards-'));
   FlutterError.onError = h.errors.add;
   runApp(RepaintBoundary(
       key: boundary,
@@ -94,6 +94,13 @@ Future<void> main() async {
     await h.settle();
     h.expect(h.all((w) => w is AlertDialog).isNotEmpty,
         'Appearance picker did not open for $reason');
+    h.expect(h.all((w) => w is Image && w.image is ResizeImage &&
+        (w.image as ResizeImage).imageProvider is AssetImage &&
+        ((w.image as ResizeImage).imageProvider as AssetImage).assetName
+            .contains('/frames/')).isNotEmpty,
+        'Appearance picker uses bounded frame-sized image previews');
+    h.expect((OriginalAssets.resourceStats()['fullSpriteSheets'] as List).isEmpty,
+        'Opening the picker never decodes full sprite sheets');
     await mutate();
     final before = session.document.fingerprint, depth = session.undoDepth;
     await confirmAppearance();

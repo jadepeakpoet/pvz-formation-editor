@@ -240,6 +240,54 @@ class OriginalAssets {
         : grayImage(imitation, path, scale: scale) ?? normal;
   }
 
+  static Iterable<(String, Map)> _spriteParts(String type) sync* {
+    final name = names[type] ?? type;
+    for (final variant in [
+      name,
+      '${name}_back',
+      if (name == 'Gloomshroom') 'GloomPuff'
+    ]) {
+      for (final part in sprites[variant]?['images'] as List? ?? []) {
+        yield (variant, part as Map);
+      }
+    }
+  }
+
+  /// A visual state becomes presentable only when all of its layers are ready.
+  static bool pieceImagesReady(Piece piece) {
+    for (final (variant, part) in _spriteParts(piece.type)) {
+      final key = spriteFramePath(part, piece.frameRow, piece.frameCol);
+      if (images[key] == null) return false;
+      if (piece.effects.contains('模仿者') && variant != 'GloomPuff' &&
+          _grayImages['$key:${_lights[variant] ?? 1.9}'] == null) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /// Protect the outgoing appearance only for the duration of a frame change.
+  static VoidCallback retainPieceImages(Piece piece) {
+    final normal = <String>{};
+    final gray = <String>{};
+    for (final (variant, part) in _spriteParts(piece.type)) {
+      final key = spriteFramePath(part, piece.frameRow, piece.frameCol);
+      normal.add(key);
+      if (piece.effects.contains('模仿者') && variant != 'GloomPuff') {
+        gray.add('$key:${_lights[variant] ?? 1.9}');
+      }
+    }
+    for (final key in normal) { images.pin(key); }
+    for (final key in gray) { _grayImages.pin(key); }
+    var released = false;
+    return () {
+      if (released) return;
+      released = true;
+      for (final key in normal) { images.unpin(key); }
+      for (final key in gray) { _grayImages.unpin(key); }
+    };
+  }
+
   static Future<void> _ensureSprite(String type, int row, int col,
       {double scale = 1, bool imitation = false, bool hitMasks = false}) async {
     final name = names[type] ?? type;

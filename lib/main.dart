@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io' show Platform, File, Directory;
 import 'dart:math' as math;
-import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter/services.dart';
@@ -36,6 +35,7 @@ import 'editor/archive_history_dialog.dart';
 import 'editor/shovel_targets.dart';
 import 'editor/classic_window.dart';
 import 'editor/original_assets.dart';
+import 'editor/sprite_presentation.dart';
 import 'editor/resource_image.dart';
 import 'domain/original_catalog.dart';
 import 'editor/editor_session.dart';
@@ -1409,6 +1409,7 @@ class EditorPage extends StatefulWidget {
 }
 
 class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
+  final spritePresentation = SpritePresentation();
   EditorSession get s => widget.session;
   final transform = TransformationController();
   final canvasFocus = FocusNode(debugLabel: 'canvas-shortcuts');
@@ -2362,6 +2363,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
   void didUpdateWidget(covariant EditorPage oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (identical(oldWidget.session, widget.session)) return;
+    spritePresentation.clear();
     editingDocumentName = false;
     documentNameSession = null;
     documentNameFocus.unfocus();
@@ -2437,6 +2439,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
   @override
   void dispose() {
     editingDocumentName = false;
+    spritePresentation.clear();
     documentNameSession = null;
     documentNameFocus.dispose();
     documentNameEditor.dispose();
@@ -5071,14 +5074,11 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
       if (mounted) message(context, '此对象没有可选外表');
       return;
     }
-    await OriginalAssets.ensureTypes([type]);
-    if (!stillCurrent()) return;
     final layer = layers.last;
-    final image = OriginalAssets.image(layer['path'] as String)?.clone();
-    if (image == null || !mounted) return;
     final rows = (layer['rows'] as num).toInt().clamp(1, 100),
         cols = (layer['cols'] as num).toInt().clamp(1, 100);
-    OriginalAssets.releaseTypeSheets(type);
+    final previewWidth = math.min((layer['rw'] as num).toDouble(),
+        96 * MediaQuery.devicePixelRatioOf(context)).ceil();
     final route = DialogRoute<(int, int)>(
         context: context,
         builder: (ctx) => AlertDialog(
@@ -5110,15 +5110,12 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                                               : Colors.blueGrey)),
                                   child: Column(children: [
                                     Expanded(
-                                        child: CustomPaint(
-                                            size: const Size(76, 60),
-                                            painter: _SpriteFramePainter(
-                                                image,
-                                                row,
-                                                col,
-                                                (layer['rw'] as num).toDouble(),
-                                                (layer['rh'] as num)
-                                                    .toDouble()))),
+                                        child: Image.asset(
+                                          'assets/original/${OriginalAssets.spriteFramePath(layer, row, col)}',
+                                          fit: BoxFit.contain,
+                                          cacheWidth: previewWidth,
+                                          gaplessPlayback: true,
+                                        )),
                                     Text('${row + 1}-${col + 1}',
                                         style: const TextStyle(fontSize: 12))
                                   ])));
@@ -5131,11 +5128,8 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                       onPressed: () => Navigator.pop(ctx, (0, 0)),
                       child: Text(AppLanguage.text('默认外表')))
                 ]));
-    (int,int)? value;
-    try {
-      value = await Navigator.of(context,rootNavigator:true).push(route);
-      await route.completed;
-    } finally { image.dispose(); }
+    final value = await Navigator.of(context,rootNavigator:true).push(route);
+    await route.completed;
     final chosen = value;
     if (chosen == null || !stillCurrent()) return;
     setState(() {
@@ -5664,6 +5658,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                                         key: plantingBoardKey,
                                         painter: BoardPainter(
                                             document: rendered,
+                                            spritePresentation: spritePresentation,
                                             paintSunValue: false,
                                             plantingPreview: preview,
                                             plantingSupportPreviews:
@@ -6037,27 +6032,4 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
               icon: const Icon(Icons.delete_outline))
         ]),
       ];
-}
-
-class _SpriteFramePainter extends CustomPainter {
-  final ui.Image image;
-  final int row, col;
-  final double frameWidth, frameHeight;
-  _SpriteFramePainter(
-      this.image, this.row, this.col, this.frameWidth, this.frameHeight);
-  @override
-  void paint(Canvas canvas, Size size) {
-    final source = Rect.fromLTWH(
-        col * frameWidth, row * frameHeight, frameWidth, frameHeight);
-    final fitted = applyBoxFit(BoxFit.contain, source.size, size);
-    canvas.drawImageRect(
-        image,
-        source,
-        Alignment.center.inscribe(fitted.destination, Offset.zero & size),
-        Paint());
-  }
-
-  @override
-  bool shouldRepaint(covariant _SpriteFramePainter old) =>
-      old.image != image || old.row != row || old.col != col;
 }

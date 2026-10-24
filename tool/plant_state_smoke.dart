@@ -16,7 +16,7 @@ Future<void> main() async {
   final session = EditorSession(repo, persistDraft: false);
   final key = GlobalKey();
   final h = ParityHarness(
-      key, await Directory('/tmp/pvz-plant-state').create(recursive: true));
+      key, await Directory.systemTemp.createTemp('pvz-plant-state-'));
   FlutterError.onError = h.errors.add;
   runApp(RepaintBoundary(
       key: key,
