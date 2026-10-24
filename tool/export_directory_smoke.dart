@@ -17,7 +17,7 @@ Future<void> main() async {
   final preference = File('${temporary.path}/support/export-preferences.json');
   ExportPreferences.fileOverride = preference;
   ExportPreferences.documentsDirectoryOverride = documents;
-  final expected = '${documents.path}/PvzFormationEditor';
+  final expected = '${documents.path}${Platform.pathSeparator}PvzFormationEditor';
   final custom = await Directory('${temporary.path}/My formations').create();
   final customChild =
       await Directory('${custom.path}/PvzFormationEditor').create();

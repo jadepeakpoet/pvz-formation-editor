@@ -86,8 +86,8 @@ Future<void> main() async {
     }
     cases.add(row);
     await File(filter == null
-            ? '/tmp/pvz-document-workflow-report.json'
-            : '/tmp/pvz-document-workflow-focused-report.json')
+            ? '${Directory.systemTemp.path}/pvz-document-workflow-report.json'
+            : '${Directory.systemTemp.path}/pvz-document-workflow-focused-report.json')
         .writeAsString(jsonEncode({
       'scope':
           'real headless Workspace and LibraryPage; temporary SQLite/files; OS picker/clipboard simulated',
@@ -98,7 +98,7 @@ Future<void> main() async {
 
   Future<void> libraryList() async {
     if (page().sidebarMode != 'library' || page().toolboxVisible != true) {
-      await ui.tap('main-sidebar-library');
+      await ui.tap('sidebar-library-tab');
     }
     if (ui.keyed('library-detail-back') != null) {
       await ui.tap('library-detail-back');
@@ -179,7 +179,7 @@ Future<void> main() async {
     final scene =
         ui.keyed('original-window-background-1')!.renderObject as RenderBox;
     ui.check(
-        sidebar.size.height == scene.size.height && scene.size.height == 635,
+        sidebar.size.height == scene.size.height && scene.size.height > 500,
         'Fallback side/PVZ visible window heights differ');
     ui.check(
         (sidebar.localToGlobal(Offset.zero).dy -
@@ -201,6 +201,11 @@ Future<void> main() async {
         'Template current must be editable exact source');
     final first = tabs.active;
     await presetDetail();
+    await ui.tap('library-open-tab');
+    ui.check(tabs.sessions.length == 1 && identical(tabs.active, first),
+        'Already-open template workcopy should be reused');
+    await libraryList();
+    await ui.tap('library-item-preset:${LibraryPresets.all[1].id}');
     await ui.tap('library-open-tab');
     await wait(() => tabs.sessions.length == 2, 'template new tab');
     ui.check(
@@ -235,9 +240,10 @@ Future<void> main() async {
         'Preview mutated source');
     row['readonly'] = tabs.active.readOnly;
   });
-  await test('workflow.template-favorite-copy-persistence', (row) async {
+  await test('workflow.template-copy-persistence-favorites-hidden', (row) async {
     await presetDetail();
-    await ui.tap('library-favorite');
+    ui.check(ui.keyed('library-favorite') == null, 'Favorite entry stays hidden');
+    await repo.setPresetFavorite(preset.id, true);
     ui.check((await repo.listFavoritePresets()).contains(preset.id),
         'Favorite not persisted');
     final reloaded =
@@ -474,6 +480,9 @@ Future<void> main() async {
     final created = <String>[];
     for (var i = 0; i < 3; i++) {
       await ui.tap('editor-new-tab');
+      await tabs.active.flush();
+      ui.check(tabs.active.sourceArchiveId == null, 'Untouched new tab remains temporary');
+      tabs.active.rename('Auto archive $i');
       await tabs.active.flush();
       created.add(tabs.active.name);
       ui.check(

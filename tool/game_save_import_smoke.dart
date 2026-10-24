@@ -16,6 +16,7 @@ import 'package:flutter/services.dart';
 import 'package:pvz_formation_editor/main.dart' as app;
 import 'package:pvz_formation_editor/editor/editor_session.dart';
 import 'package:pvz_formation_editor/storage/formation_repository.dart';
+import 'mock_desktop_dialogs.dart';
 
 late Dialogs dialogs;
 
@@ -192,6 +193,14 @@ Uint8List save(
 
 Future<void> main() async {
   Binding();
+  installMockDesktopDialogs((call) async {
+    if (call.method == 'chooseSavePath') return dialogs.savePath;
+    if (call.method == 'pickFormation') return dialogs.pickPath == null ? null : {
+      'path': dialogs.pickPath,
+      'bytes': await File(dialogs.pickPath!).readAsBytes(),
+    };
+    throw StateError('Unexpected picker ${call.method}');
+  });
   final dir = await Directory.systemTemp.createTemp('pvz-save-ui-');
   final repo = await FormationRepository.open('${dir.path}/library.sqlite');
   final source = File('${dir.path}/game1_13.dat');
@@ -277,7 +286,7 @@ Future<void> main() async {
     check(errors.isEmpty, 'Flutter errors $errors');
     stdout.writeln(
         'PASS save import UI: warnings/counts, cancel, current/newtab, initial history, duplicate prevention, no binary path, unchanged source, malformed rejected');
-    await File('/tmp/pvz-game-save-ui-report.json').writeAsString(jsonEncode({
+    await File('${Directory.systemTemp.path}/pvz-game-save-ui-report.json').writeAsString(jsonEncode({
       'pass': 11,
       'errors': errors,
       'fixture': 'synthetic primary schema',

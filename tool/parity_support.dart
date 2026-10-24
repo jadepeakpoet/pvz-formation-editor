@@ -8,6 +8,8 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:pvz_formation_editor/editor/classic_window.dart';
 import 'package:pvz_formation_editor/editor/board_painter.dart';
+import 'mock_desktop_dialogs.dart';
+import 'settle_frames.dart';
 
 class ParityBinding extends WidgetsFlutterBinding {
   static final handlers = <String, Future<dynamic> Function(MethodCall)>{};
@@ -29,8 +31,7 @@ class ParityHarness {
   Map<String, dynamic> Function()? environmentState;
   Map<String, dynamic> Function(String id)? caseObservations;
   ParityHarness(this.boundary, this.output);
-  Future<void> settle() =>
-      Future<void>.delayed(const Duration(milliseconds: 100));
+  Future<void> settle() => settleFrames();
   List<Element> all(bool Function(Widget) predicate) {
     final found = <Element>[];
     void walk(Element e) {
@@ -71,8 +72,11 @@ class ParityHarness {
   }
 
   Future<void> tap(String text, {int index = 0}) async {
-    final matches = all((w) =>
+    var matches = all((w) =>
         (w is Tooltip && w.message == text) || (w is Text && w.data == text));
+    if (matches.isEmpty && ['撤销', '恢复'].contains(text)) {
+      matches = all((w) => w is Tooltip && (w.message ?? '').startsWith(text));
+    }
     if (matches.length <= index)
       throw StateError('Missing clickable label: $text [$index]');
     await tapElement(matches[index]);
@@ -266,7 +270,13 @@ class ParityHarness {
 
 class ParityMessenger extends BinaryMessenger {
   final BinaryMessenger delegate;
-  ParityMessenger(this.delegate);
+  ParityMessenger(this.delegate) {
+    installMockDesktopDialogs((call) async {
+      final handler = ParityBinding.handlers['pvz_formation_editor/files'];
+      if (handler == null) throw StateError('Picker fixture missing: ${call.method}');
+      return handler(call);
+    });
+  }
   @override
   Future<ByteData?>? send(String channel, ByteData? message) {
     final handler = ParityBinding.handlers[channel];

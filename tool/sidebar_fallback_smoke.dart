@@ -13,6 +13,7 @@ import 'package:pvz_formation_editor/library/library_browser.dart';
 import 'package:pvz_formation_editor/main.dart';
 import 'package:pvz_formation_editor/storage/formation_repository.dart';
 import 'parity_support.dart';
+import 'package:pvz_formation_editor/widgets/sidebar_tabs.dart';
 
 class FallbackBinding extends WidgetsFlutterBinding {
   @override
@@ -43,7 +44,8 @@ List<Element> elements(bool Function(Widget) predicate, {bool onstage = true}) {
 }
 
 Element? keyed(String key, {bool onstage = true}) {
-  final found = elements((w) => w.key == ValueKey(key), onstage: onstage);
+  final actual = key == 'main-sidebar-library' ? 'sidebar-library-tab' : key == 'main-sidebar-toolbox' ? 'toolbox-tab-2' : key;
+  final found = elements((w) => w.key == ValueKey(actual), onstage: onstage);
   return found.isEmpty ? null : found.single;
 }
 
@@ -86,11 +88,10 @@ Future<void> typeSearch(String value) async {
   await settle();
 }
 
-bool selectedMode(String mode) =>
-    (keyed('main-sidebar-selection-$mode')!.widget as Semantics)
-        .properties
-        .selected ==
-    true;
+bool selectedMode(String mode) {
+  final tabs = elements((w) => w is SidebarTabs).single.widget as SidebarTabs;
+  return mode == 'library' ? tabs.selected == 0 : tabs.selected != 0;
+}
 void expectMode(String? mode) {
   check(
       selectedMode('toolbox') == (mode == 'toolbox') &&
@@ -154,7 +155,7 @@ Future<void> main() async {
     final crop = await picture.toImage(
         library.size.width.ceil(), library.size.height.ceil());
     final bytes = await crop.toByteData(format: ui.ImageByteFormat.png);
-    final path = '/tmp/pvz-sidebar-fallback-$name.png';
+    final path = '${Directory.systemTemp.path}/pvz-sidebar-fallback-$name.png';
     await File(path).writeAsBytes(bytes!.buffer.asUint8List());
     screenshots.add(path);
     crop.dispose();
@@ -220,29 +221,20 @@ Future<void> main() async {
       expectMode('toolbox');
       check((await repo.listDrafts()).isEmpty, 'blank startup must not save');
     });
-    await test('mainbar-mutual-selection-and-serialized-rapid-taps', () async {
+    await test('sidebar-tabs-idempotent-and-serialized-rapid-taps', () async {
       immediateTap('main-sidebar-toolbox', 71);
       immediateTap('main-sidebar-toolbox', 72);
       await settle();
-      await settle();
       expectMode('toolbox');
       immediateTap('main-sidebar-library', 73);
-      immediateTap('main-sidebar-toolbox', 74);
       await settle();
+      expectMode('library');
+      immediateTap('main-sidebar-library', 74);
       await settle();
-      expectMode('toolbox');
-      immediateTap('main-sidebar-library', 75);
-      immediateTap('main-sidebar-library', 76);
-      await settle();
-      await settle();
-      expectMode(null);
-      check(keyed('library-search') == null, 'two library taps show then hide');
-      await tap('main-sidebar-library');
       expectMode('library');
       await tap('main-sidebar-toolbox');
       expectMode('toolbox');
-      check((await repo.listDrafts()).isEmpty,
-          'rapid toggles do not persist blank');
+      check(tabs.active.sourceArchiveId == null, 'Tab switches preserve untouched temporary page');
     });
     await test('library-search-map-cannon-intersection', () async {
       await tap('main-sidebar-library');
@@ -287,9 +279,8 @@ Future<void> main() async {
               410,
           'actual narrow content width');
       check(
-          keyed('library-game-tools') == null &&
-              keyed('library-apply-game') == null,
-          'nonWindows hides live game entry');
+          (keyed('library-game-tools') != null) == Platform.isWindows,
+          'Game tools availability follows the host platform');
       await tap('library-filter-toggle');
       check(
           keyed('library-map-roof') == null &&
@@ -380,8 +371,8 @@ Future<void> main() async {
       await tap('library-search');
       final search = searchState();
       check(search.widget.focusNode.hasFocus, 'search really focused');
-      await tap('main-sidebar-library');
-      expectMode(null);
+      await tap('main-sidebar-toolbox');
+      expectMode('toolbox');
       check(keyed('library-search') == null,
           'library hidden while both mainbuttons remain available');
       check(
@@ -486,7 +477,7 @@ Future<void> main() async {
     'flutterErrors': errors.map((e) => '${e.exception}').toList(),
     'screenshots': screenshots
   };
-  File('/tmp/pvz-sidebar-fallback-report.json')
+  File('${Directory.systemTemp.path}/pvz-sidebar-fallback-report.json')
       .writeAsStringSync(const JsonEncoder.withIndent('  ').convert(report));
   stdout.writeln(jsonEncode(report));
   exit(report['failed'] == 0 && errors.isEmpty ? 0 : 1);

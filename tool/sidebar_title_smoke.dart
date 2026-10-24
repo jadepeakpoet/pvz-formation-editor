@@ -132,7 +132,7 @@ Future<void> main() async {
         boundary.currentContext!.findRenderObject() as RenderRepaintBoundary;
     final image = await render.toImage();
     final data = await image.toByteData(format: ui.ImageByteFormat.png);
-    await File('/tmp/pvz-library-titleless-410.png')
+    await File('${Directory.systemTemp.path}/pvz-library-titleless-410.png')
         .writeAsBytes(data!.buffer.asUint8List());
     image.dispose();
   });
@@ -162,9 +162,9 @@ Future<void> main() async {
     'passed': rows.where((r) => r['status'] == 'pass').length,
     'failed': rows.where((r) => r['status'] == 'fail').length,
     'flutterErrors': errors.map((e) => '${e.exception}').toList(),
-    'screenshot': '/tmp/pvz-library-titleless-410.png'
+    'screenshot': '${Directory.systemTemp.path}/pvz-library-titleless-410.png'
   };
-  File('/tmp/pvz-library-title-report.json')
+  File('${Directory.systemTemp.path}/pvz-library-title-report.json')
       .writeAsStringSync(const JsonEncoder.withIndent('  ').convert(report));
   stdout.writeln(jsonEncode(report));
   exit(report['failed'] == 0 && errors.isEmpty ? 0 : 1);

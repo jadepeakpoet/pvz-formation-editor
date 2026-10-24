@@ -1,3 +1,4 @@
+// ignore_for_file: invalid_use_of_visible_for_testing_member
 import 'dart:convert';
 import 'dart:io';
 import 'dart:async';
@@ -23,7 +24,7 @@ Future<void> main() async {
   final s = EditorSession(repo, persistDraft: false);
   final key = GlobalKey();
   final h = ParityHarness(key,
-      await Directory('/tmp/pvz-planting-support').create(recursive: true));
+      await Directory('${Directory.systemTemp.path}/pvz-planting-support').create(recursive: true));
   FlutterError.onError = h.errors.add;
   runApp(RepaintBoundary(
       key: key,
@@ -67,6 +68,11 @@ Future<void> main() async {
     }
 
     final water = Formation(mapId: 'pool');
+    await OriginalAssets.ensureMapImages(water.map.name);
+    await OriginalAssets.ensurePieceImages([
+      Piece(id: 'preview-pea', type: 'pea', row: 2, col: 1, layer: 10),
+      Piece(id: 'preview-lily', type: 'lily', row: 2, col: 1, layer: 0),
+    ]);
     var painter = await preview(water, 'pea', 2, 1);
     h.expect(
         painter.plantingSupportPreviews.single.type == 'lily' &&
@@ -692,7 +698,7 @@ Future<void> main() async {
   });
   await h.run('preferences.persist.sync',
       'Preferences survive reload and travel in native window state', () async {
-    final file = File('/tmp/pvz-planting-support/preferences.json');
+    final file = File('${Directory.systemTemp.path}/pvz-planting-support/preferences.json');
     await const PlantingPreferences(autoLily: false, potMode: 'land')
         .save(file: file);
     final restored = await PlantingPreferences.load(file: file);
@@ -749,6 +755,27 @@ Future<void> main() async {
       ]
     };
     try {
+      final part = (OriginalAssets.sprites['Peashooter']['images'] as List).single as Map;
+      for (var row = 0; row < 2; row++) {
+        for (var col = 0; col < 2; col++) {
+          final rgba = Uint8List(16 * 16 * 4);
+          final mask = Uint8List(32);
+          for (var y = 0; y < 16; y++) {
+            for (var x = 0; x < 16; x++) {
+              final alpha = pixels[(((row * 16 + y) * 32) + col * 16 + x) * 4 + 3];
+              if (alpha != 0) {
+                final pixel = y * 16 + x;
+                rgba.fillRange(pixel * 4, pixel * 4 + 4, 255);
+                mask[pixel >> 3] |= 1 << (pixel & 7);
+              }
+            }
+          }
+          final frame = Completer<ui.Image>();
+          ui.decodeImageFromPixels(rgba, 16, 16, ui.PixelFormat.rgba8888, frame.complete);
+          OriginalAssets.registerFrameForTesting(part, row, col, await frame.future, mask);
+        }
+      }
+      OriginalAssets.images.remove(path);
       await OriginalAssets.ensureHitMasks(['pea']);
       for (final map in ['pool', 'roof']) {
         for (final flip in [false, true]) {
@@ -874,7 +901,7 @@ Future<void> main() async {
         'Delete undo did not restore shell and ladder');
   });
   await h.report();
-  await File('/tmp/pvz-planting-support-report.json')
+  await File('${Directory.systemTemp.path}/pvz-planting-support-report.json')
       .writeAsString(jsonEncode(h.cases));
   s.dispose();
   await repo.close();

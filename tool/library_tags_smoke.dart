@@ -62,7 +62,7 @@ Future<void> main() async {
   final h = LibraryHarness(
       key,
       await Directory(
-              '/tmp/pvz-library-tags-${Platform.environment['PVZ_TAGS_WIDTH'] ?? '410'}')
+              '${Directory.systemTemp.path}/pvz-library-tags-${Platform.environment['PVZ_TAGS_WIDTH'] ?? '410'}')
           .create(recursive: true));
   FlutterError.onError = h.errors.add;
   runApp(RepaintBoundary(
@@ -136,6 +136,7 @@ Future<void> main() async {
     await tap('library-tag:新标签');
     h.expect(
         ids().length == 1 && ids().single == 'a', 'Tag index not filtering');
+    await tap('library-tags');
     await tap('library-tag-all');
     h.expect(ids().length == 4, 'All archives did not clear tag filter');
   });
@@ -178,7 +179,7 @@ Future<void> main() async {
   });
   await h.report();
   await File(
-          '/tmp/pvz-library-tags-${Platform.environment['PVZ_TAGS_WIDTH'] ?? '410'}-report.json')
+          '${Directory.systemTemp.path}/pvz-library-tags-${Platform.environment['PVZ_TAGS_WIDTH'] ?? '410'}-report.json')
       .writeAsString(jsonEncode(h.cases));
   await repo.close();
   exit(h.cases.every((c) => c['status'] == 'pass') ? 0 : 1);

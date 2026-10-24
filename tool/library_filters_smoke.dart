@@ -207,14 +207,14 @@ Future<void> main() async {
               as RenderRepaintBoundary)
           .toImage();
       final data = await image.toByteData(format: ui.ImageByteFormat.png);
-      await File('/tmp/pvz-library-filter-dialog-${viewport.width.toInt()}.png')
+      await File('${Directory.systemTemp.path}/pvz-library-filter-dialog-${viewport.width.toInt()}.png')
           .writeAsBytes(data!.buffer.asUint8List());
       image.dispose();
       await tap('library-filter-cancel');
       passed.add(
           'actual Overlay dialog screenshot and no layout errors ${viewport.width.toInt()}x${viewport.height.toInt()}');
     }
-    await File('/tmp/pvz-library-filter-dialog-report.json')
+    await File('${Directory.systemTemp.path}/pvz-library-filter-dialog-report.json')
         .writeAsString(jsonEncode({
       'pass': passed,
       'errors': errors,

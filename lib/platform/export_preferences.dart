@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -11,6 +12,8 @@ class ExportPreferences {
   // Isolated harnesses never need to create folders in the user's Documents.
   static File? fileOverride;
   static Directory? documentsDirectoryOverride;
+  @visibleForTesting
+  static Future<String?> Function(String? initialDirectory)? directoryDialogOverride;
   static Future<File> _file() async => File(fileOverride?.path ??
       '${(await getApplicationSupportDirectory()).path}/export-preferences.json');
 
@@ -113,6 +116,9 @@ class ExportPreferences {
 
   static Future<String?> pickDirectory() async {
     final current = await ensureDirectory();
+    if (directoryDialogOverride != null) {
+      return directoryDialogOverride!(current);
+    }
     if (Platform.isMacOS) {
       return _channel.invokeMethod<String>(
           'chooseExportDirectory', {'directory': current});

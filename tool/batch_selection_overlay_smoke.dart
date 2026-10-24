@@ -154,7 +154,7 @@ Future<void> main() async {
   check(black(geometry.cellCenter(1, 4)) && black(geometry.cellCenter(3, 2)),
       'Selection should leave unselected axes untouched');
   final png = await image.toByteData(format: ui.ImageByteFormat.png);
-  await File('/tmp/pvz-batch-selection-mask.png')
+  await File('${Directory.systemTemp.path}/pvz-batch-selection-mask.png')
       .writeAsBytes(png!.buffer.asUint8List());
   image.dispose();
   picture.dispose();

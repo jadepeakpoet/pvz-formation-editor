@@ -24,7 +24,7 @@ Future<void> main() async {
   final session = EditorSession(repo, persistDraft: false);
   final key = GlobalKey();
   final dir =
-      await Directory('/tmp/pvz-planting-feedback').create(recursive: true);
+      await Directory('${Directory.systemTemp.path}/pvz-planting-feedback').create(recursive: true);
   final h = ParityHarness(key, dir);
   FlutterError.onError = h.errors.add;
   runApp(RepaintBoundary(
@@ -125,7 +125,7 @@ Future<void> main() async {
     Future<void> checkCell(String map, int row, int col, int terrain,
         {String type = 'pea'}) async {
       page.clearPlantingFeedback();
-      session.execute('terrain fixture', Formation(mapId: map));
+      session.execute('terrain fixture', Formation(mapId: map, display: {'泥土': true}));
       page.selectedType = type;
       await h.settle();
       final before = played().length;
@@ -168,11 +168,11 @@ Future<void> main() async {
     await checkCell('greenhouseRestricted', 2, 4, 0);
     await checkCell('day', 0, 4, 1, type: 'rake');
     await checkCell('day', 0, 5, 1, type: 'Lawnmower');
-    await File('/tmp/pvz-planting-terrain-observations.json')
+    await File('${Directory.systemTemp.path}/pvz-planting-terrain-observations.json')
         .writeAsString(jsonEncode(observations));
   });
   await h.report();
-  await File('/tmp/pvz-planting-feedback-report.json')
+  await File('${Directory.systemTemp.path}/pvz-planting-feedback-report.json')
       .writeAsString(jsonEncode({
     'cases': h.cases,
     'scope':

@@ -483,7 +483,7 @@ Future<void> main() async {
     'passed': results.where((r) => r['status'] == 'pass').length,
     'failed': results.where((r) => r['status'] == 'fail').length
   };
-  File('/tmp/pvz-editor-tabs-report.json')
+  File('${Directory.systemTemp.path}/pvz-editor-tabs-report.json')
       .writeAsStringSync(const JsonEncoder.withIndent('  ').convert(report));
   stdout.writeln(jsonEncode(report));
   exit(report['failed'] == 0 ? 0 : 1);

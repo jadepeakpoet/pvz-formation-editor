@@ -65,7 +65,7 @@ Future<void> main() async {
   final tabs = EditorTabsController(repo, initial: session);
   final key = GlobalKey();
   final h = ParityHarness(
-      key, await Directory('/tmp/pvz-current-history').create(recursive: true));
+      key, await Directory('${Directory.systemTemp.path}/pvz-current-history').create(recursive: true));
   FlutterError.onError = h.errors.add;
   runApp(RepaintBoundary(
       key: key,

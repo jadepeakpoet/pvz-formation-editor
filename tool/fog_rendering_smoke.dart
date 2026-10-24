@@ -91,7 +91,7 @@ Future<void> main() async {
     final lanternLayout = FogGeometry(base.copy(pieces: [lantern]));
     check(lanternLayout.cleared.contains((0, 5)) && !lanternLayout.cleared.contains((0, 3)) &&
         lanternLayout.cleared.contains((2, 9)), 'Plantern must clear source rounded 5x7 region');
-    final folder = await Directory('/tmp/pvz-fog-rendering').create(recursive: true);
+    final folder = await Directory('${Directory.systemTemp.path}/pvz-fog-rendering').create(recursive: true);
     for (final example in [base, base.copy(pieces: [torch, lantern])]) {
       final screenshot = await render((canvas) => BoardPainter(document: example)
           .paint(canvas, const Size(800, 600)));

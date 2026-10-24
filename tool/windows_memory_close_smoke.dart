@@ -116,6 +116,7 @@ Future<void> scrollPreviewTest(File file) async {
 Future<void> pause() => Future<void>.delayed(const Duration(seconds: 1));
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await OriginalAssets.ensureLoaded();
   await ImageMemory.configure();
   app.initializeExitHandling();
   final cache = Platform.environment['PVZ_THUMBNAIL_CACHE_ROOT'];
@@ -124,8 +125,25 @@ Future<void> main() async {
     await ThumbnailStore.primeBuiltins();
   }
   final reportFile = File(Platform.environment['PVZ_MEMORY_REPORT']!);
+  final scrollPath = Platform.environment['PVZ_SCROLL_REPORT'];
+  if (scrollPath != null) {
+    for (final path in [scrollPath, '$scrollPath.start']) {
+      final old = File(path);
+      if (await old.exists()) await old.delete();
+    }
+  }
   final report = <String, dynamic>{};
   final errors = <String>[];
+  var closeSerial = 0;
+  Future<void> requestClose() async {
+    final gate = Platform.environment['PVZ_CLOSE_GATE'];
+    if (gate == null) {
+      await WindowBridge.channel.invokeMethod('requestCloseForTest');
+    } else {
+      await File(gate).writeAsString(jsonEncode({'pid': pid, 'serial': ++closeSerial}));
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+    }
+  }
   FlutterError.onError = (e) => errors.add(e.exceptionAsString());
   try {
     final path = '${reportFile.parent.path}/memory-close.sqlite';
@@ -191,7 +209,7 @@ Future<void> main() async {
     }
     Future<bool> veto() async => false;
     app.exitGuards.add(veto);
-    await channel.invokeMethod('requestCloseForTest');
+    await requestClose();
     await pause();
     report['vetoPreservedWindow'] =
         await channel.invokeMethod('diagnostics') != null;
@@ -203,9 +221,12 @@ Future<void> main() async {
     check(errors.isEmpty, 'No Flutter errors during page switching');
     report['status'] = 'requesting-normal-close';
     await reportFile.writeAsString(jsonEncode(report));
-    await channel.invokeMethod('requestCloseForTest');
+    await requestClose();
     // Parent checks process exit and the committed SQLite name after WM_CLOSE.
   } catch (error, stack) {
+    report['errors'] = errors;
+    report['visibleText'] = findWidgets((w) => w is Text)
+        .map((e) => (e.widget as Text).data).whereType<String>().toList();
     report['error'] = '$error\n$stack';
     await reportFile.writeAsString(jsonEncode(report));
     exit(1);

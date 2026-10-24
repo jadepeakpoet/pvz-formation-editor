@@ -1,5 +1,4 @@
-// Real NSSavePanel/NSOpenPanel QA. Only path-provider storage is redirected;
-// the product files channel remains registered by the actual macOS runner.
+// Real OS file panels and filesystem backups with isolated storage paths.
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -11,11 +10,14 @@ import 'package:pvz_formation_editor/platform/export_preferences.dart';
 import 'package:pvz_formation_editor/platform/project_files.dart';
 import 'package:pvz_formation_editor/storage/file_backups.dart';
 
-const base = '/tmp/pvz-native-file-dialog';
+final base = Platform.environment['PVZ_FILE_DIALOG_ROOT'] ??
+    '${Directory.systemTemp.path}/pvz-native-file-dialog';
 
 class IsolatedPaths extends PathProviderPlatform {
   @override
   Future<String?> getApplicationSupportPath() async => '$base/support';
+  @override
+  Future<String?> getApplicationDocumentsPath() async => '$base/documents';
 }
 
 void check(bool condition, String message) {
@@ -62,13 +64,15 @@ Future<void> main() async {
         'save',
         () => ProjectFiles.saveWithBackup(
             File(target).uri.pathSegments.last, original, 'application/json'));
-    check(saved?.path == target && saved?.backupPath == null,
+    check(saved != null &&
+        await File(saved.path).resolveSymbolicLinks() == await File(target).resolveSymbolicLinks() &&
+        saved.backupPath == null,
         'native save result');
     check(
         base64Encode(await File(target).readAsBytes()) ==
             base64Encode(original),
         'native save bytes');
-    passed.add('real NSSavePanel saves exact bytes into temporary target');
+    passed.add('real native save panel saves exact bytes into temporary target');
     final picked = await panel('open', ProjectFiles.pickWithPath);
     check(
         picked?.path != null &&
@@ -76,7 +80,7 @@ Future<void> main() async {
                 await File(target).resolveSymbolicLinks() &&
             base64Encode(picked.bytes) == base64Encode(original),
         'native open exact file and bytes: path=${picked?.path}, size=${picked?.bytes.length}, expected=${original.length}');
-    passed.add('real NSOpenPanel returns saved path and exact bytes');
+    passed.add('real native open panel returns saved path and exact bytes');
     final canceled = await panel(
         'cancel',
         () => ProjectFiles.saveWithBackup(File(target).uri.pathSegments.last,
@@ -109,7 +113,7 @@ Future<void> main() async {
       'status': 'pass',
       'pass': passed,
       'scope':
-          'real native macOS file panels and temporary files; path-provider support storage redirected, product files channel untouched'
+          'real native desktop file panels and temporary files; path-provider support storage redirected, product files channel untouched'
     });
     exit(0);
   } catch (e, s) {

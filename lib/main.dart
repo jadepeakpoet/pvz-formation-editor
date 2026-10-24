@@ -1684,6 +1684,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     try {
       final supported = await WindowBridge.initialize(
           toolbox: widget.toolboxOnly,
+          availabilityRetries: 3,
           dataPath: widget.toolboxOnly ? null : widget.libraryPath,
           activeDraftId: s.readOnly ? null : s.id,
           onEvent: (method, arguments) async {
@@ -4051,12 +4052,12 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     if (gameBusy) return;
     setState(() => gameBusy = true);
     try {
-      final target = read ? null : FormationExchange.decode(outputFormation.text);
+      final target = read ? null : s.document;
       final selected = await chooseRunningGame(context, read: read);
       if (selected == null) return;
       if (read) {
         final current = await GameBridge.readFormation(selected.pid);
-        final code = FormationExchange.encode(current.formation);
+        final code = FormationExchange.encodeGameRead(current.formation);
         if (!mounted) return;
         inputFormation.text = code;
         message(context, '已获取游戏阵型，可点击“载入布阵器”');

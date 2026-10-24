@@ -11,6 +11,7 @@ void check(bool condition, String message) {
 }
 
 Future<Uint8List> pixels(List<Piece> pieces) async {
+  await OriginalAssets.ensurePieceImages(pieces, hitMasks: true);
   final recorder = ui.PictureRecorder();
   BoardPainter(
           document: Formation(mapId: 'day', pieces: pieces, display: const {}),

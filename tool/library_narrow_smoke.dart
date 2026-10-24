@@ -123,7 +123,7 @@ Future<void> main() async {
             as RenderRepaintBoundary)
         .toImage();
     final bytes = await screenshot.toByteData(format: ui.ImageByteFormat.png);
-    await File('/tmp/pvz-library-narrow-$label.png')
+    await File('${Directory.systemTemp.path}/pvz-library-narrow-$label.png')
         .writeAsBytes(bytes!.buffer.asUint8List());
     screenshot.dispose();
   }
@@ -224,7 +224,7 @@ Future<void> main() async {
         'Narrow file import lost document or path');
     passed.add('narrow import menu retains source file association');
     check(errors.isEmpty, 'Flutter errors: $errors');
-    await File('/tmp/pvz-library-narrow-report.json').writeAsString(jsonEncode({
+    await File('${Directory.systemTemp.path}/pvz-library-narrow-report.json').writeAsString(jsonEncode({
       'pass': passed,
       'errors': errors,
       'scope':

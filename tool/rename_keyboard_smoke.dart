@@ -26,7 +26,7 @@ Future<void> main() async {
       ]));
   final boundary = GlobalKey();
   final h = ParityHarness(boundary,
-      await Directory('/tmp/pvz-rename-keys').create(recursive: true));
+      await Directory('${Directory.systemTemp.path}/pvz-rename-keys').create(recursive: true));
   FlutterError.onError = h.errors.add;
   runApp(RepaintBoundary(
       key: boundary,

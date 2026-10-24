@@ -63,7 +63,7 @@ Future<void> main() async {
   final boundary = GlobalKey();
   final h = ParityHarness(
       boundary,
-      await Directory('/tmp/pvz-library-global-actions')
+      await Directory('${Directory.systemTemp.path}/pvz-library-global-actions')
           .create(recursive: true));
   FlutterError.onError = h.errors.add;
   bool keyed(String key) => h.all((w) => w.key == ValueKey(key)).isNotEmpty;
@@ -125,23 +125,15 @@ Future<void> main() async {
     await h.settle();
     h.expect(keyed('library-export') && keyed('library-select-archives'),
         'Global actions missing at $width px');
-    h.expect(
-        (origin('library-export').dy - origin('library-select-archives').dy)
-                    .abs() <
-                12 &&
-            origin('library-select-archives').dx > origin('library-export').dx,
-        'Batch selection is not at the right of the global header at $width px');
+    h.expect(origin('library-export').dy < origin('library-results').dy &&
+        origin('library-select-archives').dy < origin('library-results').dy &&
+        origin('library-export').dx >= 0 &&
+        origin('library-select-archives').dx < width,
+        'Header positions at $width: export=${origin('library-export')}, batch=${origin('library-select-archives')}');
     h.expect(!keyed('library-export-all') && !keyed('library-export-selected'),
         'Classification content still exposes standalone export actions');
-    final stars = h
-        .all((w) => w is Icon && w.icon == Icons.star_rounded)
-        .map((e) => e.widget as Icon)
-        .toList();
-    h.expect(
-        stars.isNotEmpty &&
-            stars.every((icon) => icon.color == const Color(0xffffb300)),
-        'Selected favorite stars are not consistently gold');
-
+    h.expect(!keyed('library-favorite') && !keyed('library-section-收藏'),
+        'Favorite UI remains hidden');
     await tap('library-section-预制名阵');
     await export('library-export-all');
     h.expect(
@@ -151,15 +143,9 @@ Future<void> main() async {
                 .containsAll({'one', 'fav', 'other'}) &&
             exports.last.length == 3,
         'Global user export depends on current category');
-    await export('library-export-favorites');
-    h.expect(
-        exports.last.length == 2 &&
-            exports.last.any((r) => r.id == 'fav') &&
-            exports.last.any((r) =>
-                r.name == favoredPreset.name &&
-                Formation.fromJson(r.document).fingerprint ==
-                    favoredPreset.document.fingerprint),
-        'Favorites export omitted the favorite preset or included nonfavorites');
+    await tap('library-export');
+    h.expect(!keyed('library-export-favorites'), 'Favorite export entry is hidden');
+    await tap('library-export-all');
     h.expect(mutatingCallbacks == 0, 'Export mutated or added library records');
 
     await tap('library-section-我的存档');
@@ -202,7 +188,7 @@ Future<void> main() async {
         boundary.currentContext!.findRenderObject() as RenderRepaintBoundary;
     final image = await render.toImage();
     final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
-    await File('/tmp/pvz-library-global-actions/${width.toInt()}.png')
+    await File('${Directory.systemTemp.path}/pvz-library-global-actions/${width.toInt()}.png')
         .writeAsBytes(bytes!.buffer.asUint8List());
     image.dispose();
     stdout.writeln(

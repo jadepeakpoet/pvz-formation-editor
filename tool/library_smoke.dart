@@ -134,18 +134,13 @@ Future<void> main() async {
     check(clipboard == FormationExchange.encode(Formation()),
         'Archive copy contains Toolkit only');
     report.add('archive selection, editable current-tab open and Toolkit copy');
-    await tap('library-favorite');
-    check(
-        (await repo.listArchives())
-            .firstWhere((a) => a.id == 'archive-one')
-            .favorite,
-        'Favorite persisted');
-    await tap('library-section-收藏');
-    check(
-        keyed('library-item-archive:archive-one') != null &&
-            keyed('library-item-archive:archive-two') == null,
-        'Favorites filters list');
-    report.add('favorite persistence and section');
+    check(keyed('library-favorite') == null && keyed('library-section-收藏') == null,
+        'Favorite controls stay hidden');
+    await repo.updateArchiveMetadata('archive-one', favorite: true);
+    await repo.listArchives();
+    check((await repo.listArchives()).firstWhere((a) => a.id == 'archive-one').favorite,
+        'Legacy favorite metadata remains preserved');
+    report.add('favorite controls hidden while metadata remains compatible');
     check(keyed('library-section-工作草稿') == null,
         'Legacy draft section remains removed');
     await tap('library-section-我的存档');
@@ -345,10 +340,10 @@ Future<void> main() async {
               as RenderRepaintBoundary)
           .toImage();
       final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
-      await File('/tmp/pvz-library-compact-${size.width.toInt()}.png')
+      await File('${Directory.systemTemp.path}/pvz-library-compact-${size.width.toInt()}.png')
           .writeAsBytes(bytes!.buffer.asUint8List());
       if (size.width == 900) {
-        await File('/tmp/pvz-library-compact.png')
+        await File('${Directory.systemTemp.path}/pvz-library-compact.png')
             .writeAsBytes(bytes.buffer.asUint8List());
       }
       image.dispose();
@@ -358,7 +353,7 @@ Future<void> main() async {
           .toImage();
       final presetBytes =
           await presetImage.toByteData(format: ui.ImageByteFormat.png);
-      await File('/tmp/pvz-library-builtins-${size.width.toInt()}.png')
+      await File('${Directory.systemTemp.path}/pvz-library-builtins-${size.width.toInt()}.png')
           .writeAsBytes(presetBytes!.buffer.asUint8List());
       presetImage.dispose();
       await rawTap('library-filter-toggle');
@@ -369,7 +364,7 @@ Future<void> main() async {
           .toImage();
       final filterBytes =
           await filterImage.toByteData(format: ui.ImageByteFormat.png);
-      await File('/tmp/pvz-library-filters-${size.width.toInt()}.png')
+      await File('${Directory.systemTemp.path}/pvz-library-filters-${size.width.toInt()}.png')
           .writeAsBytes(filterBytes!.buffer.asUint8List());
       filterImage.dispose();
       await rawTap('library-filter-cancel');
@@ -377,7 +372,7 @@ Future<void> main() async {
       report.add(
           'no layout/paint errors at ${size.width.toInt()}x${size.height.toInt()}');
     }
-    await File('/tmp/pvz-library-compact-report.json')
+    await File('${Directory.systemTemp.path}/pvz-library-compact-report.json')
         .writeAsString(jsonEncode({
       'pass': report,
       'errors': errors.map((e) => e.exceptionAsString()).toList(),

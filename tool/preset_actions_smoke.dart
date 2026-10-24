@@ -140,7 +140,6 @@ Future<void> main() async {
   await test('template-menu-nine-safe-actions', () async {
     for (final pair in [
       ('只读预览', 'preview'),
-      ('收藏', 'favorite'),
       ('导出完整项目', 'export'),
       ('复制图片', 'copy-image'),
       ('导出图片', 'export-image')
@@ -192,7 +191,7 @@ Future<void> main() async {
     'passed': rows.where((r) => r['status'] == 'pass').length,
     'failed': rows.where((r) => r['status'] == 'fail').length
   };
-  File('/tmp/pvz-preset-actions-report.json')
+  File('${Directory.systemTemp.path}/pvz-preset-actions-report.json')
       .writeAsStringSync(const JsonEncoder.withIndent('  ').convert(report));
   stdout.writeln(jsonEncode(report));
   exit(report['failed'] == 0 && errors.isEmpty ? 0 : 1);

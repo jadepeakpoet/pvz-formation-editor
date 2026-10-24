@@ -13,6 +13,9 @@ import 'package:pvz_formation_editor/platform/game_bridge.dart';
 import 'package:pvz_formation_editor/platform/game_writes.dart';
 import 'package:pvz_formation_editor/domain/formation.dart';
 import 'package:pvz_formation_editor/domain/formation_exchange.dart';
+import 'package:pvz_formation_editor/domain/plant_game_state.dart';
+import 'package:pvz_formation_editor/domain/website_codec.dart';
+import 'settle_frames.dart';
 import 'package:pvz_formation_editor/storage/formation_repository.dart';
 
 List<Element> find(bool Function(Widget) test) {
@@ -26,8 +29,7 @@ List<Element> find(bool Function(Widget) test) {
   return result;
 }
 
-Future<void> settle() =>
-    Future<void>.delayed(const Duration(milliseconds: 120));
+Future<void> settle() => settleFrames();
 Future<void> tap(Element e) async {
   await Scrollable.ensureVisible(e, duration: Duration.zero);
   await settle();
@@ -48,7 +50,7 @@ Future<void> tapKey(String key) {
 String composition(Formation f) {
   final rows = f.pieces
       .map((p) =>
-          '${p.type}:${p.row}:${p.col}:${p.asleep}:${p.effects.join(',')}')
+          '${p.type}:${p.row}:${p.col}:${p.asleep}:${p.effects.join(',')}:${PlantGameState.of(p)}')
       .toList()
     ..sort();
   return jsonEncode([f.mapId, rows]);
@@ -72,7 +74,7 @@ Future<void> main() async {
   final errors = <String>[];
   FlutterError.onError = (e) => errors.add(e.exceptionAsString());
   final repository = await FormationRepository.open(
-      '${reportFile.parent.path}/live-preset-test.sqlite');
+      '${reportFile.parent.path}/live-preset-$pid.sqlite');
   GameFormationSnapshot? original;
   int? pid;
   Future<void> save() async {
@@ -81,11 +83,14 @@ Future<void> main() async {
   }
 
   try {
-    final game = (await GameBridge.listGames()).firstWhere((g) => g.canWrite);
+    final requestedPid = int.tryParse(Platform.environment['PVZ_GAME_PID'] ?? '');
+    final game = (await GameBridge.listGames()).firstWhere((g) =>
+        g.canWrite && (requestedPid == null || g.pid == requestedPid));
     pid = game.pid;
     original = await GameBridge.readFormation(pid);
     report['pid'] = pid;
     report['initial'] = original.toJson();
+    await save();
     // Reproduce the user's exact failure before the full catalog sweep.
     final sample = FormationExchange.decode(
         'LI5HDH/tAib/1HrXeldAXDjByF1AjX7kwjV5EJA18df513mXEtPBVT91RHxWRlfGVk91dlZnUYJejHa/VuVRBBhSVDSeSVlW');
@@ -118,6 +123,9 @@ Future<void> main() async {
             .where((p) => selectedIds.isEmpty || selectedIds.contains(p.id))
             .take(limit);
     for (final preset in presets) {
+      const decorations = {'original-59', 'original-81', 'original-303'};
+      final expectedRejection = decorations.contains(preset.id);
+      final unchanged = expectedRejection ? await GameBridge.readFormation(pid) : null;
       final row = <String, dynamic>{
         'id': preset.id,
         'name': preset.name,
@@ -146,11 +154,18 @@ Future<void> main() async {
         }
         check(library.applyingArchiveToGame == false, 'Application timed out');
         final actual = await GameBridge.readFormation(pid);
-        check(composition(actual.formation) == composition(preset.document),
+        check(composition(actual.formation) == composition(
+            unchanged?.formation ?? preset.document),
             'Readback differs: ${find((w) => w is SnackBar).map((e) => (e.widget as SnackBar).content).toList()}');
         check(actual.formation.sunValue == original.formation.sunValue,
             'Sun changed');
         row['pass'] = true;
+        row['applied'] = !expectedRejection;
+        if (expectedRejection) {
+          check(find((w) => w is Text && (w.data ?? '').contains('失败')).isNotEmpty,
+              'Unsupported decorations must show a rejection');
+          row['expectedRejection'] = true;
+        }
         row['readbackObjects'] = actual.formation.pieces.length;
       } catch (e) {
         row['pass'] = false;
@@ -168,7 +183,55 @@ Future<void> main() async {
       stdout.writeln(
           '${results.length}/$limit ${row['pass'] == true ? 'PASS' : 'FAIL'} ${preset.name}');
     }
+    final archiveManifest = Platform.environment['PVZ_ARCHIVE_COPIES'];
+    if (archiveManifest != null) {
+      final archiveResults = <Map<String, dynamic>>[];
+      report['userArchives'] = archiveResults;
+      final sources = jsonDecode(await File(archiveManifest).readAsString()) as List;
+      var index = 0;
+      for (final source in sources) {
+        final copied = await FormationRepository.open(source['copy'] as String);
+        for (final archive in await copied.listArchives()) {
+          final id = 'user-verification-${index++}';
+          final document = Formation.fromJson(archive.document);
+          await repository.saveArchive(id: id, name: id, document: document.toJson());
+          await library.refresh();
+          await settle();
+          final search = find((w) => w.key == const ValueKey('library-search')).single;
+          final editable = find((w) => w is EditableText &&
+              w.controller == (search.widget as TextField).controller).single as StatefulElement;
+          (editable.state as EditableTextState).updateEditingValue(TextEditingValue(
+              text: id, selection: TextSelection.collapsed(offset: id.length)));
+          await settle();
+          await tapKey('library-item-archive:$id');
+          final before = await GameBridge.readFormation(pid);
+          await tapKey('library-apply-game');
+          for (var i = 0; i < 250 && library.applyingArchiveToGame == true; i++) {
+            await Future<void>.delayed(const Duration(milliseconds: 20));
+          }
+          final after = await GameBridge.readFormation(pid);
+          final messages = find((w) => w is Text).map((e) => (e.widget as Text).data ?? '').join('\n');
+          final rejected = messages.contains('失败');
+          final unsupported = document.pieces.any((p) =>
+              (!WebsiteCodec.plantIds.contains(p.type) &&
+                  !{'grave', 'ladder', 'rake'}.contains(p.type)) ||
+              p.scale != 1 || p.opacity != 1 || p.flipped || p.flippedVertical ||
+              p.effects.any((effect) => effect != '模仿者') ||
+              (p.type == 'cob' && p.frameRow != 0));
+          check(rejected == unsupported, 'Unexpected rejection for user archive $id');
+          final matched = composition(after.formation) ==
+              composition(rejected ? before.formation : document);
+          archiveResults.add({'id': id, 'pass': matched,
+            'rejected': rejected, if (rejected) 'messages': messages});
+          await save();
+          check(matched, 'User archive $id readback differs');
+          ScaffoldMessenger.of(find((w) => w is app.LibraryPage).single).clearSnackBars();
+        }
+        await copied.close();
+      }
+    }
     if (Platform.environment['PVZ_VERIFY_ENTRYPOINTS'] == '1') {
+      await tapKey('library-section-预制名阵');
       final entryResults = <String>[];
       Future<void> verify(String name, Formation expected) async {
         final actual = await GameBridge.readFormation(pid!);
@@ -210,6 +273,7 @@ Future<void> main() async {
           document: sample.toJson());
       await library.refresh();
       await settle();
+      await tapKey('library-section-我的存档');
       final search2 =
           find((w) => w.key == const ValueKey('library-search')).single;
       final editable2 = find((w) =>
@@ -229,8 +293,13 @@ Future<void> main() async {
               .single);
       await finishLibraryApply();
       await verify('archive-more-menu', sample);
+      final visual = Formation(mapId: 'pool', pieces: [
+        Piece(id: 'empty-cob', type: 'cob', row: 0, col: 0, layer: 10, frameCol: 2),
+        Piece(id: 'damaged-nut', type: 'wallnut', row: 1, col: 0, layer: 10, frameCol: 3),
+        Piece(id: 'armed-mine', type: 'potato', row: 1, col: 1, layer: 10, frameCol: 1),
+      ]);
       final session =
-          EditorSession(repository, document: sample, persistDraft: false);
+          EditorSession(repository, document: visual, persistDraft: false);
       runApp(MaterialApp(
           theme: buildAppTheme(),
           home: app.EditorPage(
@@ -247,14 +316,14 @@ Future<void> main() async {
       for (var i = 0; i < 250 && editor.gameBusy == true; i++) {
         await Future<void>.delayed(const Duration(milliseconds: 20));
       }
-      await verify('editor-load-export', sample);
+      await verify('editor-load-export-visual-states', visual);
       await tapKey('formation-read-game');
       for (var i = 0; i < 250 && editor.gameBusy == true; i++) {
         await Future<void>.delayed(const Duration(milliseconds: 20));
       }
       check(
           composition(FormationExchange.decode(editor.inputFormation.text)) ==
-              composition(sample),
+              composition(visual),
           'Editor read button result');
       entryResults.add('editor-read-game');
       runApp(MaterialApp(
@@ -274,6 +343,8 @@ Future<void> main() async {
     report['completed'] = true;
     report['passed'] = results.where((r) => r['pass'] == true).length;
     report['failed'] = results.where((r) => r['pass'] != true).length;
+    report['applied'] = results.where((r) => r['applied'] == true).length;
+    report['expectedRejections'] = results.where((r) => r['expectedRejection'] == true).length;
   } catch (e, st) {
     report['fatal'] = '$e\n$st';
   } finally {
@@ -296,5 +367,6 @@ Future<void> main() async {
     'failed': report['failed'],
     'fatal': report['fatal']
   }));
-  exit(report['fatal'] == null ? 0 : 1);
+  exit(report['fatal'] == null && report['failed'] == 0 &&
+      report['restoredOriginal'] == true ? 0 : 1);
 }

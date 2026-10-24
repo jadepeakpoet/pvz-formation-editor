@@ -5,6 +5,7 @@ import 'package:pvz_formation_editor/main.dart' as app;
 import 'package:flutter/material.dart';
 import 'package:pvz_formation_editor/editor/original_assets.dart';
 import 'package:pvz_formation_editor/editor/editor_session.dart';
+import 'package:pvz_formation_editor/editor/editor_tabs.dart';
 import 'package:pvz_formation_editor/storage/formation_repository.dart';
 
 import 'package:pvz_formation_editor/platform/window_bridge.dart';
@@ -59,21 +60,29 @@ Future<void> main() async {
     throw StateError('Explicit native smoke report path required');
   }
   final report = <String, dynamic>{};
+  final errors = <String>[];
+  FlutterError.onError = (e) => errors.add(e.exceptionAsString());
   try {
     WidgetsFlutterBinding.ensureInitialized();
+    app.initializeExitHandling();
     await OriginalAssets.ensureLoaded();
     final databasePath =
         '${File(reportPath).parent.path}/native-windows-test.sqlite';
     final repository = await FormationRepository.open(databasePath);
     runApp(MaterialApp(
-        home: app.EditorPage(
-            session: EditorSession(repository),
+        home: app.EditorWorkspace(
+            controller: EditorTabsController(repository,
+                initial: EditorSession(repository)),
             libraryPath: databasePath,
             continueArchive: (_) async {})));
     for (var i = 0; i < 150 && !WindowBridge.supported; i++) {
       await Future<void>.delayed(const Duration(milliseconds: 200));
     }
-    check(WindowBridge.supported, 'Native window bridge initialized');
+    report['windowError'] = editorState()?.windowError;
+    report['editorPresent'] = editorState() != null;
+    report['flutterErrors'] = errors;
+    report['initialDiagnostics'] = await diagnostics();
+    check(WindowBridge.supported, 'Native window bridge initialized: ${report['windowError']}');
     await Future<void>.delayed(const Duration(seconds: 2));
     final toolbox = await diagnostics();
     report['toolbox'] = toolbox;
@@ -101,9 +110,19 @@ Future<void> main() async {
     check(sizeMatches(library['sidebarContentSize'], 410, 695),
         'Library geometry');
     report['library'] = library;
+    final minimizeGate = Platform.environment['PVZ_MINIMIZE_GATE'];
+    if (minimizeGate != null) {
+      await File('$minimizeGate.ready').writeAsString('$pid');
+      for (var i = 0; i < 200 && !File('$minimizeGate.done').existsSync(); i++) {
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+      }
+      check(File('$minimizeGate.done').existsSync(), 'Native minimize check completed');
+    }
     await WindowBridge.selectMode('toolbox');
     final games = await GameBridge.listGames();
-    final game = games.firstWhere((g) => g.canWrite);
+    final requestedPid = int.tryParse(Platform.environment['PVZ_GAME_PID'] ?? '');
+    final game = games.firstWhere((g) =>
+        g.canWrite && (requestedPid == null || g.pid == requestedPid));
     var current = await GameBridge.readFormation(game.pid);
     report['gameBefore'] = {
       'pid': game.pid,

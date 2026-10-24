@@ -44,7 +44,7 @@ Future<void> main() async {
   await repo.updateArchiveMetadata('favorite', favorite: true);
   final boundary = GlobalKey();
   final h = ParityHarness(boundary,
-      await Directory('/tmp/pvz-archive-dedup-ui').create(recursive: true));
+      await Directory('${Directory.systemTemp.path}/pvz-archive-dedup-ui').create(recursive: true));
   FlutterError.onError = h.errors.add;
   runApp(RepaintBoundary(
       key: boundary,

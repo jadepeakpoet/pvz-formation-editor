@@ -56,29 +56,46 @@ Future<void> main() async {
         'Primary handshake payload');
     check(WindowBridge.latestState == null, 'No invented initial snapshot');
   });
+  await run('primary.delayed-native-registration', () async {
+    native.behavior = (call) async {
+      if (native.calls.length == 1) throw MissingPluginException();
+      return true;
+    };
+    check(await WindowBridge.initialize(toolbox: false, availabilityRetries: 3,
+        onEvent: ignoreEvent), 'Late native registration must recover');
+    check(native.calls.length == 2 && WindowBridge.supported,
+        'Only unavailable registration is retried');
+  });
+  await run('primary.registration-retries-bounded', () async {
+    native.behavior = (call) async => throw MissingPluginException();
+    check(!await WindowBridge.initialize(toolbox: false, availabilityRetries: 3,
+        onEvent: ignoreEvent), 'Permanently missing channel stays unavailable');
+    check(native.calls.length == 4 && !native.hasHandler,
+        'Retry budget and cleanup');
+  });
   await run('primary.library-configuration', () async {
     check(
         await WindowBridge.initialize(
             toolbox: false,
-            dataPath: '/tmp/library.sqlite',
+            dataPath: '${Directory.systemTemp.path}/library.sqlite',
             activeDraftId: 'draft-7',
             onEvent: ignoreEvent),
         'Configured initialize');
     final args = native.calls.single.arguments as Map;
     check(
         args.length == 2 &&
-            args['dataPath'] == '/tmp/library.sqlite' &&
+            args['dataPath'] == '${Directory.systemTemp.path}/library.sqlite' &&
             args['activeDraftId'] == 'draft-7',
         'Library configuration forwarded');
   });
   await run('sidebar.mode-and-invalid-mode', () async {
     await initialize();
     await WindowBridge.selectMode('library',
-        dataPath: '/tmp/store.sqlite', activeDraftId: 'active');
+        dataPath: '${Directory.systemTemp.path}/store.sqlite', activeDraftId: 'active');
     check(
         native.calls.last.method == 'selectSidebarMode' &&
             native.calls.last.arguments['mode'] == 'library' &&
-            native.calls.last.arguments['dataPath'] == '/tmp/store.sqlite' &&
+            native.calls.last.arguments['dataPath'] == '${Directory.systemTemp.path}/store.sqlite' &&
             native.calls.last.arguments['activeDraftId'] == 'active',
         'Library mode payload');
     await WindowBridge.selectMode('toolbox');
@@ -467,9 +484,9 @@ Future<void> main() async {
       'fail': results.where((r) => r['status'] == 'fail').length
     }
   };
-  await File('/tmp/pvz-window-bridge-report.json')
+  await File('${Directory.systemTemp.path}/pvz-window-bridge-report.json')
       .writeAsString(const JsonEncoder.withIndent('  ').convert(report));
-  stdout.writeln('Report /tmp/pvz-window-bridge-report.json');
+  stdout.writeln('Report ${Directory.systemTemp.path}/pvz-window-bridge-report.json');
   exit(results.any((r) => r['status'] == 'fail') ? 1 : 0);
 }
 

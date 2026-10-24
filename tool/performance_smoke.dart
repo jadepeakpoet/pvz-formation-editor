@@ -87,7 +87,7 @@ Future<void> paint(Formation doc,
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final output = Platform.environment['PVZ_PERFORMANCE_OUTPUT'] ??
-      '/tmp/pvz-performance-report.json';
+      '${Directory.systemTemp.path}/pvz-performance-report.json';
   final dir = await Directory.systemTemp.createTemp('pvz-performance-');
   FormationRepository? repo;
   EditorSession? session;

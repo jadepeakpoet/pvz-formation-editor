@@ -142,7 +142,7 @@ Future<void> main() async {
         boundary.currentContext!.findRenderObject() as RenderRepaintBoundary;
     final image = await render.toImage();
     final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
-    await File('/tmp/pvz-archive-history-$kind.png')
+    await File('${Directory.systemTemp.path}/pvz-archive-history-$kind.png')
         .writeAsBytes(bytes!.buffer.asUint8List());
     image.dispose();
   }

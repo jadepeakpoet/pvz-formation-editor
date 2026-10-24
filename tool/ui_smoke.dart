@@ -17,6 +17,7 @@ import 'package:pvz_formation_editor/editor/original_assets.dart';
 import 'package:pvz_formation_editor/editor/seed_chooser.dart';
 import 'package:pvz_formation_editor/storage/formation_repository.dart';
 import 'parity_support.dart';
+import 'package:pvz_formation_editor/editor/resource_image.dart';
 
 class ResponsiveBinding extends ParityBinding {
   Size viewport = const Size(1240, 800);
@@ -34,7 +35,7 @@ Future<void> main() async {
   final boundary = GlobalKey();
   final h = ParityHarness(
       boundary,
-      await Directory('/tmp/pvz-full-editor/ui-screenshots')
+      await Directory('${Directory.systemTemp.path}/pvz-full-editor/ui-screenshots')
           .create(recursive: true));
   FlutterError.onError = h.errors.add;
   runApp(RepaintBoundary(
@@ -355,7 +356,7 @@ Future<void> main() async {
             session.document.pieces.single.id == 'keep-map' &&
             session.undoDepth == depth + 1 &&
             page.classicTab == 2,
-        'One map click must apply keep policy and close in one undo command');
+        'Map apply: map=${session.document.mapId}, pieces=${session.document.pieces.length}, undo=${session.undoDepth}/$depth, tab=${page.classicTab}');
     session.undo();
     await h.settle();
     h.expect(session.document.fingerprint == before,
@@ -495,7 +496,7 @@ Future<void> main() async {
     h.expect(host.left == 13 && host.top == 38,
         'Chooser host no longer matches source coordinate system');
     final background = h.find((w) =>
-        w is RawImage &&
+        w is ResourceImage &&
         w.image == OriginalAssets.image('image/SeedChooser_Background.png'));
     final panel = background.findAncestorWidgetOfExactType<Positioned>()!;
     h.expect(panel.top == 75 && panel.width == 465 && panel.height == 513,
@@ -823,7 +824,7 @@ Future<void> main() async {
   });
 
   await h.report();
-  await File('/tmp/pvz-full-editor/ui-current-report.json')
+  await File('${Directory.systemTemp.path}/pvz-full-editor/ui-current-report.json')
       .writeAsString(jsonEncode({
     'cases': h.cases,
     'flutterErrors': h.errors.map((e) => e.exceptionAsString()).toList(),

@@ -27,7 +27,7 @@ Future<void> main() async {
   await tabs.ready;
   final key = GlobalKey();
   final h = ParityHarness(key,
-      await Directory('/tmp/pvz-formation-navigation').create(recursive: true));
+      await Directory('${Directory.systemTemp.path}/pvz-formation-navigation').create(recursive: true));
   FlutterError.onError = h.errors.add;
   runApp(RepaintBoundary(
       key: key,
@@ -250,7 +250,7 @@ Future<void> main() async {
     ParityBinding.handlers['pvz_formation_editor/files'] = (call) async {
       if (call.method == 'pickFormation') {
         return {
-          'path': '/tmp/导入测试.pvzf.json',
+          'path': '${Directory.systemTemp.path}/导入测试.pvzf.json',
           'bytes': Uint8List.fromList(utf8.encode(FormationExchange.encode(
               imported,
               format: FormationFormat.project))),
@@ -264,7 +264,7 @@ Future<void> main() async {
     h.expect(
         !identical(tabs.active, previous) &&
             tabs.active.document.fingerprint == imported.fingerprint &&
-            tabs.active.filePath == '/tmp/导入测试.pvzf.json',
+            tabs.active.filePath == '${Directory.systemTemp.path}/导入测试.pvzf.json',
         'Import navigation failed');
     await tabs.goBack();
     await settled();
@@ -273,6 +273,8 @@ Future<void> main() async {
   });
   await h.run('maps.undo',
       'Map changes keep the current page and undo restores its document', () async {
+    await tabs.newBlank();
+    await settled();
     final previous = tabs.active;
     final original = previous.document.fingerprint;
     final name = previous.name;
@@ -456,7 +458,7 @@ Future<void> main() async {
   });
   await h.screenshot('garden-toolbox');
   await h.report();
-  await File('/tmp/pvz-formation-navigation-report.json')
+  await File('${Directory.systemTemp.path}/pvz-formation-navigation-report.json')
       .writeAsString(jsonEncode(h.cases));
   final pass = h.cases.every((c) => c['status'] == 'pass');
   tabs.dispose();

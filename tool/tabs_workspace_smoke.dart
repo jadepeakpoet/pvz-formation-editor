@@ -87,7 +87,7 @@ Future<void> main() async {
   final initial = EditorSession(repo, name: 'Tab A');
   final tabs = EditorTabsController(repo, initial: initial);
   final boundary = GlobalKey();
-  final out = Directory('/tmp/pvz-tabs-workspace');
+  final out = Directory('${Directory.systemTemp.path}/pvz-tabs-workspace');
   await out.create(recursive: true);
   final h = Harness(boundary, out);
   FlutterError.onError = h.errors.add;
@@ -207,7 +207,7 @@ Future<void> main() async {
         'Windows tools shown in macOS workspace');
   });
   await h.report();
-  await File('/tmp/pvz-tabs-workspace-report.json').writeAsString(jsonEncode({
+  await File('${Directory.systemTemp.path}/pvz-tabs-workspace-report.json').writeAsString(jsonEncode({
     'cases': h.cases,
     'scope':
         'real headless Flutter Workspace/tab gestures; native window protocol simulated; no native three-engine acceptance'

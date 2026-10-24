@@ -26,6 +26,7 @@ Future<void> main() async {
           final piece = Piece(id: 'preview', type: type, row: 1, col: 1,
               layer: ObjectSpec.byId(type).layer, flipped: flipped);
           final geometry = BoardGeometry(empty);
+          await OriginalAssets.ensurePieceImages([piece]);
           final position = geometry.pieceCenter(piece);
           final placed = await render((canvas) => BoardPainter(
               document: empty.copy(pieces: [piece]), background: false,

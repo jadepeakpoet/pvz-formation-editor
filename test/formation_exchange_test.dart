@@ -4,8 +4,28 @@ import 'package:pvz_formation_editor/domain/formation_exchange.dart';
 import 'package:pvz_formation_editor/domain/toolkit_codec.dart';
 import 'package:pvz_formation_editor/domain/website_codec.dart';
 import 'package:pvz_formation_editor/library/library_presets.dart';
+import 'package:pvz_formation_editor/domain/plant_game_state.dart';
 
 void main() {
+  test('game-read code preserves stable states and retains compact ordinary layouts', () {
+    final plain = Formation(pieces: [
+      Piece(id: 'pea', type: 'pea', row: 0, col: 0, layer: 10),
+    ]);
+    expect(FormationExchange.detectFormat(FormationExchange.encodeGameRead(plain)),
+        FormationFormat.toolkit);
+    for (final p in [
+      Piece(id: 'cob', type: 'cob', row: 0, col: 0, layer: 10, frameCol: 2),
+      Piece(id: 'nut', type: 'wallnut', row: 0, col: 0, layer: 10, frameCol: 3),
+      Piece(id: 'mine', type: 'potato', row: 0, col: 0, layer: 10, frameCol: 1),
+      Piece(id: 'sun', type: 'sunshroom', row: 0, col: 0, layer: 10, frameRow: 1, frameCol: 2),
+    ]) {
+      final code = FormationExchange.encodeGameRead(Formation(pieces: [p]));
+      expect(FormationExchange.detectFormat(code), FormationFormat.website);
+      final restored = FormationExchange.decode(code).pieces.single;
+      expect(PlantGameState.of(restored), PlantGameState.of(p), reason: p.type);
+      expect(restored.asleep, p.asleep, reason: p.type);
+    }
+  });
   test('auto import preserves JSON and legacy PVZF1 including BOM', () {
     final source = Formation(mapId: 'roof', sunValue: 1234, seedSlots: ['pea']);
     for (final value in [
@@ -75,8 +95,11 @@ void main() {
     final normalized = FormationExchange.layoutDocument(preset);
     expect(
         normalized.pieces.every((p) =>
-            p.frameRow == 0 && p.frameCol == 0 && p.websiteFields == null),
+            p.frameRow == (Piece.mushroomTypes.contains(p.type) && !p.asleep ? 1 : 0) &&
+            p.frameCol == 0 && p.websiteFields == null),
         isTrue);
+    expect(normalized.pieces.map((p) => p.asleep),
+        preset.pieces.map((p) => p.asleep));
     expect(FormationExchange.exportIssues(preset), isEmpty);
     expect(
         FormationExchange.decode(FormationExchange.encode(preset))
@@ -123,11 +146,14 @@ void main() {
     expect(
         FormationExchange.exportIssues(sleeping,
             format: FormationFormat.website),
-        isNotEmpty);
+        isEmpty);
     expect(
-        () =>
-            FormationExchange.encode(sleeping, format: FormationFormat.website),
-        throwsFormatException);
+        FormationExchange.decode(FormationExchange.encode(sleeping,
+            format: FormationFormat.website)).pieces.single.asleep,
+        isTrue);
+    final awake = sleeping.copy(pieces: [asleep.copy(frameRow: 1)]);
+    expect(FormationExchange.decode(FormationExchange.encode(awake,
+        format: FormationFormat.website)).pieces.single.asleep, isFalse);
     for (final changed in [
       asleep.copy(scale: 2),
       asleep.copy(opacity: .5),

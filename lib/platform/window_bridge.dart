@@ -52,6 +52,7 @@ class WindowBridge {
 
   static Future<bool> initialize(
       {required bool toolbox,
+      int availabilityRetries = 0,
       String? dataPath,
       String? activeDraftId,
       required Future<dynamic> Function(String, dynamic) onEvent}) async {
@@ -93,7 +94,7 @@ class WindowBridge {
     });
     final sequenceBeforeReady = _stateSequence;
     try {
-      final result = await channel.invokeMethod<dynamic>(
+      Future<dynamic> invokeReady() => channel.invokeMethod<dynamic>(
           toolbox ? 'ready' : 'initialize',
           toolbox
               ? null
@@ -101,6 +102,21 @@ class WindowBridge {
                   if (dataPath != null) 'dataPath': dataPath,
                   if (activeDraftId != null) 'activeDraftId': activeDraftId,
                 });
+      dynamic result;
+      for (var attempt = 0;; attempt++) {
+        try {
+          result = await invokeReady();
+          break;
+        } on MissingPluginException {
+          if (attempt >= availabilityRetries || generation != _generation) {
+            rethrow;
+          }
+          // A new engine can send its first message while its native host is
+          // still installing channels. Yield briefly, keeping this generation.
+          await Future<void>.delayed(const Duration(milliseconds: 16));
+          if (generation != _generation) return false;
+        }
+      }
       if (generation != _generation) return false;
       if (result == false) {
         _detach();

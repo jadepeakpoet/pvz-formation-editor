@@ -18,7 +18,7 @@ Future<void> main() async {
   await OriginalAssets.ensureLoaded();
   final repo = await FormationRepository.open(':memory:');
   final key = GlobalKey();
-  final directory = Directory('/tmp/pvz-live-output');
+  final directory = Directory('${Directory.systemTemp.path}/pvz-live-output');
   await directory.create(recursive: true);
   final h = ParityHarness(key, directory);
   FlutterError.onError = h.errors.add;
@@ -81,7 +81,7 @@ Future<void> main() async {
     matches();
     h.expect(FormationExchange.decode(output().controller!.text).pieces.isEmpty,
         'Undo output stale');
-    await h.tap('重做');
+    await h.tap('恢复');
     matches();
     h.expect(
         FormationExchange.decode(output().controller!.text).pieces.length == 1,
@@ -168,7 +168,7 @@ Future<void> main() async {
         'Readonly snapshot code missing');
   });
   await h.report();
-  await File('/tmp/pvz-live-output-report.json').writeAsString(jsonEncode({
+  await File('${Directory.systemTemp.path}/pvz-live-output-report.json').writeAsString(jsonEncode({
     'cases': h.cases,
     'scope':
         'real headless Flutter UI; clipboard simulated; native secondary output checked separately'

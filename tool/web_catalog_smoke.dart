@@ -16,7 +16,7 @@ Future<void> main() async {
   final session = EditorSession(repo, persistDraft: false);
   final boundary = GlobalKey();
   final h = ParityHarness(boundary,
-      await Directory('/tmp/pvz-web-catalog').create(recursive: true));
+      await Directory('${Directory.systemTemp.path}/pvz-web-catalog').create(recursive: true));
   FlutterError.onError = h.errors.add;
   runApp(RepaintBoundary(
       key: boundary,

@@ -68,7 +68,7 @@ Future<void> main() async {
     'results': rows,
     'flutterErrors': errors.map((e) => '${e.exception}').toList()
   };
-  File('/tmp/pvz-export-settings-report.json')
+  File('${Directory.systemTemp.path}/pvz-export-settings-report.json')
       .writeAsStringSync(jsonEncode(report));
   stdout.writeln(jsonEncode(report));
   ExportPreferences.fileOverride = null;

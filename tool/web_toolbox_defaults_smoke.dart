@@ -33,7 +33,7 @@ Future<void> main() async {
   final session = EditorSession(repo, persistDraft: false);
   final boundary = GlobalKey();
   final h = ParityHarness(boundary,
-      await Directory('/tmp/pvz-web-toolbox-defaults').create(recursive: true));
+      await Directory('${Directory.systemTemp.path}/pvz-web-toolbox-defaults').create(recursive: true));
   FlutterError.onError = h.errors.add;
   h.expect(OriginalAudio.musicVolume == .25 && OriginalAudio.soundVolume == .5,
       'Fresh audio defaults must match source 25% music / 50% effects');
@@ -101,7 +101,7 @@ Future<void> main() async {
           radioSelected('original-rWindow1'),
       'Settings selected radio defaults differ from source');
   h.expect(
-      checkbox('original-cSoil').value == true &&
+      checkbox('original-cSoil').value == false &&
           checkbox('original-rSeed').value == true &&
           checkbox('original-rClear').value == true &&
           checkbox('original-rBrain').value == false &&
@@ -217,7 +217,7 @@ Future<void> main() async {
   h.expect(
       h.all((w) => w.key == const ValueKey('formation-live-output')).length ==
               1 &&
-          text('载入') &&
+          text('载入布阵器') &&
           text('清空输入') &&
           text('复制') &&
           h

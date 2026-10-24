@@ -89,7 +89,7 @@ Future<void> main() async {
         'real bundled mp3 assets; mock audio channel with second configure reply explicitly blocked',
     'cases': cases
   };
-  await File('/tmp/pvz-planting-audio-race-report.json')
+  await File('${Directory.systemTemp.path}/pvz-planting-audio-race-report.json')
       .writeAsString(jsonEncode(report));
   stdout.writeln(jsonEncode(report));
   exit(cases.every((c) => c['status'] == 'pass') ? 0 : 1);

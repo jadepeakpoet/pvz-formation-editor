@@ -1,6 +1,4 @@
 import 'dart:ui';
-import 'dart:async';
-import 'original_assets.dart';
 import '../domain/formation.dart';
 import '../domain/object_filter.dart';
 import 'board_painter.dart';
@@ -8,9 +6,6 @@ import 'board_painter.dart';
 /// Both hover feedback and removal use this result, including shell attachments.
 class ShovelTargets {
   static Set<String> at(Formation doc, Offset point, String filter) {
-    if (filter == '智能') {
-      unawaited(OriginalAssets.ensurePieceImages(doc.pieces, hitMasks: true));
-    }
     final geometry = BoardGeometry(doc);
     Set<String> ids;
     if (filter == '智能') {

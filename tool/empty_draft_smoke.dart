@@ -15,8 +15,8 @@ Future<void> main() async {
   try {
     await session.flush();
     await session.flush();
-    check((await repo.listArchives()).single.id == session.sourceArchiveId,
-        'Untouched empty editor creates an archive');
+    check((await repo.listArchives()).isEmpty && session.sourceArchiveId == null,
+        'Untouched empty editor remains temporary');
     session.execute(
         'first plant',
         session.document.copy(pieces: [
@@ -24,14 +24,14 @@ Future<void> main() async {
         ]));
     await session.flush();
     check((await repo.listArchives()).single.id == session.id,
-        'First plant creates one identified draft');
+        'First plant creates one identified archive');
     session.execute('clear', session.document.copy(pieces: []));
     await session.flush();
     final saved = (await repo.listArchives()).single;
     check(saved.id == session.id && (saved.document['objects'] as List).isEmpty,
-        'Clear retains same previously edited draft');
+        'Clear retains the same previously edited archive');
     stdout.writeln(
-        'PASS 3: untouched empty archive; first plant updates same archive; clear keeps same archive/history');
+        'PASS 3: untouched page stays temporary; first plant creates archive; clear keeps identity/history');
     session.dispose();
     await repo.close();
     await dir.delete(recursive: true);

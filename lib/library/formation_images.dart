@@ -1,11 +1,14 @@
 import 'dart:io';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import '../domain/formation.dart';
 import '../editor/board_painter.dart';
 import '../editor/original_assets.dart';
 import '../platform/project_files.dart';
 
 class FormationImages {
+  @visibleForTesting
+  static Future<void> Function(Uint8List bytes)? clipboardOverride;
   static Future<Uint8List> render(Formation document) async {
     await OriginalAssets.ensureLoaded();
     return exportPng(document, multiplier: 2);
@@ -21,6 +24,7 @@ class FormationImages {
   static Future<void> copy(Formation document) async => copyBytes(await render(document));
 
   static Future<void> copyBytes(Uint8List bytes) async {
+    if (clipboardOverride != null) return clipboardOverride!(bytes);
     if (Platform.isLinux) {
       Process process;
       try {

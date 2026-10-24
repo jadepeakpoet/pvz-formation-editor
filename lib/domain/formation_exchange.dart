@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'formation.dart';
 import 'toolkit_codec.dart';
 import 'website_codec.dart';
+import 'plant_game_state.dart';
 
 enum FormationFormat {
   toolkit,
@@ -35,6 +36,18 @@ enum FormationFormat {
 
 /// One import boundary for current interchange and legacy project formats.
 class FormationExchange {
+  /// Keep game appearances that the compact Toolkit layout cannot express.
+  static String encodeGameRead(Formation document) {
+    final compact = layoutDocument(document);
+    for (var i = 0; i < document.pieces.length; i++) {
+      if (PlantGameState.of(document.pieces[i]) !=
+          PlantGameState.of(compact.pieces[i])) {
+        return encode(document, format: FormationFormat.website);
+      }
+    }
+    return ToolkitCodec.encode(compact);
+  }
+
   static FormationFormat detectFormat(String value) {
     final text = value.replaceFirst(RegExp(r'^\s*\uFEFF'), '').trim();
     if (text.startsWith('{') || text.startsWith('PVZF1:')) {

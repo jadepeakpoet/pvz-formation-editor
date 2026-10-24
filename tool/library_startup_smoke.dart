@@ -50,7 +50,7 @@ Future<void> main() async {
     'scope':
         'real Flutter engine first loading frame then actual library; configuration channel mocked'
   };
-  await File('/tmp/pvz-library-startup-report.json')
+  await File('${Directory.systemTemp.path}/pvz-library-startup-report.json')
       .writeAsString(jsonEncode(report));
   stdout.writeln(jsonEncode(report));
   exit(0);

@@ -329,6 +329,22 @@ class OriginalAssets {
   }
 
   static final _frameMaskLoading = <String, Future<void>>{};
+  @visibleForTesting
+  static void registerFrameForTesting(Map part, int row, int col,
+      ui.Image image, Uint8List mask) {
+    final source = part['path'] as String;
+    final rows = (part['rows'] as num).toInt();
+    final cols = (part['cols'] as num).toInt();
+    final entry = _frameIndex.putIfAbsent(source, () => {
+      'rows': rows, 'cols': cols,
+      'frames': List.generate(rows * cols, (i) => 'fixture-$source-$i'),
+    }) as Map;
+    final path = 'frames/${(entry['frames'] as List)[row * cols + col]}.png';
+    images[path] = image;
+    _hitMasks[path] = mask;
+    _frameMaskLoading[path] = Future.value();
+  }
+
   static Future<void> _ensureFrameMask(Map part, int row, int col) {
     final path = spriteFramePath(part, row, col);
     return _frameMaskLoading.putIfAbsent(path, () async {
