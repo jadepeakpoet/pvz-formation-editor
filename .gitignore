@@ -90,5 +90,7 @@ app.*.map.json
 /release/
 /website/dist/
 /website/.wrangler/
+/website/.dev.vars
+/website/.admin-password.*
 
 /.wrangler/

@@ -1,0 +1,9 @@
+// Website only; the desktop application does not send these events.
+(()=>{
+  if(!['xmpvz.pages.dev'].includes(location.hostname)||navigator.globalPrivacyControl||navigator.doNotTrack==='1')return;
+  const id=(store,key)=>{try{const storage=window[store];let v=storage.getItem(key);if(!v){v=crypto.randomUUID();storage.setItem(key,v);}return v;}catch{return crypto.randomUUID();}};
+  const visitor=id('localStorage','pvz-visitor-v1'),session=id('sessionStorage','pvz-session-v1');
+  const send=event=>{const payload={id:crypto.randomUUID(),visitor,session,event,path:location.pathname,source:document.referrer?new URL(document.referrer).origin:''};fetch('/api/collect',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),keepalive:true,credentials:'same-origin'}).catch(()=>{});};
+  send('page_view');
+  document.addEventListener('click',event=>{const link=event.target.closest?.('a[href]');if(!link)return;const url=new URL(link.href);if(url.origin===location.origin&&url.pathname.endsWith('-windows-x64.zip'))send('download_click');else if(url.hostname==='qm.qq.com')send('qq_click');});
+})();

@@ -1,1 +1,11 @@
-{"name":"xmpvz","pages_build_output_dir":"./dist","compatibility_date":"2026-10-24"}
+{
+  "name": "xmpvz",
+  "pages_build_output_dir": "./dist",
+  "compatibility_date": "2026-10-24",
+  "d1_databases": [{
+    "binding": "DB",
+    "database_name": "xmpvz-analytics",
+    "database_id": "368bbfe1-d225-4804-8488-96bdffb3ee14",
+    "migrations_dir": "migrations"
+  }]
+}
