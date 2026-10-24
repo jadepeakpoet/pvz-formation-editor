@@ -67,8 +67,8 @@ class MainFlutterWindow: NSWindow, NSWindowDelegate {
 
   private var englishUI = false
   private func sidebarTitle(_ mode: String) -> String {
-    if englishUI { return mode == "library" ? "Library" : "Formation Toolbox" }
-    return mode == "library" ? "存档库" : "布阵器工具箱"
+    if englishUI { return "Formation Toolbox" }
+    return "布阵器工具箱"
   }
 
   private(set) var lifecycleChannel: FlutterMethodChannel?

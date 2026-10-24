@@ -166,7 +166,7 @@ struct EditorWindows::Impl {
     mode=selected;
     sidebar->SetChildContent(toolbox->view()->GetNativeWindow());
     toolbox_channel->InvokeMethod("selectSidebarPage",std::make_unique<V>(selected));
-    SetWindowTextW(sidebar->GetHandle(),selected=="toolbox" ? L"布阵器工具箱" : L"存档库");
+    SetWindowTextW(sidebar->GetHandle(),L"布阵器工具箱");
     if(show) {
       if(IsIconic(sidebar->GetHandle())) ShowWindow(sidebar->GetHandle(),SW_RESTORE);
       sidebar->Show(); SetForegroundWindow(sidebar->GetHandle());

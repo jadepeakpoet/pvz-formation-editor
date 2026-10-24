@@ -2104,7 +2104,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
 
   Widget fallbackSidebar() => ClassicWindow(
       key: const ValueKey('fallback-sidebar-window'),
-      title: AppLanguage.text(sidebarMode == 'library' ? '存档库' : '布阵器工具箱'),
+      title: AppLanguage.text('布阵器工具箱'),
       width: 410,
       height: 635,
       dragKey: const ValueKey('toolbox-drag'),
