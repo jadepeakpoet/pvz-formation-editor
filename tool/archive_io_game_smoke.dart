@@ -29,6 +29,7 @@ Future<void> main() async {
   String? picked, saved;
   final methods = <String>[];
   int writes = 0;
+  final clearFlags = <bool>[];
   var clipboard = '';
   ParityBinding.handlers[SystemChannels.platform.name] = (call) async {
     if (call.method == 'Clipboard.setData') {
@@ -63,11 +64,13 @@ Future<void> main() async {
         'version': '1.0.0.1051',
         'map': 'day',
         'sunValue': 8000,
+        'includeZombies': (call.arguments as Map)['includeZombies'] == true,
         'pieces': []
       };
     if (call.method == 'applyFormation') {
       writes++;
       final args = call.arguments as Map;
+      clearFlags.add(args['target']['includeZombies'] == true);
       h.check(
           args['target']['pieces'].length == 1, 'Selected archive is written');
       h.check(args['target']['sunValue'] == 8000, 'Current game sun preserved');
@@ -154,10 +157,18 @@ Future<void> main() async {
         copy.findAncestorWidgetOfExactType<Row>() ==
             apply.findAncestorWidgetOfExactType<Row>(),
         'Copy and apply share the same action group');
-    await h.tap('library-copy-website-code');
+    h.check(copy.widget is OutlinedButton && apply.widget is FilledButton,
+        'Copy and apply have visible button surfaces');
+    final formatGroup = h.find((w) => w is RadioGroup<FormationFormat>).single.widget
+        as RadioGroup<FormationFormat>;
+    h.check(formatGroup.groupValue == FormationFormat.toolkit,
+        'Archive copy defaults to Toolkit with mutually exclusive format choices');
+    await h.tap('library-copy-format-website');
+    await h.tap('library-copy-code');
     h.check(FormationExchange.detectFormat(clipboard) == FormationFormat.website &&
         FormationExchange.decode(clipboard).pieces.length == formation.pieces.length,
         'Archive detail copies a loadable website code');
+    await h.tap('library-copy-format-toolkit');
     await h.tap('library-copy-code');
     h.check(FormationExchange.detectFormat(clipboard) == FormationFormat.toolkit,
         'Archive Toolkit action keeps the standard format');
@@ -165,11 +176,16 @@ Future<void> main() async {
     await h.settle();
     h.check(writes == 1 && h.find((w) => w is GamePanel).isEmpty,
         'Detail apply writes directly without opening file tools');
+    h.check(!clearFlags.single, 'Clearing zombies is unchecked by default');
+    await h.tap('library-clear-zombies');
+    await h.tap('library-apply-game');
+    await h.settle();
+    h.check(clearFlags.last, 'Checked clear option reaches the native write');
     await h.tap('library-detail-back');
     await h.tap('library-menu-archive:${item.id}');
     await h.tapElement(h.find((w) => w is Text && w.data == '应用阵型').single);
     await h.settle();
-    h.check(writes == 2 && !methods.contains('listSaveFiles'),
+    h.check(writes == 3 && !methods.contains('listSaveFiles'),
         'More menu uses the same direct apply action');
     h.check(
         errors.isEmpty, errors.map((e) => e.exceptionAsString()).join('\n'));

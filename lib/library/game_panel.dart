@@ -1,4 +1,5 @@
 import '../widgets/app_dropdown.dart';
+import '../widgets/clear_game_zombies_option.dart';
 import '../platform/app_language.dart';
 
 import 'dart:convert';
@@ -38,6 +39,7 @@ class _GamePanelState extends State<GamePanel> {
   GameFormationSnapshot? snapshot;
   String? error, notice, lastFileBackup, restoredFile;
   bool busy = false;
+  bool clearZombiesOnApply = false;
   GameWrites? backups;
   @override
   void initState() {
@@ -91,7 +93,8 @@ class _GamePanelState extends State<GamePanel> {
       });
 
   Future<void> apply() => run(() async {
-        snapshot = await (await store()).apply(selected!.pid, widget.target!);
+        snapshot = await (await store()).apply(selected!.pid, widget.target!,
+            clearZombies: clearZombiesOnApply);
         final detail = PlacementLayout.prepare(
           widget.target!,
           includeZombies: true,
@@ -274,6 +277,10 @@ class _GamePanelState extends State<GamePanel> {
                                     key: const ValueKey('game-panel-apply'),
                                     label: Text(AppLanguage.text('应用阵型')),
                                   ),
+                                if (widget.target != null)
+                                  ClearGameZombiesOption(key: const ValueKey('game-panel-clear-zombies'),
+                                      value: clearZombiesOnApply,
+                                      onChanged: busy ? null : (value) => setState(() => clearZombiesOnApply = value)),
                               ],
                             ),
                             if (snapshot != null) ...[

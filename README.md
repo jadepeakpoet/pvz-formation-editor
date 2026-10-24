@@ -99,3 +99,5 @@ Windows 使用 Visual Studio C++ 桌面工具链与 Windows SDK；其他平台�
 技术参考：[PvZ Toolkit](https://pvz.tools/toolkit/)（lmintlcx）、[PvZ-Portable](https://github.com/wszqkzqk/PvZ-Portable)（wszqkzqk 及社区贡献者）。感谢 PopCap Games、Flutter / Dart 社区及相关开源项目。
 
 项目源代码采用 [GNU GPL v3.0](LICENSE)，Copyright (C) 2026 越小梦。游戏素材与第三方依赖分别保留其权利及许可声明，见 [鸣谢](ACKNOWLEDGMENTS.md) 与 [素材来源](docs/assets.md)。
+
+应用阵型可勾选“清除场上僵尸”，默认不勾选；懒人布局提供一键清除僵尸，保留现有植物与阳光。包含僵尸的阵型仍按目标布局替换僵尸。存档详情先选择 PvZ Toolkit 码或网页布阵器码，再点击“复制阵型码”。

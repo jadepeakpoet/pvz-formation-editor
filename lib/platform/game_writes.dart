@@ -31,8 +31,9 @@ class GameWrites {
     int pid,
     Formation target, {
     bool includeZombies = false,
+    bool clearZombies = false,
   }) {
-    final full = includeZombies || ZombieLayout.contains(target);
+    final full = clearZombies || includeZombies || ZombieLayout.contains(target);
     final layout = PlacementLayout.prepare(
       target,
       includeZombies: full,
@@ -50,6 +51,13 @@ class GameWrites {
       (_) {},
       onError: (Object _, StackTrace __) {},
     );
+    return operation;
+  }
+
+  Future<int> clearZombies(int pid) {
+    final operation = (_operations[pid] ?? Future<void>.value()).then(
+        (_) => GameBridge.clearZombies(pid));
+    _operations[pid] = operation.then<void>((_) {}, onError: (Object _, StackTrace __) {});
     return operation;
   }
 

@@ -713,7 +713,9 @@ struct LoopGuard {
 };
 using X86 = GameX86;
 
-M ApplyBoard(DWORD pid, const M &target, const M &expected) {
+M ApplyBoard(DWORD pid, const M &incomingTarget, const M &expected, bool clearOnly=false) {
+  M effectiveTarget=incomingTarget;
+  const M& target=effectiveTarget;
   const DWORD blocked = blockedPid.load();
   if (blocked) {
     Handle oldProcess{OpenProcess(SYNCHRONIZE, FALSE, blocked)};
@@ -742,8 +744,8 @@ M ApplyBoard(DWORD pid, const M &target, const M &expected) {
                              FALSE, pid)};
   if (!t.supported || !process.h || !WriteCompatible(process.h, t.path))
     throw std::runtime_error("当前原版1051的运行内存或调用入口校验未通过");
-  RequireRepresentable(target);
-  const bool includeZombies=Flag(target,"includeZombies");
+  if(!clearOnly) RequireRepresentable(target);
+  const bool includeZombies=clearOnly || Flag(target,"includeZombies");
   if(includeZombies) {
     for(uint32_t address:{0x40ddc0u,0x530510u,0x52f2e0u,0x528b00u,0x52c310u})
       if(!RuntimeEntryCompatible(process.h,address)) throw std::runtime_error("僵尸函数入口校验失败");
@@ -763,14 +765,25 @@ M ApplyBoard(DWORD pid, const M &target, const M &expected) {
   if (Read<uint32_t>(process.h, lawn + 0x768) != board)
     throw std::runtime_error("游戏场地在操作前发生变化，未应用阵型");
   const M before = ReadBoard(pid,includeZombies);
-  if (std::get<std::string>(Field(before, "map")) !=
+  int cleared=0;
+  if(clearOnly) {
+    effectiveTarget=before;
+    L retained;
+    for(const auto& item:std::get<L>(Field(before,"pieces"))) {
+      if(Object(item).find(V("zombieType"))!=Object(item).end()) ++cleared;
+      else retained.push_back(item);
+    }
+    effectiveTarget[V("pieces")]=V(retained);
+    effectiveTarget[V("includeZombies")]=V(true);
+  }
+  if (!clearOnly && (std::get<std::string>(Field(before, "map")) !=
           std::get<std::string>(Field(expected, "map")) ||
       Composition(before) != Composition(expected) ||
-      Number(before, "sunValue") != Number(expected, "sunValue"))
+      Number(before, "sunValue") != Number(expected, "sunValue")))
     throw std::runtime_error(
         "游戏阵型在读取后发生变化，请重新获取后重试");
   const int sun = Number(target, "sunValue");
-  if (sun < 0 || sun > 999999)
+  if (!clearOnly && (sun < 0 || sun > 999999))
     throw std::runtime_error("目标阳光值无效");
   X86 code;
   code.Byte(0x60); // Preserve registers for the remote thread entry.
@@ -782,6 +795,7 @@ M ApplyBoard(DWORD pid, const M &target, const M &expected) {
       if(!Read<uint8_t>(process.h,address+0xec)) code.RemoveZombie(address);
     }
   }
+  if(!clearOnly) {
   const auto plants = Read<uint32_t>(process.h, board + 0xac),
              count = Read<uint32_t>(process.h, board + 0xb0);
   for (uint32_t i = 0; i < count; i++) {
@@ -800,6 +814,7 @@ M ApplyBoard(DWORD pid, const M &target, const M &expected) {
     if(!Read<uint8_t>(process.h,address+0x20) && (kind==1 || kind==3 || kind==11)) {
       code.Byte(0xbe); code.Dword(address); code.Call(0x44d000);
     }
+  }
   }
   const auto targetMap = std::get<std::string>(Field(target,"map"));
   const char* maps[] = {"day","night","pool","fog","roof","moonRoof"};
@@ -856,7 +871,7 @@ M ApplyBoard(DWORD pid, const M &target, const M &expected) {
       return p.find(V("gridType"))!=p.end() ? 4 : order(Number(p,"type")); };
     return rank(a)<rank(b);
   });
-  for (const auto &item : pieces) {
+  if(!clearOnly) for (const auto &item : pieces) {
     const auto &p = Object(item);
     if(p.find(V("zombieType"))!=p.end()) {
       code.PutZombie(board,Number(p,"row"),Number(p,"zombieType"),
@@ -945,8 +960,8 @@ M ApplyBoard(DWORD pid, const M &target, const M &expected) {
     if (!GetExitCodeThread(thread, &exit) || exit != 0)
       throw std::runtime_error(
           "游戏构造函数异常退出，可能已部分应用；请重新获取并注入阵型");
-    if(includeZombies) ApplyZombieStates(process.h,lawn,board,pieces);
-    WriteBytes(process.h, board + 0x5560, &sun, sizeof(sun));
+    if(includeZombies && !clearOnly) ApplyZombieStates(process.h,lawn,board,pieces);
+    if(!clearOnly) WriteBytes(process.h, board + 0x5560, &sun, sizeof(sun));
     // Start loaded cannons at the bright end of their normal ready pulse.
     // The game's own subsequent updates retain the original flashing behavior.
     const auto plantArray = Read<uint32_t>(process.h, board + 0xac);
@@ -955,7 +970,7 @@ M ApplyBoard(DWORD pid, const M &target, const M &expected) {
       throw std::runtime_error("应用后植物数组无效");
     const auto holder = Read<uint32_t>(process.h, lawn + 0x820);
     const auto animations = Read<uint32_t>(process.h, holder + 8);
-    for (uint32_t i = 0; i < plantCount; ++i) {
+    for (uint32_t i = 0; !clearOnly && i < plantCount; ++i) {
       const uintptr_t plant = plantArray + i * 0x14c;
       if (Read<uint8_t>(process.h, plant + 0x141) ||
           Read<uint8_t>(process.h, plant + 0x142) ||
@@ -985,7 +1000,7 @@ M ApplyBoard(DWORD pid, const M &target, const M &expected) {
     if (!loop.Restore())
       throw std::runtime_error(
           "阵型已应用但主循环恢复校验失败，请重新启动游戏");
-    return M{{V("before"), V(before)}, {V("after"), V(after)}};
+    return M{{V("before"), V(before)}, {V("after"), V(after)}, {V("cleared"),V(cleared)}};
   } catch (...) {
     if (thread)
       CloseHandle(thread);
@@ -1088,6 +1103,13 @@ RegisterGameBridge(flutter::BinaryMessenger *messenger) {
             L games;
             EnumWindows(Discover, reinterpret_cast<LPARAM>(&games));
             result->Success(V(games));
+            return;
+          }
+          if (call.method_name() == "clearZombies") {
+            if(!call.arguments()) throw std::runtime_error("缺少游戏参数");
+            const int pid=Number(Object(*call.arguments()),"pid");
+            if(pid<=0) throw std::runtime_error("游戏进程无效");
+            result->Success(V(ApplyBoard(static_cast<DWORD>(pid),M{},M{},true)));
             return;
           }
           if (call.method_name() == "applyFormation" ||

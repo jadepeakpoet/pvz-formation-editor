@@ -28,6 +28,7 @@ import 'editor/board_painter.dart';
 import 'editor/board_sun_editor.dart';
 import 'editor/batch_selection_overlay.dart';
 import 'widgets/app_dropdown.dart';
+import 'widgets/clear_game_zombies_option.dart';
 import 'widgets/app_about.dart';
 import 'widgets/sidebar_tabs.dart';
 import 'editor/rename_dialog.dart';
@@ -411,6 +412,7 @@ class LibraryPage extends StatefulWidget {
 
 class _LibraryPageState extends State<LibraryPage> {
   bool applyingArchiveToGame = false;
+  bool clearArchiveZombiesOnApply = false;
   FormationRepository? repo;
   List<DraftRecord> drafts = [];
   List<ArchiveRecord> archives = [];
@@ -1086,7 +1088,8 @@ class _LibraryPageState extends State<LibraryPage> {
     try {
       final game = await chooseRunningGame(context, read: false);
       if (game == null) return;
-      await GameWrites(Directory.systemTemp).apply(game.pid, target);
+      await GameWrites(Directory.systemTemp).apply(game.pid, target,
+          clearZombies: clearArchiveZombiesOnApply);
       if (mounted) message(context, PlacementLayout.completion('阵型已应用到游戏', target, game: true));
     } catch (e) {
       if (mounted) message(context, '应用失败：$e');
@@ -1116,6 +1119,8 @@ class _LibraryPageState extends State<LibraryPage> {
     final browser = LibraryBrowser(
       showTitle: widget.showTitle,
       gameBusy: applyingArchiveToGame,
+      clearZombiesOnApply: clearArchiveZombiesOnApply,
+      onClearZombiesChanged: (value) => setState(() => clearArchiveZombiesOnApply = value),
       onGameTools: Platform.isWindows
           ? (target) async {
               if (target != null) {
@@ -1694,6 +1699,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
         'windowStyle': windowStyle,
         'pendingMapId': pendingMapId,
         'keepPlantsOnMapChange': keepPlantsOnMapChange,
+        'clearZombiesOnApply': clearZombiesOnApply,
         'presetChangeMap': presetChangeMap,
         'musicLevel': musicLevel,
         'soundLevel': soundLevel,
@@ -1944,6 +1950,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
         windowStyle = (value['windowStyle'] as num).toInt();
         pendingMapId = value['pendingMapId'] as String?;
         keepPlantsOnMapChange = value['keepPlantsOnMapChange'] != false;
+        clearZombiesOnApply = value['clearZombiesOnApply'] == true;
         presetChangeMap = value['presetChangeMap'] != false;
         exportFormat = FormationFormat.values.firstWhere(
             (f) => f.name == value['exportFormat'],
@@ -4127,6 +4134,22 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
   }
 
   bool gameBusy = false;
+  bool clearZombiesOnApply = false;
+
+  Future<void> clearGameZombies() async {
+    if (gameBusy) return;
+    setState(() => gameBusy = true);
+    try {
+      final selected = await chooseRunningGame(context, read: false);
+      if (selected == null) return;
+      final count = await GameWrites(Directory.systemTemp).clearZombies(selected.pid);
+      if (mounted) message(context, count == 0 ? '场上没有僵尸' : '已清除 $count 个僵尸');
+    } catch (e) {
+      if (mounted) message(context, '清除僵尸失败：$e');
+    } finally {
+      if (mounted) setState(() => gameBusy = false);
+    }
+  }
   Future<void> gameFormationAction({required bool read}) async {
     if (gameBusy) return;
     setState(() => gameBusy = true);
@@ -4143,7 +4166,8 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
         inputFormation.text = code;
         message(context, '已获取游戏阵型，可点击“载入布阵器”');
       } else {
-        await GameWrites(Directory.systemTemp).apply(selected.pid, target!);
+        await GameWrites(Directory.systemTemp).apply(selected.pid, target!,
+            clearZombies: clearZombiesOnApply);
         if (mounted) message(context, PlacementLayout.completion('阵型已应用到游戏', target, game: true));
       }
     } catch (e) {
@@ -4762,10 +4786,14 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
         ]),
         if (Platform.isWindows) ...[
           const Divider(height: 16, thickness: .5),
-          Row(children: [classicButton('应用阵型', gameBusy ? null
+          Wrap(crossAxisAlignment: WrapCrossAlignment.center, spacing: 8, children: [classicButton('应用阵型', gameBusy ? null
               : () => gameFormationAction(read: false), key: const ValueKey('formation-inject-game'),
               icon: Icons.play_arrow_rounded,
-              tooltip: '将当前阵型应用到游戏，替换现有布阵。')]),
+              tooltip: '将当前阵型应用到游戏，替换现有布阵。'),
+            ClearGameZombiesOption(key: const ValueKey('formation-clear-zombies'),
+                value: clearZombiesOnApply,
+                onChanged: gameBusy ? null : (value) => setState(() => clearZombiesOnApply = value)),
+          ]),
           Text(AppLanguage.text('PvZ Toolkit 码用于复制和分享；应用阵型直接替换游戏中的布阵，可包含僵尸及其所选状态。'),
               style: const TextStyle(fontSize: 12, color: Color(0xff63755f))),
         ],
@@ -4816,6 +4844,11 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
             }, key: ValueKey('lazy-action-$label'),
                 tooltip: label == '搭梯' ? '为陆地第2–6列的南瓜搭梯' : null)
         ]),
+        if (Platform.isWindows)
+          classicButton('清除场上僵尸', gameBusy ? null : clearGameZombies,
+              key: const ValueKey('lazy-clear-game-zombies'),
+              icon: Icons.delete_sweep_outlined,
+              tooltip: '清除正在运行的游戏中的全部僵尸。'),
         const Divider(),
         Text(AppLanguage.text('一键模仿'), style: const TextStyle(fontSize: 12)),
         Wrap(children: [

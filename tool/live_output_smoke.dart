@@ -66,6 +66,12 @@ Future<void> main() async {
         'Changing maps must retain plants by default');
     h.expect(editorState.pokerWidth == false,
         'Image export must preserve the original aspect ratio by default');
+    h.expect(editorState.clearZombiesOnApply == false,
+        'Applying a formation must preserve existing zombies by default');
+    await h.tapElement(h.find((w) => w.key == const ValueKey('formation-clear-zombies')));
+    h.expect(editorState.clearZombiesOnApply == true,
+        'Clear option is selectable from Load/Export');
+    await h.tapElement(h.find((w) => w.key == const ValueKey('formation-clear-zombies')));
     final radios = h.all((w) => w is Radio<FormationFormat>);
     final radioGroups = h.all((w) => w is RadioGroup<FormationFormat>);
     h.expect(radios.length == 4 && radioGroups.length == 2 && radioGroups.every((e) =>

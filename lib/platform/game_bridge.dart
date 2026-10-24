@@ -274,6 +274,14 @@ class GameBridge {
     );
   }
 
+  static Future<int> clearZombies(int pid) async {
+    if (pid <= 0) throw ArgumentError.value(pid, 'pid');
+    final result = await channel.invokeMapMethod<String, dynamic>('clearZombies', {'pid': pid});
+    final count = result?['cleared'];
+    if (count is! int || count < 0) throw StateError('游戏未返回清除结果');
+    return count;
+  }
+
   static Future<List<GameSaveFile>> listSaveFiles(int pid) async {
     if (pid <= 0) throw ArgumentError.value(pid, 'pid');
     final result = await channel.invokeListMethod<dynamic>('listSaveFiles', {

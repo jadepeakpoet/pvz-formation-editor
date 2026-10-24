@@ -1,5 +1,12 @@
 /// English translations for the main editor interface.
 const Map<String, String> mainTranslations = {
+  '复制阵型码': 'Copy formation code',
+  '清除场上僵尸': 'Clear zombies',
+  '应用阵型前清除游戏中已有的僵尸。': 'Clear existing zombies before applying the formation.',
+  '清除正在运行的游戏中的全部僵尸。': 'Remove all zombies from the running game.',
+  '场上没有僵尸': 'There are no zombies on the board',
+  '已清除 {count} 个僵尸': '{count} zombies cleared',
+  '清除僵尸失败：{error}': 'Could not clear zombies: {error}',
   '僵尸携带物、潜水和啃食状态以所选外观为准。': 'Zombie objects, water states and eating follow the selected appearance.',
   'Toolkit 阵型码：{notice}；原阵图保留，游戏应用可包含僵尸。': 'Toolkit code: {notice}. The editor formation is retained; game applications may include zombies.',
   '已忽略 {count} 个僵尸或装饰对象': '{count} zombies or decorative objects omitted',

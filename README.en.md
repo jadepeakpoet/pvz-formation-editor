@@ -97,3 +97,5 @@ Primary reference: [jspvz ArrayDesign](http://jspvz.com/ArrayDesign/) by **Lonel
 Technical references: [PvZ Toolkit](https://pvz.tools/toolkit/) by lmintlcx and [PvZ-Portable](https://github.com/wszqkzqk/PvZ-Portable) by wszqkzqk and contributors. Thanks to PopCap Games and the Flutter / Dart community.
 
 Source code: [GNU GPL v3.0](LICENSE), Copyright (C) 2026 越小梦. Assets and third-party dependencies retain their own rights and licenses; see [Acknowledgments](ACKNOWLEDGMENTS.md) and [asset provenance](docs/assets.md).
+
+Apply formation offers an unchecked-by-default Clear zombies option. Lazy Layout also provides a standalone clear action that retains existing plants and sunlight. Formations containing zombies still replace them with the target layout. Archive details use mutually exclusive Toolkit/website choices and one Copy formation code button.

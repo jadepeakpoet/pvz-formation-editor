@@ -61,3 +61,5 @@ PvZ Toolkit 码保存标准格位、模仿者和蘑菇睡眠；完整项目及�
 选项设置提供语言、显示、音效、土壤水花和导出目录等选项。土壤水花默认关闭，可随时开启。应用与官网支持简体中文、English。
 
 [官网](https://xmpvz.pages.dev) · [GitHub](https://github.com/jadepeakpoet/pvz-formation-editor) · [交流 QQ 群 425175276](https://qm.qq.com/q/BbkV57ELaa)。
+
+应用阵型可勾选“清除场上僵尸”，默认不勾选；懒人布局提供一键清除僵尸，保留现有植物与阳光。包含僵尸的阵型仍按目标布局替换僵尸。存档详情先选择 PvZ Toolkit 码或网页布阵器码，再点击“复制阵型码”。

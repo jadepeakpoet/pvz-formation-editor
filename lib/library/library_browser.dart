@@ -3,6 +3,8 @@ import '../widgets/app_dropdown.dart';
 import '../platform/app_language.dart';
 import 'package:flutter/material.dart';
 import '../domain/formation.dart';
+import '../domain/formation_exchange.dart';
+import '../widgets/clear_game_zombies_option.dart';
 import 'library_presets.dart';
 import 'formation_thumbnail.dart';
 import '../editor/board_painter.dart';
@@ -25,6 +27,8 @@ class LibraryBrowser extends StatefulWidget {
   final VoidCallback? onImportGameSave;
   final bool showTitle;
   final bool gameBusy;
+  final bool clearZombiesOnApply;
+  final ValueChanged<bool>? onClearZombiesChanged;
   final Future<void> Function(Formation?)? onGameTools;
   final List<LibraryPreset> presets;
   final ValueChanged<LibraryPreset>? onPresetPick;
@@ -54,6 +58,8 @@ class LibraryBrowser extends StatefulWidget {
       this.onImportGameSave,
       this.showTitle = true,
       this.gameBusy = false,
+      this.clearZombiesOnApply = false,
+      this.onClearZombiesChanged,
       this.presets = const [],
       this.onPresetPick,
       this.onAddPreset,
@@ -107,6 +113,7 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
   static const green = Color(0xff376b50);
   String section = '我的存档', query = '', sort = '最近修改';
   String mapFilter = '';
+  FormationFormat copyFormat = FormationFormat.toolkit;
   String? tagFilter;
   int? cannonFilter;
   bool filterDialogOpen = false;
@@ -1231,7 +1238,7 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
                   ])))));
   Widget detail(_Entry e, {bool bordered = true, bool narrow = false}) =>
       Container(
-          width: narrow ? double.infinity : 230,
+          width: narrow ? double.infinity : 280,
           decoration: BoxDecoration(
               color: Colors.white,
               border: bordered
@@ -1410,49 +1417,71 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
                               color: Color(0xff85917e)))
                     ]
                   ])));
-  Widget formationCodeActions(_Entry e) => Column(children: [Row(children: [
-        Expanded(
-            flex: 3,
-            child: TextButton(
-                key: const ValueKey('library-copy-code'),
-                style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 2),
-                    minimumSize: Size.zero),
-                onPressed: e.preset != null && widget.onPresetAction == null
-                    ? null
-                    : () => action('copy-code', e),
-                child: Text(AppLanguage.text('复制 PvZ Toolkit 码'),
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize: 12)))),
-        if (widget.onGameTools != null && e.formation != null) ...[
-          const SizedBox(width: 4),
-          Expanded(
-              flex: 2,
-              child: Tooltip(
-                message: AppLanguage.text('将当前阵型应用到游戏，替换现有布阵。'),
-                child: TextButton.icon(
+  Widget formationCodeActions(_Entry e) {
+    final canCopy = e.preset == null || widget.onPresetAction != null;
+    final canApply = widget.onGameTools != null && e.formation != null;
+    final buttonStyle = OutlinedButton.styleFrom(
+        minimumSize: const Size(0, 38),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+        textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)));
+    const help = 'PvZ Toolkit 码用于标准植物布局；网页码可保留僵尸和外观。';
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Row(children: [
+        Expanded(child: RadioGroup<FormationFormat>(
+            groupValue: copyFormat,
+            onChanged: (value) { if (value != null) setState(() => copyFormat = value); },
+            child: Wrap(spacing: 10, runSpacing: 4, children: [
+              for (final format in [FormationFormat.toolkit, FormationFormat.website])
+                InkWell(
+                    key: ValueKey('library-copy-format-${format.name}'),
+                    borderRadius: BorderRadius.circular(6),
+                    onTap: () => setState(() => copyFormat = format),
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      SizedBox(width: 24, height: 32, child: Radio<FormationFormat>(value: format)),
+                      Text(AppLanguage.text(format == FormationFormat.toolkit ? 'PvZ Toolkit 码' : '网页布阵器码'),
+                          style: const TextStyle(fontSize: 12)),
+                    ])),
+            ]))),
+        Tooltip(key: const ValueKey('library-code-help'), message: AppLanguage.text(help),
+            child: IconButton(
+                onPressed: () => showDialog<void>(context: context,
+                    builder: (context) => AlertDialog(
+                        content: Text(AppLanguage.text(help)),
+                        actions: [TextButton(onPressed: () => Navigator.pop(context),
+                            child: Text(AppLanguage.text('关闭')))])),
+                icon: const Icon(Icons.help_outline, size: 18))),
+      ]),
+      const SizedBox(height: 6),
+      Row(children: [
+        Expanded(child: OutlinedButton.icon(
+            key: const ValueKey('library-copy-code'), style: buttonStyle,
+            onPressed: canCopy ? () => action(copyFormat == FormationFormat.toolkit ? 'copy-code' : 'copy-website-code', e) : null,
+            icon: const Icon(Icons.content_copy_rounded, size: 16),
+            label: Text(AppLanguage.text('复制阵型码')))),
+        if (canApply) ...[
+          const SizedBox(width: 10),
+          Expanded(child: Tooltip(
+              message: AppLanguage.text('PvZ Toolkit 码用于复制和分享；应用阵型直接替换游戏中的布阵，可包含僵尸及其所选状态。'),
+              child: FilledButton.icon(
                   key: const ValueKey('library-apply-game'),
-                  style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 2),
-                      minimumSize: Size.zero),
-                  onPressed:
-                      widget.gameBusy ? null : () => action('apply-game', e),
-                  icon: const Icon(Icons.play_arrow_rounded, size: 17),
-                  label: Text(AppLanguage.text('应用阵型'),
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(fontSize: 12))))),
+                  style: FilledButton.styleFrom(minimumSize: const Size(0, 38),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+                      textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
+                  onPressed: widget.gameBusy ? null : () => action('apply-game', e),
+                  icon: const Icon(Icons.play_arrow_rounded, size: 18),
+                  label: Text(AppLanguage.text('应用阵型'))))),
         ],
-      ]), Row(children: [
-        Expanded(child: TextButton(
-            key: const ValueKey('library-copy-website-code'),
-            onPressed: e.preset != null && widget.onPresetAction == null
-                ? null : () => action('copy-website-code', e),
-            child: Text(AppLanguage.text('复制网页阵型码'), style: const TextStyle(fontSize: 12)))),
-        Tooltip(
-            key: const ValueKey('library-code-help'),
-            message: AppLanguage.text('PvZ Toolkit 码用于标准植物布局；网页码可保留僵尸和外观。'),
-            child: IconButton(onPressed: null, icon: const Icon(Icons.help_outline, size: 17))),
-      ])]);
+      ]),
+      if (canApply && widget.onClearZombiesChanged != null)
+        Padding(padding: const EdgeInsets.only(top: 6),
+            child: ClearGameZombiesOption(key: const ValueKey('library-clear-zombies'),
+                value: widget.clearZombiesOnApply,
+                onChanged: widget.gameBusy ? null : widget.onClearZombiesChanged)),
+      const SizedBox(height: 4),
+    ]);
+  }
 
   List<PopupMenuEntry<String>> importItems() => [
         PopupMenuItem(
