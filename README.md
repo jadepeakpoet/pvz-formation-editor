@@ -12,6 +12,25 @@
 
 本项目主要参考 [jspvz 网页布阵器](http://jspvz.com/ArrayDesign/)，作者 **LonelyStar（囧丫乙）**，以其功能和 UI 为基础迁移到本地并进行功能增强。技术参考：[PvZ Toolkit](https://pvz.lmintlcx.com/toolkit/)（lmintlcx）、[PvZ-Portable](https://github.com/wszqkzqk/PvZ-Portable)（wszqkzqk 及社区贡献者）。
 
+## Windows 版本
+
+当前发布为 **Windows v1.0.0**，已构建并启动验证。其他平台目前提供工程源码，没有本次对应的发布包。
+
+| 项目 | 信息 |
+| --- | --- |
+| 应用版本 | 1.0.0 |
+| 系统与架构 | Windows 10 / Windows 11，x64 |
+| 发布形式 | Release 绿色 ZIP 包，免安装 |
+| 启动程序 | `pvz_formation_editor.exe` |
+| 运行库 | 包内附带 MSVC 运行库；保留 DLL 和 `data` 文件夹 |
+| 游戏接入 | 原版 Windows PvZ 1.0.0.1051，生存无尽模式 11–15 |
+| 本地数据 | 用户应用支持目录；不随绿色包目录自动移动 |
+| 更新方式 | 正常退出旧版，解压新版后运行；迁移设备前先导出存档 |
+
+**[下载 Windows v1.0.0 x64 绿色版](https://xmpvz.pages.dev/downloads/PvZ-Formation-Editor-1.0.0-windows-x64.zip)** · [SHA-256 校验](https://xmpvz.pages.dev/downloads/SHA256SUMS.txt) · [Windows 使用文档](https://xmpvz.pages.dev/docs/)
+
+本版包含独立双窗口、Windows 中文字体优化、名阵打开即自动保存、存档批量导入导出，以及模仿者/梯子/墓碑/钉耙的游戏应用支持。完整游戏实测范围见下文；不保证改版或其他游戏版本兼容。
+
 ## 下载与使用
 
 Windows 10 / 11 x64：下载绿色包、完整解压，然后运行 `pvz_formation_editor.exe`。请保留旁边的 DLL 和 `data` 文件夹，无需安装。校验值见 [SHA256SUMS](https://xmpvz.pages.dev/downloads/SHA256SUMS.txt)。官网仅提供应用下载，源代码以本 GitHub 仓库为准。

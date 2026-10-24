@@ -12,6 +12,25 @@ Author: **越小梦 (yuexiaomeng)** · [Authors](AUTHORS) · [Acknowledgments](A
 
 The primary reference is [jspvz ArrayDesign](http://jspvz.com/ArrayDesign/) by **LonelyStar (囧丫乙)**. This project adapts its functionality and UI for local use, adding archive management, desktop interaction and live game integration. Technical references: [PvZ Toolkit](https://pvz.lmintlcx.com/toolkit/) by lmintlcx and [PvZ-Portable](https://github.com/wszqkzqk/PvZ-Portable) by wszqkzqk and contributors.
 
+## Windows release
+
+The current published package is **Windows v1.0.0**, built and launched for verification. Other platforms have source projects, but no corresponding release package from this run.
+
+| Item | Details |
+| --- | --- |
+| App version | 1.0.0 |
+| OS / architecture | Windows 10 / Windows 11, x64 |
+| Package | Release ZIP, no installation required |
+| Executable | `pvz_formation_editor.exe` |
+| Runtime | App-local MSVC runtime included; retain all DLL files and the `data` folder |
+| Game integration | Original Windows PvZ 1.0.0.1051, Survival Endless modes 11–15 |
+| Local data | User application-support folder; moving the ZIP/app folder does not move archives |
+| Updating | Quit the previous version normally, extract the new package and run it; export archives before migrating devices |
+
+**[Download Windows v1.0.0 x64](https://xmpvz.pages.dev/downloads/PvZ-Formation-Editor-1.0.0-windows-x64.zip)** · [SHA-256 checksums](https://xmpvz.pages.dev/downloads/SHA256SUMS.txt) · [Windows user guide](https://xmpvz.pages.dev/en/docs/)
+
+This release includes independent windows, improved Windows CJK typography, autosave when opening presets, batch archive import/export, and live-game support for Imitaters, ladders, graves and rakes. See the verification scope below; mods and other game versions are not guaranteed to work.
+
 ## Download and features
 
 On Windows 10 / 11 x64, fully extract the ZIP and run `pvz_formation_editor.exe`. Keep the DLL files and `data` folder alongside it. No installation is needed. See [SHA256 checksums](https://xmpvz.pages.dev/downloads/SHA256SUMS.txt). Source code is available in this GitHub repository; the website does not provide source archives.
