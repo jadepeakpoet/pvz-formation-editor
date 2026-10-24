@@ -145,6 +145,9 @@ struct EditorWindows::Impl {
     library_channel->SetMethodCallHandler([this](const Call& call,std::unique_ptr<Result> result){
       const auto& method=call.method_name();
       if(method=="ready") { library_ready=true; result->Success(V(configuration)); return; }
+      if(method=="prepareDedup") {
+        Forward(main_channel.get(),"libraryPrepareDedup",call.arguments(),std::move(result)); return;
+      }
       if(method=="openEditor") {
         auto guard=alive;
         Forward(main_channel.get(),"libraryOpen",call.arguments(),std::move(result),[this,guard](const V* value){
@@ -164,13 +167,20 @@ struct EditorWindows::Impl {
     sidebar->SetChildContent(toolbox->view()->GetNativeWindow());
     toolbox_channel->InvokeMethod("selectSidebarPage",std::make_unique<V>(selected));
     SetWindowTextW(sidebar->GetHandle(),selected=="toolbox" ? L"布阵器工具箱" : L"存档库");
-    if(show) { sidebar->Show(); SetForegroundWindow(sidebar->GetHandle()); }
+    if(show) {
+      if(IsIconic(sidebar->GetHandle())) ShowWindow(sidebar->GetHandle(),SW_RESTORE);
+      sidebar->Show(); SetForegroundWindow(sidebar->GetHandle());
+    }
     if(selected=="library") Refresh();
     Notify(); return true;
   }
   void Handle(const Call& call,std::unique_ptr<Result> result,bool secondary) {
     const auto& method=call.method_name(); const auto args=Arguments(call);
     Configure(args);
+    if(method=="getDialogOwner") {
+      HWND owner=secondary && sidebar ? sidebar->GetHandle() : main->GetHandle();
+      result->Success(V(static_cast<int64_t>(reinterpret_cast<intptr_t>(owner)))); return;
+    }
     if(method=="initialize") { result->Success(V(Select("toolbox",false))); return; }
     if(method=="ready") { toolbox_ready=true; result->Success(latest); return; }
     if(method=="publishState") {
@@ -198,7 +208,10 @@ struct EditorWindows::Impl {
     if(method=="setSidebarVisible" || method=="setToolboxVisible") {
       bool ok=true;
       if(Flag(args,"visible")) ok=Select(mode,true);
-      else if(sidebar) { ShowWindow(sidebar->GetHandle(),SW_HIDE); Notify(); }
+      else if(sidebar) {
+        if(Flag(args,"restoreIfMinimized") && IsIconic(sidebar->GetHandle())) ok=Select(mode,true);
+        else { ShowWindow(sidebar->GetHandle(),SW_HIDE); Notify(); }
+      }
       result->Success(V(ok)); return;
     }
     if(method=="deactivate") {
@@ -234,6 +247,8 @@ struct EditorWindows::Impl {
           V(static_cast<int32_t>(r.right-r.left)),V(static_cast<int32_t>(r.bottom-r.top))};
       };
       result->Success(V(M{{V("sharedSidebarWindow"),V(true)},
+        {V("sidebarVisible"),V(sidebar && IsWindowVisible(sidebar->GetHandle())!=FALSE)},
+        {V("sidebarMinimized"),V(sidebar && IsIconic(sidebar->GetHandle())!=FALSE)},
         {V("sidebarMode"),V(mode)},{V("hasToolboxEngine"),V(toolbox!=nullptr)},
         {V("hasLibraryEngine"),V(false)},{V("sidebarEngineCount"),V(toolbox ? 1 : 0)},
         {V("toolboxReady"),V(toolbox_ready)},{V("libraryReady"),V(library_ready)},

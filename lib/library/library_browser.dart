@@ -839,9 +839,10 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
         ? {
             'open-current': '当前标签页使用模板',
             'open-tab': '新标签页使用模板',
-            'copy-code': '复制 Toolkit 阵型码',
+            'copy-code': '复制 PvZ Toolkit 码',
+            'copy-website-code': '复制网页阵型码',
             if (widget.onGameTools != null && e.formation != null)
-              'apply-game': '应用到游戏',
+              'apply-game': '应用阵型',
             'copy-image': '复制图片',
             'export-image': '导出图片',
             'preview': '只读预览',
@@ -852,9 +853,10 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
         : {
             'open-current': '当前标签页打开',
             if (widget.onOpenArchiveTab != null) 'open-tab': '新标签页打开',
-            'copy-code': '复制 Toolkit 阵型码',
+            'copy-code': '复制 PvZ Toolkit 码',
+            'copy-website-code': '复制网页阵型码',
             if (widget.onGameTools != null && e.formation != null)
-              'apply-game': '应用到游戏',
+              'apply-game': '应用阵型',
             'copy-image': '复制图片',
             'export-image': '导出图片',
             'preview': '只读预览',
@@ -875,7 +877,11 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
                 : (e.preset == null ||
                     widget.onPresetAction != null ||
                     (item.key == 'copy' && widget.onAddPreset != null)),
-            child: Text(AppLanguage.text(item.value))))
+            child: item.key == 'apply-game' ? Tooltip(
+                message: AppLanguage.text('PvZ Toolkit 码用于复制和分享；应用阵型直接替换游戏中的布阵，可包含僵尸及其所选状态。'),
+                child: Row(children: [const Icon(Icons.play_arrow_rounded, size: 17),
+                  const SizedBox(width: 4), Text(AppLanguage.text(item.value))]))
+                : Text(AppLanguage.text(item.value))))
         .toList();
   }
 
@@ -1397,14 +1403,14 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
                       ],
                       formationCodeActions(e),
                       const SizedBox(height: 10),
-                      Text(AppLanguage.text('保存可更新原存档并保留历史；另存为可创建独立副本。'),
+                      Text(AppLanguage.text('编辑修改会自动保存；另存为可创建独立副本。'),
                           style: const TextStyle(
                               fontSize: 11,
                               height: 1.6,
                               color: Color(0xff85917e)))
                     ]
                   ])));
-  Widget formationCodeActions(_Entry e) => Row(children: [
+  Widget formationCodeActions(_Entry e) => Column(children: [Row(children: [
         Expanded(
             flex: 3,
             child: TextButton(
@@ -1415,25 +1421,38 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
                 onPressed: e.preset != null && widget.onPresetAction == null
                     ? null
                     : () => action('copy-code', e),
-                child: Text(AppLanguage.text('复制 Toolkit 阵型码'),
+                child: Text(AppLanguage.text('复制 PvZ Toolkit 码'),
                     textAlign: TextAlign.center,
                     style: const TextStyle(fontSize: 12)))),
         if (widget.onGameTools != null && e.formation != null) ...[
           const SizedBox(width: 4),
           Expanded(
               flex: 2,
-              child: TextButton(
+              child: Tooltip(
+                message: AppLanguage.text('将当前阵型应用到游戏，替换现有布阵。'),
+                child: TextButton.icon(
                   key: const ValueKey('library-apply-game'),
                   style: TextButton.styleFrom(
                       padding: const EdgeInsets.symmetric(horizontal: 2),
                       minimumSize: Size.zero),
                   onPressed:
                       widget.gameBusy ? null : () => action('apply-game', e),
-                  child: Text(AppLanguage.text('应用到游戏'),
+                  icon: const Icon(Icons.play_arrow_rounded, size: 17),
+                  label: Text(AppLanguage.text('应用阵型'),
                       textAlign: TextAlign.center,
-                      style: const TextStyle(fontSize: 12)))),
+                      style: const TextStyle(fontSize: 12))))),
         ],
-      ]);
+      ]), Row(children: [
+        Expanded(child: TextButton(
+            key: const ValueKey('library-copy-website-code'),
+            onPressed: e.preset != null && widget.onPresetAction == null
+                ? null : () => action('copy-website-code', e),
+            child: Text(AppLanguage.text('复制网页阵型码'), style: const TextStyle(fontSize: 12)))),
+        Tooltip(
+            key: const ValueKey('library-code-help'),
+            message: AppLanguage.text('PvZ Toolkit 码用于标准植物布局；网页码可保留僵尸和外观。'),
+            child: IconButton(onPressed: null, icon: const Icon(Icons.help_outline, size: 17))),
+      ])]);
 
   List<PopupMenuEntry<String>> importItems() => [
         PopupMenuItem(

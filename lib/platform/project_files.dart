@@ -154,14 +154,30 @@ class ProjectFiles {
           '--title=${save ? '导出阵型' : '导入项目'}'
         ]);
       } else {
+        int? owner;
+        for (var attempt = 0; attempt < 5; attempt++) {
+          try {
+            owner = await const MethodChannel('pvz_formation_editor/windows')
+                .invokeMethod<int>('getDialogOwner');
+            break;
+          } on MissingPluginException {
+            // The first Dart frame may precede native channel registration.
+            if (attempt < 4) {
+              await Future<void>.delayed(const Duration(milliseconds: 50));
+            }
+          }
+        }
         // Suggested name is passed through the environment, never interpolated into script code.
         const base =
-            r'[Console]::OutputEncoding = New-Object System.Text.UTF8Encoding($false); Add-Type -AssemblyName System.Windows.Forms; ';
+            r'''[Console]::OutputEncoding = New-Object System.Text.UTF8Encoding($false); Add-Type -AssemblyName System.Windows.Forms;
+Add-Type -ReferencedAssemblies System.Windows.Forms -TypeDefinition 'public class PvzDialogOwner : System.Windows.Forms.IWin32Window { public System.IntPtr Handle { get; private set; } public PvzDialogOwner(long handle) { Handle = new System.IntPtr(handle); } }';
+$owner = New-Object PvzDialogOwner ([long]$env:PVZ_DIALOG_OWNER);
+''';
         final script = save
             ? base +
-                r'$d=New-Object System.Windows.Forms.SaveFileDialog; $d.FileName=$env:PVZ_EXPORT_NAME; $d.InitialDirectory=$env:PVZ_EXPORT_DIRECTORY; $d.OverwritePrompt=$true; if($d.ShowDialog() -eq "OK") { [Console]::Write($d.FileName) }'
+                r'$d=New-Object System.Windows.Forms.SaveFileDialog; $d.FileName=$env:PVZ_EXPORT_NAME; $d.InitialDirectory=$env:PVZ_EXPORT_DIRECTORY; $d.OverwritePrompt=$true; if($d.ShowDialog($owner) -eq "OK") { [Console]::Write($d.FileName) }'
             : base +
-                r'$d=New-Object System.Windows.Forms.OpenFileDialog; if($d.ShowDialog() -eq "OK") { [Console]::Write($d.FileName) }';
+                r'$d=New-Object System.Windows.Forms.OpenFileDialog; if($d.ShowDialog($owner) -eq "OK") { [Console]::Write($d.FileName) }';
         result = await Process.run('powershell', [
           '-NoProfile',
           '-STA',
@@ -169,6 +185,7 @@ class ProjectFiles {
           script
         ], environment: {
           'PVZ_EXPORT_NAME': name,
+          'PVZ_DIALOG_OWNER': '${owner ?? 0}',
           'PVZ_EXPORT_DIRECTORY': directory ?? ''
         });
       }

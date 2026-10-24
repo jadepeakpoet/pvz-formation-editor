@@ -96,7 +96,7 @@ class _GamePanelState extends State<GamePanel> {
           widget.target!,
           includeZombies: true,
         ).notice;
-        notice = '已应用到游戏。${detail.isEmpty ? '' : ' $detail'}';
+        notice = '阵型已应用到游戏。${detail.isEmpty ? '' : ' $detail'}';
       });
 
   Future<Uint8List> readSave(GameSaveFile file) async {
@@ -265,12 +265,14 @@ class _GamePanelState extends State<GamePanel> {
                                   child: const Text('获取含僵尸布局'),
                                 ),
                                 if (widget.target != null)
-                                  OutlinedButton(
+                                  OutlinedButton.icon(
                                     onPressed:
                                         busy || selected?.canWrite != true
                                             ? null
                                             : apply,
-                                    child: Text(AppLanguage.text('应用到游戏')),
+                                    icon: const Icon(Icons.play_arrow_rounded, size: 17),
+                                    key: const ValueKey('game-panel-apply'),
+                                    label: Text(AppLanguage.text('应用阵型')),
                                   ),
                               ],
                             ),

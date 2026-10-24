@@ -1,4 +1,5 @@
 import 'package:test/test.dart';
+import 'package:pvz_formation_editor/domain/formation.dart';
 import 'package:pvz_formation_editor/domain/formation_exchange.dart';
 import 'package:pvz_formation_editor/domain/placement_layout.dart';
 import 'package:pvz_formation_editor/domain/website_codec.dart';
@@ -7,6 +8,37 @@ import 'package:pvz_formation_editor/library/library_presets.dart';
 import 'package:pvz_formation_editor/platform/game_bridge.dart';
 
 void main() {
+  test('swimming dolphin atlas anchor converts to actor position and back', () {
+    for (final frame in [2, 4]) {
+      final piece = Piece(id: 'swim', type: 'dolphin', row: 2, col: 3,
+          layer: 40, frameRow: 1, frameCol: frame,
+          websiteFields: ZombieLayout.positionFields('dolphin', 2, 3, 287,
+              frameRow: 1, frameCol: frame));
+      expect(ZombieLayout.gameX(piece), 97);
+      expect(ZombieLayout.editorX('dolphin', 1, frame, 97), 287);
+      final read = GameFormationSnapshot.fromJson({
+        'pid': 1, 'version': '1051', 'map': 'pool', 'sunValue': 50,
+        'includeZombies': true,
+        'pieces': [{'zombieType': 14, 'row': 2, 'col': 0, 'x': 97,
+          'animation': frame == 2 ? 'anim_eat' : 'anim_swim', 'phase': 55,
+          'inPool': true, 'eating': frame == 2, 'hasHead': true, 'hasArm': true,
+          'hasObject': false}],
+      });
+      expect(read.formation.pieces.single.websitePixelX, 287);
+      expect(read.formation.pieces.single.col, 3);
+      expect(read.formation.pieces.single.frameCol, frame);
+    }
+    expect(ZombieLayout.appearanceOffset('dolphin', 0, 0), 0);
+    expect(ZombieLayout.appearanceOffset('jack', 1, 2), 0);
+  });
+  test('dolphin preset retains eating and pumpkin chew highlight for game apply', () {
+    final source = LibraryPresets.all[59].document;
+    final full = PlacementLayout.prepare(source, includeZombies: true).document;
+    final pumpkin = full.pieces.singleWhere((p) => p.type == 'pumpkin' && p.row == 2 && p.col == 0);
+    expect(pumpkin.effects, contains('高亮'));
+    expect(PlacementLayout.prepare(source).document.pieces
+        .singleWhere((p) => p.id == pumpkin.id).effects, isNot(contains('高亮')));
+  });
   test(
     'legacy dolphin X is preserved and exported in the current position slot',
     () {

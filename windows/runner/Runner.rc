@@ -93,7 +93,7 @@ BEGIN
             VALUE "FileDescription", "植物大战僵尸布阵器" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
             VALUE "InternalName", "pvz_formation_editor" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2026 yuexiaomeng. All rights reserved." "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2026 越小梦. GPL-3.0." "\0"
             VALUE "OriginalFilename", "pvz_formation_editor.exe" "\0"
             VALUE "ProductName", "PVZ Formation Editor" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"

@@ -37,6 +37,7 @@ class GameWrites {
       target,
       includeZombies: full,
     ).document;
+    GameBridge.validateTarget(layout);
     final operation = (_operations[pid] ?? Future<void>.value()).then((
       _,
     ) async {

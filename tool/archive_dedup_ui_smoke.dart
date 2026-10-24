@@ -2,6 +2,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:pvz_formation_editor/main.dart' as app;
 import 'package:pvz_formation_editor/domain/formation.dart';
 import 'package:pvz_formation_editor/editor/original_assets.dart';
@@ -161,6 +162,23 @@ Future<void> main() async {
       'Empty plan exposed destructive confirmation or wrote data');
   await h.tapElement(h.find((w) =>
       w is TextButton && w.child is Text && (w.child as Text).data == '确定'));
+  final nativeCalls = <String>[];
+  ParityBinding.handlers['pvz_formation_editor/library'] = (call) async {
+    nativeCalls.add(call.method);
+    if (call.method == 'ready') return {'dataPath': '${directory.path}/fixture.sqlite', 'activeDraftId': 'active'};
+    if (call.method == 'prepareDedup') return ['active'];
+    throw MissingPluginException('Unexpected forwarding: ${call.method}');
+  };
+  runApp(RepaintBoundary(key: boundary, child: MaterialApp(key: UniqueKey(),
+      home: app.LibraryPage(repository: repo, independent: true))));
+  await h.settle();
+  await h.settle();
+  await until(() => keyed('library-deduplicate'), 'Independent library missing');
+  await tap('library-deduplicate');
+  await until(() => textContains('没有可清理的重复存档'), 'Independent library must display its own dedup feedback');
+  h.expect(nativeCalls.contains('prepareDedup') && !nativeCalls.contains('openEditor'),
+      'Dedup dialog must remain in the library instead of forwarding UI to the editor');
+  await h.tapElement(h.find((w) => w is TextButton && w.child is Text && (w.child as Text).data == '确定'));
   h.expect(h.errors.isEmpty,
       h.errors.map((error) => error.exceptionAsString()).join('\n'));
   stdout.writeln(

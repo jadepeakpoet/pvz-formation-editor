@@ -40,6 +40,9 @@ class PlacementLayout {
       final websiteId = WebsiteCodec.indexForType(piece.type);
       final zombie =
           includeZombies && ZombieLayout.gameType(piece.type) != null;
+      final keepChewFlash = includeZombies && !zombie &&
+          websiteId >= 0 && websiteId < WebsiteCodec.plantIds.length &&
+          piece.effects.contains('高亮');
       if (websiteId > 0x32 && !zombie) {
         skipped++;
         continue;
@@ -55,7 +58,8 @@ class PlacementLayout {
           piece.layer != piece.spec.layer ||
           !zombie &&
               (piece.websitePixelX != null || piece.websitePixelY != null) ||
-          piece.effects.any((effect) => effect != '模仿者');
+          piece.effects.any((effect) => effect != '模仿者' &&
+              !(keepChewFlash && effect == '高亮'));
       if (!styled) {
         pieces.add(piece);
         continue;
@@ -70,7 +74,8 @@ class PlacementLayout {
         ..['opacity'] = 1.0
         ..['flipped'] = false
         ..['flippedVertical'] = false
-        ..['effects'] = [if (piece.effects.contains('模仿者')) '模仿者'];
+        ..['effects'] = [if (piece.effects.contains('模仿者')) '模仿者',
+          if (keepChewFlash) '高亮'];
       if (!zombie) data.remove('websiteFields');
       // Keep the final frame: mushroom sleep and stable plant states are
       // interpreted by the game writer, independently of decorative styling.

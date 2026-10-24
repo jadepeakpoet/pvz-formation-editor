@@ -16,6 +16,8 @@ import 'package:pvz_formation_editor/domain/formation_exchange.dart';
 import 'package:pvz_formation_editor/domain/plant_game_state.dart';
 import 'package:pvz_formation_editor/domain/website_codec.dart';
 import 'package:pvz_formation_editor/domain/placement_layout.dart';
+import 'package:pvz_formation_editor/domain/zombie_layout.dart';
+import 'package:pvz_formation_editor/domain/zombie_game_state.dart';
 import 'settle_frames.dart';
 import 'package:pvz_formation_editor/storage/formation_repository.dart';
 
@@ -50,8 +52,9 @@ Future<void> tapKey(String key) {
 
 String composition(Formation f) {
   final rows = f.pieces
-      .map((p) =>
-          '${p.type}:${p.row}:${p.col}:${p.asleep}:${p.effects.join(',')}:${PlantGameState.of(p)}')
+      .map((p) => ZombieLayout.gameType(p.type) != null
+          ? '${p.type}:${p.row}:${(ZombieLayout.x(p)*4).round()}:${jsonEncode(ZombieGameState.of(p).toJson())}'
+          : '${p.type}:${p.row}:${p.col}:${p.asleep}:${(p.effects.toList()..sort()).join(',')}:${PlantGameState.of(p)}')
       .toList()
     ..sort();
   return jsonEncode([f.mapId, rows]);
@@ -88,7 +91,7 @@ Future<void> main() async {
     final game = (await GameBridge.listGames()).firstWhere((g) =>
         g.canWrite && (requestedPid == null || g.pid == requestedPid));
     pid = game.pid;
-    original = await GameBridge.readFormation(pid);
+    original = await GameBridge.readFormation(pid, includeZombies: true);
     report['pid'] = pid;
     report['initial'] = original.toJson();
     await save();
@@ -124,7 +127,8 @@ Future<void> main() async {
             .where((p) => selectedIds.isEmpty || selectedIds.contains(p.id))
             .take(limit);
     for (final preset in presets) {
-      final layout = PlacementLayout.prepare(preset.document);
+      final full = ZombieLayout.contains(preset.document);
+      final layout = PlacementLayout.prepare(preset.document, includeZombies: full);
       final row = <String, dynamic>{
         'id': preset.id,
         'name': preset.name,
@@ -154,7 +158,7 @@ Future<void> main() async {
           await Future<void>.delayed(const Duration(milliseconds: 20));
         }
         check(library.applyingArchiveToGame == false, 'Application timed out');
-        final actual = await GameBridge.readFormation(pid);
+        final actual = await GameBridge.readFormation(pid, includeZombies: full);
         check(composition(actual.formation) == composition(
             layout.document),
             'Readback differs: ${find((w) => w is SnackBar).map((e) => (e.widget as SnackBar).content).toList()}');
@@ -190,7 +194,8 @@ Future<void> main() async {
         for (final archive in await copied.listArchives()) {
           final id = 'user-verification-${index++}';
           final document = Formation.fromJson(archive.document);
-          final gameLayout = PlacementLayout.prepare(document).document;
+          final full = ZombieLayout.contains(document);
+          final gameLayout = PlacementLayout.prepare(document, includeZombies: full).document;
           await repository.saveArchive(id: id, name: id, document: document.toJson());
           await library.refresh();
           await settle();
@@ -201,19 +206,26 @@ Future<void> main() async {
               text: id, selection: TextSelection.collapsed(offset: id.length)));
           await settle();
           await tapKey('library-item-archive:$id');
-          final before = await GameBridge.readFormation(pid);
+          final before = await GameBridge.readFormation(pid, includeZombies: full);
           await tapKey('library-apply-game');
           for (var i = 0; i < 250 && library.applyingArchiveToGame == true; i++) {
             await Future<void>.delayed(const Duration(milliseconds: 20));
           }
-          final after = await GameBridge.readFormation(pid);
+          final after = await GameBridge.readFormation(pid, includeZombies: full);
           final messages = find((w) => w is Text).map((e) => (e.widget as Text).data ?? '').join('\n');
           final rejected = messages.contains('失败');
-          final unsupported = gameLayout.pieces.any((p) =>
-              (!WebsiteCodec.plantIds.contains(p.type) &&
+          var unsupported = false;
+          try {
+            GameBridge.validateTarget(gameLayout);
+            for (final piece in gameLayout.pieces) {
+              if (ZombieLayout.gameType(piece.type) != null) ZombieGameState.of(piece);
+            }
+          } catch (_) { unsupported = true; }
+          unsupported = unsupported || gameLayout.pieces.any((p) =>
+              (!WebsiteCodec.plantIds.contains(p.type) && ZombieLayout.gameType(p.type) == null &&
                   !{'grave', 'ladder', 'rake'}.contains(p.type)) ||
               p.scale != 1 || p.opacity != 1 || p.flipped || p.flippedVertical ||
-              p.effects.any((effect) => effect != '模仿者') ||
+              p.effects.any((effect) => effect != '模仿者' && !(full && effect == '高亮')) ||
               (p.type == 'cob' && p.frameRow != 0));
           check(rejected == unsupported, 'Unexpected rejection for user archive $id');
           final matched = composition(after.formation) ==
@@ -320,9 +332,19 @@ Future<void> main() async {
       }
       check(
           composition(FormationExchange.decode(editor.inputFormation.text)) ==
-              composition(visual),
-          'Editor read button result');
-      entryResults.add('editor-read-game');
+              composition(FormationExchange.decode(FormationExchange.encode(visual))),
+          'Toolkit read preserves the format-supported plant layout');
+      entryResults.add('editor-read-game-toolkit');
+      await tapKey('formation-read-format-website');
+      await tapKey('formation-read-game');
+      for (var i = 0; i < 250 && editor.gameBusy == true; i++) {
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+      }
+      final websiteRead = FormationExchange.decode(editor.inputFormation.text);
+      check(composition(websiteRead.copy(pieces: websiteRead.pieces
+          .where((piece) => ZombieLayout.gameType(piece.type) == null).toList())) == composition(visual),
+          'Website read preserves the selected plant appearances');
+      entryResults.add('editor-read-game-website');
       runApp(MaterialApp(
           theme: buildAppTheme(),
           home: Scaffold(
@@ -332,7 +354,7 @@ Future<void> main() async {
                   onEdit: (_) async {}))));
       await settle();
       await settle();
-      await tap(find((w) => w is Text && w.data == '应用到游戏').single);
+      await tap(find((w) => w is Text && w.data == '应用阵型').single);
       await settle();
       await settle();
       await verify('game-panel', sample);
@@ -347,8 +369,9 @@ Future<void> main() async {
   } finally {
     if (original != null && pid != null) {
       try {
-        await GameWrites(Directory.systemTemp).apply(pid, original.formation);
-        final restored = await GameBridge.readFormation(pid);
+        final current = await GameBridge.readFormation(pid, includeZombies: true);
+        await GameBridge.applyFormation(pid, original.formation, current);
+        final restored = await GameBridge.readFormation(pid, includeZombies: true);
         report['restoredOriginal'] =
             composition(restored.formation) == composition(original.formation);
       } catch (e) {

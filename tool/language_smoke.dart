@@ -127,6 +127,11 @@ Future<void> main() async {
         AppLanguage.text('已选 3（含 1 个筛选外存档）') ==
             '3 selected (1 outside current filter)',
         'specific template precedence');
+    h.check(AppLanguage.text('粘贴导入') == 'Paste and import' &&
+        AppLanguage.text('已忽略 2 个僵尸或装饰对象') == '2 zombies or decorative objects omitted' &&
+        AppLanguage.text('僵尸携带物、潜水和啃食状态以所选外观为准。') ==
+            'Zombie objects, water states and eating follow the selected appearance.',
+        'New clipboard and zombie controls must have English translations');
     final after = h.find((w) => w is TextField).single.widget as TextField;
     h.check(identical(before.controller, after.controller),
         'editor state retained');

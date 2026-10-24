@@ -1,6 +1,6 @@
 {
   "catalogVersion": 1,
-  "source": "local Canvas placeholder, not original artwork",
+  "source": "Canvas fallback object catalog",
   "objects": [
     {
       "id": "lily",

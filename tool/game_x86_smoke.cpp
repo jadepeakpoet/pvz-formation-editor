@@ -73,6 +73,20 @@ int main() {
   for(const auto& fixup:zombie.calls)
     assert(uint32_t(0x2000000+fixup.offset+4+Decode(zombie.bytes,fixup.offset))==fixup.target);
   GameX86 zombieDelete;
+  GameX86 eatingDolphin;
+  eatingDolphin.InitializeDolphinPose(true);
+  assert(eatingDolphin.calls.size()==2 && eatingDolphin.calls[0].target==0x528b00 &&
+         eatingDolphin.calls[1].target==0x52c310);
+  assert(eatingDolphin.bytes[0]==0xc6 && eatingDolphin.bytes[1]==0x80 &&
+         Decode(eatingDolphin.bytes,2)==0x51 && eatingDolphin.bytes[6]==1);
+  assert(eatingDolphin.bytes[8]==0x89 && eatingDolphin.bytes[9]==0xc7);
+  GameX86 swimmingDolphin;
+  swimmingDolphin.InitializeDolphinPose(false);
+  assert(swimmingDolphin.calls.size()==1 && swimmingDolphin.calls[0].target==0x52c310);
+  GameX86 chewFlash;
+  chewFlash.EaxField(0xb8,25);
+  assert(chewFlash.bytes[0]==0xc7 && chewFlash.bytes[1]==0x80 &&
+         Decode(chewFlash.bytes,2)==0xb8 && Decode(chewFlash.bytes,6)==25);
   zombieDelete.RemoveZombie(0x01020304);
   assert(zombieDelete.bytes[0]==0xb9 && Decode(zombieDelete.bytes,1)==0x01020304 &&
          zombieDelete.calls[0].target==0x530510);

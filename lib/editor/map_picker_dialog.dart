@@ -10,7 +10,7 @@ typedef MapPickerChoice = ({String mapId, bool keepPlants});
 Future<MapPickerChoice?> showMapPickerDialog(BuildContext context,
         {required String currentMapId,
         Formation? currentFormation,
-        bool keepPlants = false,
+        bool keepPlants = true,
         ValueListenable<bool>? keepPlantsListenable,
         ValueChanged<bool>? onKeepPlantsChanged,
         bool readOnly = false}) =>

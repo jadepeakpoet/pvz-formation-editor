@@ -86,6 +86,7 @@ class WindowBridge {
         case 'resourceDiagnostics':
         case 'mainAction':
         case 'libraryOpen':
+        case 'libraryPrepareDedup':
         case 'showHistory':
           return _onEvent!(call.method, call.arguments);
         default:
@@ -165,12 +166,13 @@ class WindowBridge {
     return _send(_toolbox ? 'editState' : 'publishState', snapshot);
   }
 
-  static Future<void> setVisible(bool visible) async {
+  static Future<void> setVisible(bool visible, {bool restoreIfMinimized = false}) async {
     if (!_supported) return;
     if (_toolbox) {
       throw StateError('Only the main engine controls toolbox visibility');
     }
-    await _send('setSidebarVisible', {'visible': visible});
+    await _send('setSidebarVisible', {'visible': visible,
+      if (restoreIfMinimized) 'restoreIfMinimized': true});
   }
 
   static Future<void> selectMode(String mode,

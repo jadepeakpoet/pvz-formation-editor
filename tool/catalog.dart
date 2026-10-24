@@ -6,7 +6,7 @@ import 'package:pvz_formation_editor/domain/formation.dart';
 void main(List<String> args) {
   final manifest = {
     'catalogVersion': 1,
-    'source': 'local Canvas placeholder, not original artwork',
+    'source': 'Canvas fallback object catalog',
     'objects': ObjectSpec.all
         .map((s) => {
               'id': s.id,
@@ -27,7 +27,8 @@ void main(List<String> args) {
   final expected = '${const JsonEncoder.withIndent('  ').convert(manifest)}\n';
   final file = File('assets/catalog.json');
   if (args.contains('--check')) {
-    if (!file.existsSync() || file.readAsStringSync() != expected) {
+    if (!file.existsSync() ||
+        file.readAsStringSync().replaceAll('\r\n', '\n') != expected) {
       throw StateError('资源清单过期，请运行 dart run tool/catalog.dart');
     }
   } else {

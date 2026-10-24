@@ -119,6 +119,19 @@ struct GameX86 {
       Byte(0x50); Byte(0x31); Byte(0xf6); Call(0x52f2e0); Byte(0x58);
     }
   }
+  void InitializeDolphinPose(bool eating) {
+    if(eating) {
+      EaxByte(0x51,1);
+      // 1051 Zombie::PlayZombieReanim: EDI=this, callee pops four arguments.
+      // Select the eating pose without blending from the constructor's walk.
+      Byte(0x50); Byte(0x89); Byte(0xc7);
+      Push(0); Push(0); Push(0); Push(0x66edd0);
+      Call(0x528b00); Byte(0x58);
+    }
+    // 1051 Zombie::UpdateReanim takes EAX=this. This refreshes the pool offset
+    // and attached head pose while the board remains paused.
+    Byte(0x50); Call(0x52c310); Byte(0x58);
+  }
   void PutRake(uint32_t board,int row,int col) {
     // Enter the original constructor after random row selection and inventory
     // consumption. Recreate its stack frame so its ordinary epilogue is valid.

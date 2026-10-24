@@ -181,6 +181,83 @@ uintptr_t CobTrackColor(HANDLE process, uintptr_t animation) {
   }
   throw std::runtime_error("未找到玉米炮弹头动画轨道");
 }
+std::string ReadAscii(HANDLE process,uintptr_t address) {
+  std::string result;
+  for(int i=0;i<128;i++) {
+    const auto c=Read<char>(process,address+i);
+    if(!c) return result;
+    result+=c;
+  }
+  throw std::runtime_error("动画轨道名称无效");
+}
+struct ZombieAnimation {
+  uintptr_t address,tracks,instances;
+  uint32_t count;
+};
+ZombieAnimation GetZombieAnimation(HANDLE process,uint32_t lawn,uint32_t zombie) {
+  const auto id=Read<uint32_t>(process,zombie+0x118);
+  const auto holder=Read<uint32_t>(process,lawn+0x820);
+  const auto array=Read<uint32_t>(process,holder+8);
+  const auto index=id&0xffff;
+  if(!id || index>=Read<uint32_t>(process,array+8)) throw std::runtime_error("僵尸动画身份无效");
+  const uintptr_t animation=Read<uint32_t>(process,array)+index*0xa0;
+  if(Read<uint32_t>(process,animation+0x9c)!=id) throw std::runtime_error("僵尸动画身份已改变");
+  const auto definition=Read<uint32_t>(process,animation+0xc);
+  const auto count=Read<uint32_t>(process,definition+4);
+  if(count>512) throw std::runtime_error("僵尸动画轨道无效");
+  return {animation,Read<uint32_t>(process,definition),Read<uint32_t>(process,animation+0x58),count};
+}
+std::pair<int,int> AnimationRange(HANDLE process,uintptr_t track) {
+  const auto transforms=Read<uint32_t>(process,track+4);
+  const auto count=Read<uint32_t>(process,track+8);
+  if(!transforms || count>4096) throw std::runtime_error("僵尸动画帧无效");
+  std::vector<uint8_t> frames(static_cast<size_t>(count)*44);
+  SIZE_T got=0;
+  if(!ReadProcessMemory(process,reinterpret_cast<const void*>(static_cast<uintptr_t>(transforms)),frames.data(),frames.size(),&got) || got!=frames.size())
+    throw std::runtime_error("无法读取僵尸动画帧");
+  int start=-1,last=-1;
+  for(uint32_t i=0;i<count;i++) {
+    float frame;std::memcpy(&frame,frames.data()+i*44+24,sizeof(frame));
+    if(frame>=0) {
+    if(start<0) start=static_cast<int>(i);
+    last=static_cast<int>(i);
+    }
+  }
+  return {start,last-start+1};
+}
+M ReadZombieState(HANDLE process,uint32_t lawn,uint32_t zombie) {
+  M state;
+  for(const auto& field:std::vector<std::pair<const char*,uint32_t>>{
+      {"phase",0x28},{"height",0x64},{"phaseCounter",0x68},
+      {"helmetType",0xc4},{"bodyHealth",0xc8},{"bodyMaxHealth",0xcc},
+      {"helmetHealth",0xd0},{"helmetMaxHealth",0xd4},{"shieldType",0xd8},
+      {"shieldHealth",0xdc},{"shieldMaxHealth",0xe0},{"flyingHealth",0xe4}})
+    state[V(field.first)]=V(Read<int32_t>(process,zombie+field.second));
+  for(const auto& field:std::vector<std::pair<const char*,uint32_t>>{
+      {"eating",0x51},{"hasHead",0xba},{"hasArm",0xbb},{"hasObject",0xbc},{"inPool",0xbd}})
+    state[V(field.first)]=V(Read<uint8_t>(process,zombie+field.second)!=0);
+  state[V("altitude")]=V(static_cast<double>(Read<float>(process,zombie+0x84)));
+  const auto animation=GetZombieAnimation(process,lawn,zombie);
+  state[V("renderOffsetY")]=V(static_cast<double>(Read<float>(process,animation.address+0x38)));
+  const auto start=Read<int32_t>(process,animation.address+0x18);
+  const auto count=Read<int32_t>(process,animation.address+0x1c);
+  std::string name;
+  L hidden;
+  for(uint32_t i=0;i<animation.count;i++) {
+    const auto track=animation.tracks+i*12;
+    const auto trackName=ReadAscii(process,Read<uint32_t>(process,track));
+    if(trackName.rfind("anim_",0)==0) {
+      const auto range=AnimationRange(process,track);
+      if(range.first==start && range.second==count && name.empty()) name=trackName;
+    }
+    if(Read<int32_t>(process,animation.instances+i*0x60+0x48)==-1)
+      hidden.emplace_back(trackName);
+  }
+  state[V("animation")]=V(name);
+  state[V("bodyFrameStart")]=V(start);state[V("bodyFrameCount")]=V(count);
+  state[V("hiddenTracks")]=V(hidden);
+  return state;
+}
 M ReadBoard(DWORD pid,bool includeZombies=false) {
   HWND w = FindPid(pid);
   if (!w)
@@ -230,6 +307,8 @@ M ReadBoard(DWORD pid,bool includeZombies=false) {
             {V("frameRow"), V(frame.first)},
             {V("frameCol"), V(frame.second)}};
     if(HasVisualState(type)) piece[V("visualState")]=V(visualState);
+    const int eatenFlash=Read<int32_t>(p.h,a+0xb8);
+    if(eatenFlash>0) piece[V("eatenFlashCountdown")]=V(eatenFlash);
     if(type==47) {
       piece[V("plantState")]=V(Read<int32_t>(p.h,a+0x3c));
       piece[V("stateCountdown")]=V(Read<int32_t>(p.h,a+0x54));
@@ -280,9 +359,12 @@ M ReadBoard(DWORD pid,bool includeZombies=false) {
       const int col=std::clamp(static_cast<int>(std::floor((x-40.0f)/80.0f)),0,8);
       int fr=0,fc=0;
       if(type==14 && (phase==53 || phase==55)) { fr=1; fc=phase==55 ? 2 : 1; }
-      pieces.push_back(V(M{{V("zombieType"),V(type)},{V("row"),V(row)},{V("col"),V(col)},
+      M zombie{{V("zombieType"),V(type)},{V("row"),V(row)},{V("col"),V(col)},
           {V("x"),V(static_cast<double>(x))},{V("phase"),V(phase)},
-          {V("frameRow"),V(fr)},{V("frameCol"),V(fc)}}));
+          {V("frameRow"),V(fr)},{V("frameCol"),V(fc)}};
+      const auto state=ReadZombieState(p.h,lawn,static_cast<uint32_t>(a));
+      zombie.insert(state.begin(),state.end());
+      pieces.emplace_back(zombie);
     }
   }
   if (Read<uint32_t>(p.h, lawn + 0x768) != board)
@@ -369,6 +451,8 @@ double Real(const M& value,const char* key) {
 }
 void RequireRepresentable(const M &snapshot) {
   const auto &map = std::get<std::string>(Field(snapshot, "map"));
+  if(map!="day" && map!="night" && map!="pool" && map!="fog" && map!="roof" && map!="moonRoof")
+    throw std::runtime_error("当前阵型使用扩展地图；原版游戏仅支持六种标准场地");
   const auto &pieces = std::get<L>(Field(snapshot, "pieces"));
   if (pieces.size() > 512)
     throw std::runtime_error("当前一次最多应用512个植物");
@@ -380,6 +464,13 @@ void RequireRepresentable(const M &snapshot) {
       if(!Flag(snapshot,"includeZombies") || type<0 || type>24 || type==10 || type==12 || type==13 || type==20 ||
           row<0 || row>(map=="pool" || map=="fog" ? 5 : 4) || col<0 || col>8 || x< -200 || x>1200)
         throw std::runtime_error("僵尸类型或坐标尚不支持");
+      const auto& state=Object(Field(p,"state"));
+      const auto& animation=std::get<std::string>(Field(state,"animation"));
+      const int phase=Number(state,"phase");
+      if(animation.rfind("anim_",0)!=0 || animation.size()>32 || phase<0 || phase>77)
+        throw std::runtime_error("僵尸外观状态无效");
+      if(state.find(V("altitude"))!=state.end() && (Real(state,"altitude")< -150 || Real(state,"altitude")>1000))
+        throw std::runtime_error("僵尸高度无效");
       continue;
     }
     if (p.find(V("gridType")) != p.end()) {
@@ -423,13 +514,16 @@ void VerifyVisualStates(const M &target,const M &actual) {
   const auto& results=std::get<L>(Field(actual,"pieces"));
   for(const auto& item:std::get<L>(Field(target,"pieces"))) {
     const auto& expected=Object(item);
-    if(expected.find(V("visualState"))==expected.end()) continue;
+    const bool visual=expected.find(V("visualState"))!=expected.end();
+    const bool flash=Flag(expected,"eatenFlash");
+    if(!visual && !flash) continue;
     bool found=false;
     for(const auto& candidate:results) {
       const auto& p=Object(candidate);
       if(p.find(V("type"))==p.end() || Number(p,"type")!=Number(expected,"type") ||
           Number(p,"row")!=Number(expected,"row") || Number(p,"col")!=Number(expected,"col")) continue;
-      found=p.find(V("visualState"))!=p.end() && Number(p,"visualState")==Number(expected,"visualState");
+      found=(!visual || (p.find(V("visualState"))!=p.end() && Number(p,"visualState")==Number(expected,"visualState"))) &&
+          (!flash || (p.find(V("eatenFlashCountdown"))!=p.end() && Number(p,"eatenFlashCountdown")>0));
       break;
     }
     if(!found) throw std::runtime_error("植物外观对应的状态校验不一致，请重新获取阵型");
@@ -444,6 +538,103 @@ void WriteBytes(HANDLE process, uintptr_t address, const void *data,
                           size, &bytes) ||
       bytes != size)
     throw std::runtime_error("写入游戏内存失败");
+}
+template<class T> void Store(HANDLE process,uintptr_t address,T value) {
+  WriteBytes(process,address,&value,sizeof(value));
+}
+void SetZombieState(HANDLE process,uint32_t lawn,uint32_t zombie,const M& state) {
+  const auto animation=GetZombieAnimation(process,lawn,zombie);
+  const auto& name=std::get<std::string>(Field(state,"animation"));
+  std::pair<int,int> range{-1,0};
+  std::vector<std::string> hidden;
+  for(const auto& prefix:std::get<L>(Field(state,"hidden"))) {
+    const auto& text=std::get<std::string>(prefix);
+    if(text.size()>64 || text.rfind("Zombie_",0)!=0) throw std::runtime_error("僵尸携带物图层无效");
+    hidden.push_back(text);
+  }
+  const int type=Read<int32_t>(process,zombie+0x24);
+  if(!Flag(state,"hasArm")) {
+    if(type==7) { hidden.push_back("Zombie_football_leftarm_lower");hidden.push_back("Zombie_football_leftarm_hand"); }
+    else if(type==5) { hidden.push_back("Zombie_paper_hands");hidden.push_back("Zombie_paper_leftarm_lower"); }
+    else { hidden.push_back("Zombie_outerarm_lower");hidden.push_back("Zombie_outerarm_hand"); }
+  }
+  const bool removeShield=state.find(V("shieldType"))!=state.end() && Number(state,"shieldType")==0;
+  for(uint32_t i=0;i<animation.count;i++) {
+    const auto track=animation.tracks+i*12;
+    const auto trackName=ReadAscii(process,Read<uint32_t>(process,track));
+    if(trackName==name) range=AnimationRange(process,track);
+    const auto instance=animation.instances+i*0x60;
+    if(type==5 && Number(state,"phase")==31 && trackName=="anim_head1")
+      Store<uint32_t>(process,instance+0x44,Read<uint32_t>(process,0x6a7b34));
+    if(removeShield && Read<int32_t>(process,instance+0x48)==1)
+      Store<int32_t>(process,instance+0x48,-1);
+    if(removeShield && (trackName.rfind("Zombie_paper_hands",0)==0 || trackName.rfind("Zombie_outerarm",0)==0))
+      Store<int32_t>(process,instance+0x48,0);
+    for(const auto& prefix:hidden) if(trackName.rfind(prefix,0)==0)
+      Store<int32_t>(process,instance+0x48,-1);
+    // A newly selected appearance starts immediately, without the constructor's blend.
+    Store<int32_t>(process,instance,0);Store<int32_t>(process,instance+4,0);
+  }
+  if(range.first<0 || range.second<1) throw std::runtime_error("游戏缺少所选僵尸动画轨道");
+  Store<int32_t>(process,zombie+0x28,Number(state,"phase"));
+  Store<uint8_t>(process,zombie+0x51,Flag(state,"eating") ? 1 : 0);
+  Store<uint8_t>(process,zombie+0xbb,Flag(state,"hasArm") ? 1 : 0);
+  Store<uint8_t>(process,zombie+0xbd,Flag(state,"inPool") ? 1 : 0);
+  Store<int32_t>(process,zombie+0x64,0);
+  if(state.find(V("hasObject"))!=state.end()) Store<uint8_t>(process,zombie+0xbc,Flag(state,"hasObject") ? 1 : 0);
+  if(state.find(V("altitude"))!=state.end()) Store<float>(process,zombie+0x84,static_cast<float>(Real(state,"altitude")));
+  if(state.find(V("flyingHealth"))!=state.end()) Store<int32_t>(process,zombie+0xe4,Number(state,"flyingHealth"));
+  if(removeShield) { Store<int32_t>(process,zombie+0xd8,0);Store<int32_t>(process,zombie+0xdc,0); }
+  if(!Flag(state,"hasArm")) Store<int32_t>(process,zombie+0xc8,Read<int32_t>(process,zombie+0xcc)/2);
+  if(Number(state,"phase")==0) Store<int32_t>(process,zombie+0x68,0);
+  if(Number(state,"phase")==40 || Number(state,"phase")==67) Store<int32_t>(process,zombie+0x68,300);
+  if(Number(state,"phase")==20) Store<int32_t>(process,zombie+0x68,80);
+  if(type==14 && Flag(state,"inPool")) {
+    const int32_t rect[]={20,0,42,115}, attack[]={30,0,30,115};
+    WriteBytes(process,zombie+0x8c,rect,sizeof(rect));WriteBytes(process,zombie+0x9c,attack,sizeof(attack));
+  }
+  Store<int32_t>(process,animation.address+0x18,range.first);
+  Store<int32_t>(process,animation.address+0x1c,range.second);
+  Store<float>(process,animation.address+4,0);
+  Store<float>(process,animation.address+8,Flag(state,"eating") ? 20.0f : 12.0f);
+  Store<int32_t>(process,animation.address+0x10,0);
+  Store<int32_t>(process,animation.address+0x5c,0);
+  Store<float>(process,animation.address+0x94,-1.0f);
+  Store<float>(process,zombie+0x124,Flag(state,"eating") ? 20.0f : 12.0f);
+  const auto actual=ReadZombieState(process,lawn,zombie);
+  for(const auto& key:{"animation","phase","eating","inPool","hasArm","hasObject","shieldType","flyingHealth","altitude"}) {
+    const auto expected=state.find(V(key));
+    if(expected==state.end()) continue;
+    bool same;
+    if(const auto value=std::get_if<std::string>(&expected->second)) same=std::get<std::string>(actual.at(V(key)))==*value;
+    else if(const auto boolean=std::get_if<bool>(&expected->second)) same=Flag(actual,key)==*boolean;
+    else same=Real(actual,key)==Real(state,key);
+    if(!same) throw std::runtime_error(std::string("僵尸状态读回不一致：")+key);
+  }
+  const auto& actualHidden=std::get<L>(actual.at(V("hiddenTracks")));
+  for(const auto& prefix:hidden) for(uint32_t i=0;i<animation.count;i++) {
+    const auto trackName=ReadAscii(process,Read<uint32_t>(process,animation.tracks+i*12));
+    if(trackName.rfind(prefix,0)==0 && std::find(actualHidden.begin(),actualHidden.end(),V(trackName))==actualHidden.end())
+      throw std::runtime_error("僵尸携带物图层读回不一致");
+  }
+}
+void ApplyZombieStates(HANDLE process,uint32_t lawn,uint32_t board,const L& pieces) {
+  const auto array=Read<uint32_t>(process,board+0x90), count=Read<uint32_t>(process,board+0x94);
+  if(count>4096) throw std::runtime_error("应用后僵尸数组无效");
+  std::vector<uint32_t> used;
+  for(const auto& item:pieces) {
+    const auto& target=Object(item);
+    if(target.find(V("zombieType"))==target.end()) continue;
+    uint32_t match=0;
+    for(uint32_t i=0;i<count;i++) {
+      const auto zombie=array+i*0x15c;
+      if(Read<uint8_t>(process,zombie+0xec) || std::find(used.begin(),used.end(),zombie)!=used.end()) continue;
+      if(Read<int32_t>(process,zombie+0x24)==Number(target,"zombieType") && Read<int32_t>(process,zombie+0x1c)==Number(target,"row") &&
+          std::lround((Read<float>(process,zombie+0x2c)+40)*4)==std::lround(Real(target,"x")*4)) { match=zombie;break; }
+    }
+    if(!match) throw std::runtime_error("未找到刚应用的僵尸");
+    SetZombieState(process,lawn,match,Object(Field(target,"state")));used.push_back(match);
+  }
 }
 // All restoration paths verify the byte; failure remains visible and blocks
 // writes.
@@ -554,7 +745,7 @@ M ApplyBoard(DWORD pid, const M &target, const M &expected) {
   RequireRepresentable(target);
   const bool includeZombies=Flag(target,"includeZombies");
   if(includeZombies) {
-    for(uint32_t address:{0x40ddc0u,0x530510u,0x52f2e0u})
+    for(uint32_t address:{0x40ddc0u,0x530510u,0x52f2e0u,0x528b00u,0x52c310u})
       if(!RuntimeEntryCompatible(process.h,address)) throw std::runtime_error("僵尸函数入口校验失败");
   }
   const uint32_t lawn = Read<uint32_t>(process.h, 0x6a9ec0),
@@ -671,6 +862,9 @@ M ApplyBoard(DWORD pid, const M &target, const M &expected) {
       code.PutZombie(board,Number(p,"row"),Number(p,"zombieType"),
           static_cast<float>(Real(p,"x")),targetScene==2 || targetScene==3,
           Number(p,"frameRow"),Number(p,"frameCol"));
+      if(Number(p,"zombieType")==14 && Number(p,"frameRow")==1 &&
+          (Number(p,"frameCol")==2 || Number(p,"frameCol")==4))
+        code.InitializeDolphinPose(Flag(Object(Field(p,"state")),"eating"));
     } else if(p.find(V("gridType"))!=p.end()) {
       const int kind=Number(p,"gridType");
       code.Byte(0xbf); code.Dword(static_cast<uint32_t>(Number(p,"row")));
@@ -686,6 +880,7 @@ M ApplyBoard(DWORD pid, const M &target, const M &expected) {
       code.PutPlant(board,Number(p,"row"),Number(p,"col"),Number(p,"type"),
                     Flag(p,"asleep"),targetScene==0 || targetScene==2 || targetScene==4,Flag(p,"imitater"),
                     p.find(V("visualState"))==p.end() ? 0 : Number(p,"visualState"));
+      if(Flag(p,"eatenFlash")) code.EaxField(0xb8,25);
     }
   }
   code.Byte(0x61);
@@ -750,6 +945,7 @@ M ApplyBoard(DWORD pid, const M &target, const M &expected) {
     if (!GetExitCodeThread(thread, &exit) || exit != 0)
       throw std::runtime_error(
           "游戏构造函数异常退出，可能已部分应用；请重新获取并注入阵型");
+    if(includeZombies) ApplyZombieStates(process.h,lawn,board,pieces);
     WriteBytes(process.h, board + 0x5560, &sun, sizeof(sun));
     // Start loaded cannons at the bright end of their normal ready pulse.
     // The game's own subsequent updates retain the original flashing behavior.

@@ -14,6 +14,19 @@ class ZombieLayout {
   static double x(Piece piece) =>
       piece.websitePixelX ?? 40 + (piece.col + .5) * 80;
 
+  // The source atlas keeps the dolphin's standing anchor for every frame.
+  // Its swimming/eating frames are drawn 190 px left of that anchor; the game
+  // stores the actor origin independently of this atlas placement.
+  static double appearanceOffset(String type, int frameRow, int frameCol) =>
+      type == 'dolphin' && frameRow == 1 && {2, 4}.contains(frameCol)
+          ? 190.0 : 0.0;
+
+  static double gameX(Piece piece) =>
+      x(piece) - appearanceOffset(piece.type, piece.frameRow, piece.frameCol);
+
+  static double editorX(String type, int frameRow, int frameCol, double gameX) =>
+      gameX + appearanceOffset(type, frameRow, frameCol);
+
   static int column(double x) => ((x - 40) / 80).floor().clamp(0, 8);
 
   static List<String> positionFields(

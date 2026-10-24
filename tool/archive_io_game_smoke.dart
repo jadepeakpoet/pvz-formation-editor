@@ -3,8 +3,10 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:pvz_formation_editor/main.dart' as app;
 import 'package:pvz_formation_editor/domain/formation.dart';
+import 'package:pvz_formation_editor/domain/formation_exchange.dart';
 import 'package:pvz_formation_editor/domain/archive_bundle.dart';
 import 'package:pvz_formation_editor/editor/original_assets.dart';
 import 'package:pvz_formation_editor/library/archive_files.dart';
@@ -27,6 +29,13 @@ Future<void> main() async {
   String? picked, saved;
   final methods = <String>[];
   int writes = 0;
+  var clipboard = '';
+  ParityBinding.handlers[SystemChannels.platform.name] = (call) async {
+    if (call.method == 'Clipboard.setData') {
+      clipboard = (call.arguments as Map)['text'] as String;
+    }
+    return null;
+  };
   final formation = Formation(
       mapId: 'day',
       pieces: [Piece(id: 'one', type: 'pea', row: 0, col: 0, layer: 10)]);
@@ -145,13 +154,20 @@ Future<void> main() async {
         copy.findAncestorWidgetOfExactType<Row>() ==
             apply.findAncestorWidgetOfExactType<Row>(),
         'Copy and apply share the same action group');
+    await h.tap('library-copy-website-code');
+    h.check(FormationExchange.detectFormat(clipboard) == FormationFormat.website &&
+        FormationExchange.decode(clipboard).pieces.length == formation.pieces.length,
+        'Archive detail copies a loadable website code');
+    await h.tap('library-copy-code');
+    h.check(FormationExchange.detectFormat(clipboard) == FormationFormat.toolkit,
+        'Archive Toolkit action keeps the standard format');
     await h.tap('library-apply-game');
     await h.settle();
     h.check(writes == 1 && h.find((w) => w is GamePanel).isEmpty,
         'Detail apply writes directly without opening file tools');
     await h.tap('library-detail-back');
     await h.tap('library-menu-archive:${item.id}');
-    await h.tapElement(h.find((w) => w is Text && w.data == '应用到游戏').single);
+    await h.tapElement(h.find((w) => w is Text && w.data == '应用阵型').single);
     await h.settle();
     h.check(writes == 2 && !methods.contains('listSaveFiles'),
         'More menu uses the same direct apply action');

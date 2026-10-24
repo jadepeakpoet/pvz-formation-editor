@@ -707,7 +707,7 @@ class _LibraryPageState extends State<LibraryPage> {
   }
 
   Future<void> importString() async {
-    final value = await textPrompt(context, '导入阵型（Toolkit / 布阵器 / PVZF1）',
+    final value = await textPrompt(context, '粘贴 PvZ Toolkit 或网页布阵器阵型码',
         multiline: true);
     if (value == null) return;
     try {
@@ -724,8 +724,17 @@ class _LibraryPageState extends State<LibraryPage> {
   Future<void> deduplicateLibraryArchives() async {
     final request = <String, dynamic>{'kind': 'archive-dedup'};
     if (widget.independent) {
-      final handled = await libraryChannel.invokeMethod<bool>('openEditor', request);
-      if (handled != true) throw StateError('主编辑器暂时无法执行去重');
+      var protectedIds = <String>{};
+      final result = await showArchiveDedupDialog(context, repo!,
+          protectedArchiveIds: () => protectedIds,
+          flushEditors: () async {
+            final ids = await libraryChannel.invokeListMethod<String>('prepareDedup');
+            if (ids == null) throw StateError('主编辑器暂时无法执行去重');
+            protectedIds = ids.toSet();
+          });
+      if (result != null && mounted) {
+        message(context, '已清理 ${result.removedCount} 个重复存档，历史版本已保留。');
+      }
     } else if (widget.onDocumentAction != null) {
       if (!await widget.onDocumentAction!(request)) return;
     } else {
@@ -766,10 +775,13 @@ class _LibraryPageState extends State<LibraryPage> {
         await continueArchive(a, newTab: action == 'open-tab');
         return;
       }
-      if (action == 'copy-code') {
-        final code = FormationExchange.encode(Formation.fromJson(a.document));
+      if (action == 'copy-code' || action == 'copy-website-code') {
+        final website = action == 'copy-website-code';
+        final code = FormationExchange.encode(Formation.fromJson(a.document),
+            format: website ? FormationFormat.website : FormationFormat.toolkit);
         await Clipboard.setData(ClipboardData(text: code));
-        if (mounted) message(context, PlacementLayout.completion(
+        if (mounted && website) message(context, '已复制网页阵型码');
+        if (mounted && !website) message(context, PlacementLayout.completion(
             '已复制 Toolkit 阵型码', Formation.fromJson(a.document)));
         return;
       }
@@ -974,10 +986,13 @@ class _LibraryPageState extends State<LibraryPage> {
         await refresh();
         return;
       }
-      if (action == 'copy-code') {
+      if (action == 'copy-code' || action == 'copy-website-code') {
+        final website = action == 'copy-website-code';
         await Clipboard.setData(
-            ClipboardData(text: FormationExchange.encode(preset.document)));
-        if (mounted) message(context, PlacementLayout.completion(
+            ClipboardData(text: FormationExchange.encode(preset.document,
+                format: website ? FormationFormat.website : FormationFormat.toolkit)));
+        if (mounted && website) message(context, '已复制网页阵型码');
+        if (mounted && !website) message(context, PlacementLayout.completion(
             '已复制 Toolkit 阵型码', preset.document));
         return;
       }
@@ -1072,7 +1087,7 @@ class _LibraryPageState extends State<LibraryPage> {
       final game = await chooseRunningGame(context, read: false);
       if (game == null) return;
       await GameWrites(Directory.systemTemp).apply(game.pid, target);
-      if (mounted) message(context, PlacementLayout.completion('已应用到游戏', target, game: true));
+      if (mounted) message(context, PlacementLayout.completion('阵型已应用到游戏', target, game: true));
     } catch (e) {
       if (mounted) message(context, '应用失败：$e');
     } finally {
@@ -1434,9 +1449,9 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
   final inputFormation = TextEditingController(),
       outputFormation = TextEditingController();
   bool exportBackground = true;
-  bool pokerWidth = true;
+  bool pokerWidth = false;
   String? pendingMapId;
-  final keepPlantsOnMapChangeNotifier = ValueNotifier<bool>(false);
+  final keepPlantsOnMapChangeNotifier = ValueNotifier<bool>(true);
   bool get keepPlantsOnMapChange => keepPlantsOnMapChangeNotifier.value;
   set keepPlantsOnMapChange(bool value) =>
       keepPlantsOnMapChangeNotifier.value = value;
@@ -1549,6 +1564,8 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
   }
 
   FormationFormat exportFormat = FormationFormat.toolkit;
+  FormationFormat gameReadFormat = FormationFormat.toolkit;
+  FormationFormat outputCodeFormat = FormationFormat.toolkit;
   Formation? encodedOutputDocument;
   FormationFormat? encodedOutputFormat;
   String? outputEncodingError;
@@ -1556,15 +1573,16 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
 
   void refreshFormationOutput() {
     if (identical(encodedOutputDocument, s.document) &&
-        encodedOutputFormat == FormationFormat.toolkit) return;
+        encodedOutputFormat == outputCodeFormat) return;
     encodedOutputDocument = s.document;
-    outputLayoutNotice = PlacementLayout.prepare(s.document).notice;
-    encodedOutputFormat = FormationFormat.toolkit;
+    outputLayoutNotice = outputCodeFormat == FormationFormat.toolkit
+        ? PlacementLayout.prepare(s.document).notice : '';
+    encodedOutputFormat = outputCodeFormat;
     String text;
     try {
-      final issues = FormationExchange.exportIssues(s.document);
+      final issues = FormationExchange.exportIssues(s.document, format: outputCodeFormat);
       if (issues.isEmpty) {
-        text = FormationExchange.encode(s.document);
+        text = FormationExchange.encode(s.document, format: outputCodeFormat);
         outputEncodingError = null;
       } else {
         text = '';
@@ -1734,6 +1752,20 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
               return openLibraryItem(
                   Map<String, dynamic>.from(arguments as Map));
             }
+            if (method == 'libraryPrepareDedup') {
+              finishGesture();
+              final controller = context.findAncestorWidgetOfExactType<EditorWorkspace>()?.controller;
+              if (controller != null) {
+                if (!await controller.flushAll()) {
+                  throw StateError(controller.error ?? '无法保存打开的存档');
+                }
+              } else {
+                await s.flush();
+                if (s.error != null) throw StateError(s.error!);
+              }
+              return [for (final session in controller?.allSessions ?? <EditorSession>[s])
+                if (session.sourceArchiveId != null) session.sourceArchiveId!];
+            }
             if (method == 'showHistory') {
               unawaited(showCurrentArchiveHistory());
               return true;
@@ -1795,7 +1827,12 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
               }
               if (action == 'undo') await undoEditing();
               if (action == 'clearFormation') await clearFormation();
-              if (action == 'formatForOutput') await formatForOutput();
+              if (action == 'formatForOutput') {
+                final payload = arguments['payload'] as Map?;
+                final name = payload?['format'];
+                await formatForOutput(format: FormationFormat.values.firstWhere(
+                    (value) => value.name == name, orElse: () => outputCodeFormat));
+              }
               if (action == 'redo') await redoEditing();
             }
             return null;
@@ -1906,7 +1943,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
             : value['shovelFilter'] as String;
         windowStyle = (value['windowStyle'] as num).toInt();
         pendingMapId = value['pendingMapId'] as String?;
-        keepPlantsOnMapChange = value['keepPlantsOnMapChange'] == true;
+        keepPlantsOnMapChange = value['keepPlantsOnMapChange'] != false;
         presetChangeMap = value['presetChangeMap'] != false;
         exportFormat = FormationFormat.values.firstWhere(
             (f) => f.name == value['exportFormat'],
@@ -2200,7 +2237,13 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
 
   Widget seedChooserButton() => classicButton('卡槽选卡',
       () => unawaited(toggleSeedChooserFromTab()),
-      active: seedChooserOpen, key: const ValueKey('board-picker-toggle'));
+      active: seedChooserOpen, key: const ValueKey('board-picker-toggle'),
+      icon: Icons.style_outlined, tooltip: '选择当前阵型的游戏卡槽');
+
+  Widget applyCurrentToGameButton() => classicButton('应用阵型',
+      gameBusy ? null : () => unawaited(gameFormationAction(read: false)),
+      key: const ValueKey('board-apply-game'), icon: Icons.play_arrow_rounded,
+      tooltip: '将当前阵型应用到游戏，替换现有布阵。');
 
   bool renameDialogOpen = false;
   bool historyDialogOpen = false;
@@ -2293,6 +2336,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                       historyButton(redo: false),
                       historyButton(redo: true),
                       seedChooserButton(),
+                      if (Platform.isWindows) applyCurrentToGameButton(),
                       sidebarModeButton('toolbox'),
                       aboutButton(),
                       if (widget.tabBar == null) workspaceMoreMenu(),
@@ -2398,7 +2442,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     pendingMapId = null;
     generatedPng = null;
     generatedPngName = null;
-    keepPlantsOnMapChange = false;
+    keepPlantsOnMapChange = true;
     windowError = null;
     sunEditor.text = '${s.document.sunValue}';
     transform.value = Matrix4.identity();
@@ -2565,7 +2609,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
       try {
         if (nativeWindows) {
           if (hide) {
-            await WindowBridge.setVisible(false);
+            await WindowBridge.setVisible(false, restoreIfMinimized: true);
           } else {
             await WindowBridge.selectMode(mode,
                 dataPath: widget.libraryPath,
@@ -2861,14 +2905,15 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     }
   }
 
-  Future<void> formatForOutput() async {
+  Future<void> formatForOutput({FormationFormat? format}) async {
+    final chosen = format ?? outputCodeFormat;
     if (widget.toolboxOnly) {
-      await WindowBridge.mainAction('formatForOutput');
+      await WindowBridge.mainAction('formatForOutput', payload: {'format': chosen.name});
       return;
     }
     finishGesture();
     try {
-      final formatted = FormationFormatter.format(s.document);
+      final formatted = FormationFormatter.format(s.document, format: chosen);
       if (s.readOnly) {
         await navigateFormation(formatted, name: s.name);
       } else {
@@ -3741,7 +3786,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
       }
       if (action == 'importWebsite' && mounted) {
         final text =
-            await textPrompt(context, '导入阵型码（Toolkit / 布阵器）', multiline: true);
+            await textPrompt(context, '粘贴 PvZ Toolkit 或网页布阵器阵型码', multiline: true);
         if (text == null) return;
         final doc = FormationExchange.decode(text);
         await navigateFormation(doc, name: '导入阵型');
@@ -3982,6 +4027,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                                                 historyButton(redo: false),
                                                 historyButton(redo: true),
                                                 seedChooserButton(),
+                                                if (Platform.isWindows) applyCurrentToGameButton(),
                                                 if (widget.tabBar == null)
                                                   workspaceMoreMenu(),
                                                 if (cells.isNotEmpty ||
@@ -4053,24 +4099,52 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
           ? (Platform.isMacOS ? '恢复刚撤销的操作（⌘Y / ⇧⌘Z）' : '恢复刚撤销的操作（Ctrl+Y）')
           : (Platform.isMacOS ? '撤销上一步操作（⌘Z）' : '撤销上一步操作（Ctrl+Z）'));
 
+  bool clipboardImportBusy = false;
+
+  Future<void> pasteAndLoadFormation() async {
+    if (clipboardImportBusy) return;
+    setState(() => clipboardImportBusy = true);
+    try {
+      final data = await Clipboard.getData(Clipboard.kTextPlain);
+      if (!mounted) return;
+      final value = data?.text?.trim() ?? '';
+      if (value.isEmpty) {
+        message(context, '剪贴板中没有阵型码');
+        return;
+      }
+      final document = FormationExchange.decode(value);
+      await navigateFormation(document, name: '导入阵型');
+      if (!mounted) return;
+      inputFormation.text = value;
+      clearBatchSelection();
+      selectedId = null;
+      fit();
+    } catch (_) {
+      if (mounted) message(context, '粘贴导入失败，请检查阵型码是否完整、格式是否正确');
+    } finally {
+      if (mounted) setState(() => clipboardImportBusy = false);
+    }
+  }
+
   bool gameBusy = false;
-  Future<void> gameFormationAction({required bool read, bool includeZombies = false}) async {
+  Future<void> gameFormationAction({required bool read}) async {
     if (gameBusy) return;
     setState(() => gameBusy = true);
     try {
       final target = read ? null : s.document;
+      final format = gameReadFormat;
       final selected = await chooseRunningGame(context, read: read);
       if (selected == null) return;
       if (read) {
         final current = await GameBridge.readFormation(selected.pid,
-            includeZombies: includeZombies);
-        final code = FormationExchange.encodeGameRead(current.formation);
+            includeZombies: format != FormationFormat.toolkit);
+        final code = FormationExchange.encode(current.formation, format: format);
         if (!mounted) return;
         inputFormation.text = code;
         message(context, '已获取游戏阵型，可点击“载入布阵器”');
       } else {
         await GameWrites(Directory.systemTemp).apply(selected.pid, target!);
-        if (mounted) message(context, PlacementLayout.completion('已应用到游戏', target, game: true));
+        if (mounted) message(context, PlacementLayout.completion('阵型已应用到游戏', target, game: true));
       }
     } catch (e) {
       if (mounted) message(context, '${read ? '获取' : '应用'}失败：$e');
@@ -4115,6 +4189,39 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
         ? button
         : Tooltip(message: AppLanguage.text(tooltip), child: button);
   }
+
+  Widget formationCodeChoices({required bool read}) => RadioGroup<FormationFormat>(
+      groupValue: read ? gameReadFormat : outputCodeFormat,
+      onChanged: (value) {
+        if (value == null || read && gameBusy) return;
+        setState(() {
+          if (read) { gameReadFormat = value; }
+          else { outputCodeFormat = value; refreshFormationOutput(); }
+        });
+      },
+      child: Wrap(
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        for (final entry in const {
+          FormationFormat.toolkit: 'PvZ Toolkit 码',
+          FormationFormat.website: '网页布阵器码',
+        }.entries)
+          InkWell(
+              key: ValueKey('formation-${read ? 'read' : 'output'}-format-${entry.key.name}'),
+              onTap: read && gameBusy ? null : () => setState(() {
+                if (read) { gameReadFormat = entry.key; }
+                else { outputCodeFormat = entry.key; refreshFormationOutput(); }
+              }),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                SizedBox(width: 22, height: 28, child: Radio<FormationFormat>(value: entry.key,
+                    enabled: !read || !gameBusy,
+                    visualDensity: VisualDensity.compact,
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    )),
+                Text(AppLanguage.text(entry.value), style: const TextStyle(fontSize: 12)),
+                const SizedBox(width: 2),
+              ])),
+      ]));
 
   Widget mirrorWindow(int i) {
     final boardSize = BoardGeometry(mirrors[i]).size;
@@ -4540,16 +4647,9 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
             child: Checkbox(key: const ValueKey('original-cPokerBack'),
                 value: pokerWidth,
                 onChanged: (value) => setState(() => pokerWidth = value!))),
-        Semantics(link: true, child: InkWell(
-            key: const ValueKey('original-link-poker'),
-            onTap: () => unawaited(ProjectFiles.openExternal(
-                Uri.parse('https://tieba.baidu.com/p/5272254427'))),
-            child: Text(AppLanguage.text('植吧扑克'),
-                style: const TextStyle(fontSize: 12, color: Color(0xff1565c0),
-                    decoration: TextDecoration.underline)))),
         Flexible(child: InkWell(
             onTap: () => setState(() => pokerWidth = !pokerWidth),
-            child: Text(AppLanguage.text('等宽，否则游戏等宽'),
+            child: Text(AppLanguage.text('横向加宽（植吧扑克比例）'),
                 style: const TextStyle(fontSize: 12)))),
       ]);
 
@@ -4585,23 +4685,28 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     }
     if (classicTab == 4) {
       return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(AppLanguage.text('1.载入和导出布阵字符串')),
         const SizedBox(height: 4),
         if (Platform.isWindows)
-          Wrap(children: [
+          Wrap(crossAxisAlignment: WrapCrossAlignment.center, children: [
             classicButton('从游戏获取', gameBusy ? null : () => gameFormationAction(read: true),
                 key: const ValueKey('formation-read-game')),
-            classicButton('获取含僵尸布局', gameBusy ? null :
-                () => gameFormationAction(read: true, includeZombies: true),
-                key: const ValueKey('formation-read-full-game')),
+            formationCodeChoices(read: true),
           ]),
+        Text(AppLanguage.text('PvZ Toolkit 码用于标准植物布局；网页码可保留僵尸和外观。'),
+            style: const TextStyle(fontSize: 12, color: Color(0xff63755f))),
+        classicButton('粘贴导入', clipboardImportBusy || gameBusy
+            ? null : pasteAndLoadFormation,
+            key: const ValueKey('formation-paste-import'),
+            icon: Icons.content_paste,
+            tooltip: '读取剪贴板中的阵型码，校验后载入布阵器。'),
         TextField(
+            key: const ValueKey('formation-input'),
             controller: inputFormation,
             minLines: 2,
             maxLines: 3,
             style: const TextStyle(fontSize: 12),
             decoration: InputDecoration(
-                hintText: AppLanguage.text('粘贴 PvZ Toolkit 或网页布阵器阵型码'))),
+                hintText: AppLanguage.text('粘贴 PvZ Toolkit 或网页布阵器阵型码'), hintMaxLines: 2)),
         Wrap(children: [
           classicButton('载入布阵器', () async {
             try {
@@ -4617,10 +4722,8 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
           }),
           classicButton('清空输入', inputFormation.clear)
         ]),
-        const SizedBox(height: 10),
+        const Divider(height: 16, thickness: .5),
         Text(AppLanguage.text('当前阵型码（随阵图实时更新）'),
-            style: const TextStyle(fontSize: 12)),
-        Text(AppLanguage.text('PvZ Toolkit 阵型字符串'),
             style: const TextStyle(fontSize: 12)),
         const SizedBox(height: 4),
         TextField(
@@ -4631,7 +4734,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
             maxLines: 3,
             style: const TextStyle(fontSize: 12),
             decoration: InputDecoration(
-                hintText: AppLanguage.text('当前阵型暂不能生成 Toolkit 阵型码'))),
+                hintText: AppLanguage.text('当前阵型暂不能生成所选格式的阵型码'))),
         if (outputEncodingError != null) ...[
           classicButton('一键格式化', formatForOutput,
               key: const ValueKey('formation-format')),
@@ -4645,21 +4748,28 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                       const TextStyle(fontSize: 12, color: Colors.deepOrange))),
         ],
         if (outputLayoutNotice.isNotEmpty)
-          Text('Toolkit 阵型码：$outputLayoutNotice；原阵图保留，游戏应用可包含僵尸。',
+          Text(AppLanguage.text('Toolkit 阵型码：${outputLayoutNotice.split('；').map(AppLanguage.text).join(AppLanguage.locale.value == 'en' ? '; ' : '；')}；原阵图保留，游戏应用可包含僵尸。'),
               key: const ValueKey('formation-layout-notice'),
               style: const TextStyle(fontSize: 12, color: Colors.deepOrange)),
         if (s.document.pieces.any((p) => p.spec.category == '僵尸'))
-          const Text('应用时同时放置僵尸；僵尸按种类和位置生成，动作由游戏运行。',
-              style: TextStyle(fontSize: 12, color: Color(0xff63755f))),
-        Wrap(children: [
+          Text(AppLanguage.text('僵尸携带物、潜水和啃食状态以所选外观为准。'),
+              style: const TextStyle(fontSize: 12, color: Color(0xff63755f))),
+        Wrap(crossAxisAlignment: WrapCrossAlignment.center, children: [
           classicButton('复制', outputEncodingError != null ? null : () async {
             await Clipboard.setData(ClipboardData(text: outputFormation.text));
           }, key: const ValueKey('formation-copy')),
-          if (Platform.isWindows)
-            classicButton('应用到游戏', gameBusy || outputEncodingError != null ? null
-                : () => gameFormationAction(read: false), key: const ValueKey('formation-inject-game'), tooltip: '用当前阵型替换游戏中的布阵。'),
+          formationCodeChoices(read: false),
         ]),
-        const Divider(),
+        if (Platform.isWindows) ...[
+          const Divider(height: 16, thickness: .5),
+          Row(children: [classicButton('应用阵型', gameBusy ? null
+              : () => gameFormationAction(read: false), key: const ValueKey('formation-inject-game'),
+              icon: Icons.play_arrow_rounded,
+              tooltip: '将当前阵型应用到游戏，替换现有布阵。')]),
+          Text(AppLanguage.text('PvZ Toolkit 码用于复制和分享；应用阵型直接替换游戏中的布阵，可包含僵尸及其所选状态。'),
+              style: const TextStyle(fontSize: 12, color: Color(0xff63755f))),
+        ],
+        const Divider(height: 16, thickness: .5),
         Row(children: [
           Text(AppLanguage.text('输出倍率：'), style: const TextStyle(fontSize: 12)),
           AppDropdown<double>(
@@ -4675,37 +4785,11 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
         originalCheck('exportBackground', '显示游戏背景，否则背景透明', exportBackground,
             (v) => setState(() => exportBackground = v)),
         pokerWidthOption(),
-        Wrap(key: const ValueKey('formation-image-actions'), children: [
-          classicButton(generatingPng ? '正在生成…' : '生成图片',
+        Listener(
+          onPointerDown: (event) => imagePreviewAnchor = event.position,
+          child: classicButton(generatingPng ? '正在生成…' : '生成图片',
               generatingPng ? null : generateExportPreview,
-              key: const ValueKey('formation-generate-image')),
-          if (generatedPng != null) ...[
-            classicButton('导出图片', generatingPng ? null : () async {
-              try {
-                await ProjectFiles.save('${generatedPngName ?? safeName(s.name)}.png',
-                    generatedPng!, 'image/png');
-              } catch (e) {
-                if (mounted) message(context, e);
-              }
-            }, key: const ValueKey('formation-export-image')),
-            classicButton('复制图片', generatingPng ? null : () async {
-              try {
-                await FormationImages.copyBytes(generatedPng!);
-                if (mounted) message(context, '图片已复制');
-              } catch (e) {
-                if (mounted) message(context, '复制图片失败：$e');
-              }
-            }, key: const ValueKey('formation-copy-image')),
-          ],
-        ]),
-        if (generatedPng != null) ...[
-          const SizedBox(height: 8),
-          ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 300, maxHeight: 225),
-              child: Image.memory(generatedPng!,
-                  key: const ValueKey('formation-image-preview'),
-                  fit: BoxFit.contain, gaplessPlayback: true)),
-        ],
+              key: const ValueKey('formation-generate-image'))),
       ]);
     }
     if (classicTab == 5) return classicSettings();
@@ -4981,6 +5065,58 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     ]);
   }
 
+  Offset? imagePreviewAnchor;
+
+  Future<void> showGeneratedImage(Uint8List bytes, String name, Offset anchor) async {
+    await showDialog<void>(
+        context: context,
+        builder: (popupContext) => LayoutBuilder(builder: (context, constraints) {
+          final width = math.min(420.0, constraints.maxWidth - 24);
+          final maxHeight = math.max(1.0, constraints.maxHeight - 24);
+          final height = math.min(width * .75 + 100, maxHeight);
+          final left = (anchor.dx + 8).clamp(12.0, math.max(12.0, constraints.maxWidth - width - 12));
+          final top = (anchor.dy + 8).clamp(12.0, math.max(12.0, constraints.maxHeight - height - 12));
+          return Stack(children: [Positioned(
+              left: left.toDouble(), top: top.toDouble(), width: width,
+              child: Material(
+                  key: const ValueKey('formation-image-popup'),
+                  elevation: 8, borderRadius: BorderRadius.circular(10),
+                  clipBehavior: Clip.antiAlias,
+                  child: ConstrainedBox(
+                      constraints: BoxConstraints(maxHeight: maxHeight),
+                      child: SingleChildScrollView(child: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Column(mainAxisSize: MainAxisSize.min, children: [
+                            Row(children: [Expanded(child: Text(AppLanguage.text('生成图片'))),
+                              IconButton(key: const ValueKey('formation-image-close'),
+                                  tooltip: AppLanguage.text('关闭'),
+                                  onPressed: () => Navigator.pop(popupContext),
+                                  icon: const Icon(Icons.close, size: 18))]),
+                            Image.memory(bytes,
+                                key: const ValueKey('formation-image-preview'),
+                                fit: BoxFit.contain),
+                            const SizedBox(height: 8),
+                            Wrap(key: const ValueKey('formation-image-actions'), children: [
+                              classicButton('导出图片', () async {
+                                try {
+                                  await ProjectFiles.save('$name.png', bytes, 'image/png');
+                                } catch (e) {
+                                  if (mounted) message(this.context, e);
+                                }
+                              }, key: const ValueKey('formation-export-image')),
+                              classicButton('复制图片', () async {
+                                try {
+                                  await FormationImages.copyBytes(bytes);
+                                  if (mounted) message(this.context, '图片已复制');
+                                } catch (e) {
+                                  if (mounted) message(this.context, '复制图片失败：$e');
+                                }
+                              }, key: const ValueKey('formation-copy-image')),
+                            ]),
+                           ]))))))]);
+        }));
+  }
+
   Future<void> generateExportPreview() async {
     if (generatingPng) return;
     final target = s;
@@ -4988,6 +5124,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     final document = target.document;
     final name = safeName(target.name);
     final ratio = exportRatio, background = exportBackground, poker = pokerWidth;
+    final anchor = imagePreviewAnchor ?? const Offset(24, 24);
     setState(() => generatingPng = true);
     try {
       final bytes = await exportPng(document,
@@ -4996,6 +5133,13 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
       setState(() {
         generatedPng = bytes;
         generatedPngName = name;
+        generatingPng = false;
+      });
+      await showGeneratedImage(bytes, name, anchor);
+      await MemoryImage(bytes).evict();
+      if (mounted) setState(() {
+        generatedPng = null;
+        generatedPngName = null;
       });
     } catch (e) {
       if (mounted) message(context, '生成图片失败：$e');

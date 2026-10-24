@@ -18,7 +18,7 @@ Author and maintainer: **越小梦**. Source license: [GNU GPL v3.0](LICENSE).
 - Autosave editable work to local archives, with names, notes, tags, search, batch import/export, deduplication and version history.
 - Restore all previously open tabs, the selected tab and file associations when restarting.
 - Exchange PvZ Toolkit codes, reference-site codes, complete project JSON and archive collections; save back to source files with overwrite backups and recovery.
-- Export PNGs and backgrounds, copy formation images, configure resolution/backgrounds and use Documents/PvzFormationEditor as the default export folder.
+- Export PNGs and backgrounds, preserve the game's aspect ratio by default, and preview/copy/save generated images in a popup inside the toolbox. The default export folder is Documents/PvzFormationEditor.
 - On Windows, read and apply real game formations, including six standard scenes, Imitaters, mushroom sleep, cannon loading and other stable plant states. Browse and back up game-save files.
 - Load and share plant frames on demand. The package includes 363 thumbnails at 256×192, totaling about 7.49 MiB, with a bounded decoded-image cache and local caching for custom previews.
 - Use Simplified Chinese or English in the app and on the website.
@@ -56,12 +56,15 @@ The database is `formations.sqlite` in the user application-support directory. E
 
 The supported target is **original Windows PvZ 1.0.0.1051, Survival Endless modes 11–15**.
 
-- Read from game fills the input above Load / Export. Load into editor opens that code for editing.
-- Apply to game writes the current formation and preserves the game's sun amount. Archive details and each item's More menu expose the same action.
+- Read from game fills the input above Load / Export. Reading and copying each have independent Toolkit/website format choices. Load into editor opens the code for editing; Paste and import validates clipboard text before loading it.
+- Apply formation replaces the current in-game layout. The main toolbar, Load / Export, archive details and each item's More menu expose the same action.
+- Website-format reads include zombies. Game integration supports 21 zombie types and their stable appearances, including carried objects, grounded balloons, submerged/surfaced snorkel zombies and eating. Dolphin layouts account for atlas/game position differences and initialize the selected pose while paused; plant highlights initialize the game's chew flash.
 - Card defaults select awake appearances for Fume-shrooms, Gloom-shrooms and Magnet-shrooms. Later user choices remain authoritative. Loaded cannons are immediately ready; empty cannons have zero cooldown and begin charging when play resumes.
 - Read/write stable growth, height and damage states for supported plants, and browse/import/back up supported game-save files.
 
 Game writes are verified by reading back the formation and related states. See the [Windows integration guide](docs/game-integration/windows-1051.md).
+
+Game writes support six standard scenes. Custom six-row lawns and roofs remain available for editing and produce a clear scene-support message when applied.
 
 ## Formats
 

@@ -178,8 +178,8 @@ Future<void> main() async {
       'Mirror panel should use source heading without duplicate create button');
   h.expect(
       checkbox('original-cMirrorBack').value == true &&
-          checkbox('original-cPokerBack').value == true,
-      'Mirror background / poker width defaults differ from source InitCookie');
+          checkbox('original-cPokerBack').value == false,
+      'Image width should preserve the game aspect ratio by default');
   for (var index = 0; index < 6; index++) {
     h.expect(
         h.all((w) => w.key == ValueKey('original-clone-$index')).length == 1,
@@ -190,7 +190,7 @@ Future<void> main() async {
   h.expect(
       page.mirrors.length == 1 &&
           page.mirrorScales.single == .5 &&
-          page.mirrorPokerWidths.single == true,
+          page.mirrorPokerWidths.single == false,
       'Source half-size mirror button created incorrect snapshot');
   final snapshot = (page.mirrors.single as Formation).fingerprint;
   session.execute('change after mirror', session.document.copy(sunValue: 4321));
@@ -249,9 +249,9 @@ Future<void> main() async {
   final png = page.generatedPng as Uint8List;
   final header = ByteData.sublistView(png);
   h.expect(
-      header.getUint32(16) == (917 * .75).round() &&
+      header.getUint32(16) == (800 * .75).round() &&
           header.getUint32(20) == (600 * .75).round(),
-      'Generated PNG dimensions do not match poker width / selected 3/4 ratio');
+      'Generated PNG dimensions must preserve aspect ratio at 3/4 scale');
   h.expect(
       h
               .all((w) => w.key == const ValueKey('formation-image-preview'))
@@ -261,7 +261,9 @@ Future<void> main() async {
               .isNotEmpty &&
           !fileCalls.any((c) => c.method == 'chooseSavePath'),
       'Generation must expose preview/export without opening a save picker');
-  for (final key in ['formation-generate-image', 'formation-export-image', 'formation-copy-image']) {
+  h.expect(h.all((w) => w.key == const ValueKey('formation-image-popup')).length == 1,
+      'Image preview must open in a popup');
+  for (final key in ['formation-export-image', 'formation-copy-image']) {
     h.expect(h.find((w) => w.key == ValueKey(key)).findAncestorWidgetOfExactType<Wrap>()?.key ==
         const ValueKey('formation-image-actions'), 'Image actions must stay together above preview');
   }
@@ -290,6 +292,10 @@ Future<void> main() async {
       '${fileCalls.map((c) => c.method).toList()}, same bytes=${identical(page.generatedPng, png)}, '
       'messages=${h.all((w) => w is SnackBar).map((e) => (e.widget as SnackBar).content)}');
   await h.screenshot('source-transfer-controls');
+  await h.tapElement(h.find((w) => w.key == const ValueKey('formation-image-close')));
+  await h.settle();
+  h.expect(h.all((w) => w.key == const ValueKey('formation-image-preview')).isEmpty &&
+      page.generatedPng == null, 'Closing preview must remove the popup and release PNG bytes');
   h.expect(
       h.errors.isEmpty, h.errors.map((e) => e.exceptionAsString()).join('\n'));
   stdout.writeln(

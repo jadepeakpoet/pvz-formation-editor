@@ -8,7 +8,7 @@
 
 | 目标 | 宿主与工具 |
 | --- | --- |
-| Windows | Windows、Visual Studio 2022 C++ 桌面开发工具、Windows SDK |
+| Windows | Windows、Visual Studio C++ 桌面开发工具、Windows SDK |
 | macOS / iOS | macOS、Xcode、CocoaPods |
 | Linux | Linux、Flutter GTK 开发依赖、SQLite、中文字体 |
 | Android | JDK 17、Android SDK、项目 Gradle 工程 |
@@ -58,6 +58,8 @@ node website/test-download.mjs
 ## 发布
 
 应用版本统一记录在 `pubspec.yaml`、`lib/platform/app_info.dart`，Windows 资源版本由 Flutter 构建配置生成。`tool/package_windows_release.py` 从 `pubspec.yaml` 读取发布版本，将 Release 程序、资源和本地 MSVC 运行库打包到 `release/<version>/`。
+
+打包时显式指定已验证的构建目录：`python tool/package_windows_release.py --build build/windows/x64/runner/Release`。脚本自动查找 MSVC x64 运行库，也可用 `--crt` 指定。源码包使用 `python tool/package_source_release.py --ref <已审核的提交或标签>`，从对应 Git 提交读取版本并归档。
 
 GitHub Release 提供 Windows 绿色包、源码归档和 SHA-256 校验文件。官网提供绿色包与文档，源码入口指向 GitHub。官网部署说明见 [website/README](../website/README.md)。
 

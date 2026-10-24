@@ -54,6 +54,7 @@ Future<void> main() async {
   final boundary = GlobalKey();
   Future<MapPickerChoice?>? pending;
   var readOnly = false;
+  var useDefaults = false;
   final keepPlants = ValueNotifier<bool>(false);
   var keepChanges = 0;
   var completed = false;
@@ -82,7 +83,8 @@ Future<void> main() async {
                         key: const ValueKey('open'),
                         onPressed: () {
                           completed = false;
-                          pending = showMapPickerDialog(context,
+                          pending = useDefaults ? showMapPickerDialog(context,
+                              currentMapId: source.mapId, currentFormation: source) : showMapPickerDialog(context,
                               currentMapId: source.mapId,
                               currentFormation: source,
                               keepPlants: keepPlants.value,
@@ -273,6 +275,12 @@ Future<void> main() async {
       'Narrow immediate result failed');
   check(jsonEncode(source.toJson()) == before,
       'Dialog flow must not mutate supplied formation');
+  useDefaults = true;
+  await tap('open');
+  check(keepCheckbox().value == true && previewDocument().pieces.length == 2,
+      'Default map dialog must retain plants without explicit options');
+  await tap('map-picker-cancel');
+  check(await pending == null, 'Cancel the default map dialog');
   check(errors.isEmpty, errors.map((e) => e.exceptionAsString()).join('\n'));
   stdout.writeln(
       'PASS bidirectional keep synchronization, cancel preserves option, live retained previews, bounds filtering, source unchanged, immediate choice, readonly and 360px layout');

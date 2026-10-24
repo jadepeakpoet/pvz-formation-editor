@@ -15,11 +15,11 @@
 
 部署须在 `website` 目录运行 `wrangler pages deploy dist --project-name xmpvz --branch main`，让 Wrangler 自动读取当前目录的配置，确保 D1 的 `DB` 绑定保留（Pages deploy 不接受自定义配置路径）。`_routes.json` 只将 `/api/*` 和 ZIP 路径交给 Worker；页面仍由静态资源服务。
 
-先运行 `python tool/package_windows_release.py` 打包完整 Windows Release，再运行 `python website/build.py` 生成 website/dist。官网只提供应用绿色包下载，源码入口统一指向 GitHub；构建脚本不会发布源码压缩包。
+先运行 `python tool/package_windows_release.py --build <已验证的Release目录>` 打包完整 Windows Release，再运行 `python website/build.py` 生成 website/dist。官网只提供应用绿色包下载，源码入口统一指向 GitHub；构建脚本不会发布源码压缩包。
 
 运行 `node website/test-download.mjs` 验证完整 ZIP SHA256、跨分段 Range、后缀下载、无效范围和 HEAD。
 
-发布：`wrangler pages deploy website/dist --project-name xmpvz --branch main`。
+发布时切换到 `website` 目录，执行 `wrangler pages deploy dist --project-name xmpvz --branch main`，使用同目录配置中的 D1 绑定。
 
 官网：https://xmpvz.pages.dev，文档：/docs/，下载校验值：/downloads/SHA256SUMS.txt。
 

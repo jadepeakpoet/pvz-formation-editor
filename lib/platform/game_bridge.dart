@@ -4,6 +4,7 @@ import '../domain/formation.dart';
 import '../domain/website_codec.dart';
 import '../domain/plant_game_state.dart';
 import '../domain/zombie_layout.dart';
+import '../domain/zombie_game_state.dart';
 
 /// An identified live process. Capabilities are reported by the native adapter,
 /// never inferred from the window title by the UI.
@@ -79,7 +80,14 @@ class GameFormationSnapshot {
       if (zombie != null && ZombieLayout.gameType(id) != zombie) {
         throw const FormatException('游戏僵尸类型尚未适配');
       }
-      final row = p['row'] as int, col = p['col'] as int;
+      final row = p['row'] as int;
+      final zombieState = zombie != null && p.containsKey('animation')
+          ? ZombieGameState.fromRuntime(zombie, p) : null;
+      final editorX = zombie == null ? null : zombieState == null
+          ? (p['x'] as num).toDouble()
+          : ZombieLayout.editorX(id, zombieState.row, zombieState.col,
+              (p['x'] as num).toDouble());
+      final col = zombieState != null ? ZombieLayout.column(editorX!) : p['col'] as int;
       if (row < 0 || row > 5 || col < 0 || col > 8) {
         throw const FormatException('游戏对象坐标无效');
       }
@@ -91,19 +99,22 @@ class GameFormationSnapshot {
           col: col,
           layer: ObjectSpec.byId(id).layer,
           asleep: p['asleep'] == true,
-          frameRow: p['frameRow'] as int?,
-          frameCol: p['frameCol'] as int? ?? 0,
+          frameRow: zombieState?.row ?? p['frameRow'] as int?,
+          frameCol: zombieState?.col ?? p['frameCol'] as int? ?? 0,
           websiteFields: zombie != null
               ? ZombieLayout.positionFields(
                   id,
                   row,
                   col,
-                  (p['x'] as num).toDouble(),
-                  frameRow: p['frameRow'] as int? ?? 0,
-                  frameCol: p['frameCol'] as int? ?? 0,
+                  editorX!,
+                  frameRow: zombieState?.row ?? p['frameRow'] as int? ?? 0,
+                  frameCol: zombieState?.col ?? p['frameCol'] as int? ?? 0,
                 )
               : null,
-          effects: p['imitater'] == true ? {'模仿者'} : const {},
+          effects: {
+            if (p['imitater'] == true) '模仿者',
+            if (zombie == null && (p['eatenFlashCountdown'] as int? ?? 0) > 0) '高亮',
+          },
         ),
       );
     }
@@ -154,6 +165,18 @@ class GameSaveFile {
 
 class GameBridge {
   static const channel = MethodChannel('pvz_formation_editor/game');
+  static const supportedMaps = ['day', 'night', 'pool', 'fog', 'roof', 'moonRoof'];
+  static void validateTarget(Formation target) {
+    if (!supportedMaps.contains(target.mapId)) {
+      throw UnsupportedError('“${target.map.name}”是扩展地图；原版游戏支持白天、黑夜、泳池、浓雾、屋顶和月夜屋顶。六行布局可选择泳池或浓雾场地。');
+    }
+    for (final piece in target.pieces) {
+      if (piece.row < 0 || piece.row >= target.map.rows || piece.col < 0 ||
+          piece.col + piece.spec.width > target.map.columns) {
+        throw FormatException('“${piece.spec.name}”位于第 ${piece.row + 1} 行、第 ${piece.col + 1} 列，超出${target.map.name}的场地范围');
+      }
+    }
+  }
   static Future<List<RunningGame>> listGames() async {
     final values = await channel.invokeListMethod<dynamic>('listGames') ?? [];
     return values
@@ -183,11 +206,12 @@ class GameBridge {
     if (pid <= 0 || expectedBefore.pid != pid) {
       throw ArgumentError('读取的快照与游戏进程不一致');
     }
+    validateTarget(target);
     final pieces = <Map<String, dynamic>>[];
     for (final p in target.pieces) {
       final zombie = ZombieLayout.gameType(p.type);
       if (zombie != null && expectedBefore.includesZombies) {
-        final x = ZombieLayout.x(p);
+        final x = ZombieLayout.gameX(p);
         if (!x.isFinite || x < -200 || x > 1200) {
           throw const FormatException('僵尸横坐标超出支持范围');
         }
@@ -198,6 +222,7 @@ class GameBridge {
           'x': x,
           'frameRow': p.frameRow,
           'frameCol': p.frameCol,
+          'state': ZombieGameState.of(p).toJson(),
         });
         continue;
       }
@@ -210,7 +235,8 @@ class GameBridge {
           p.opacity != 1 ||
           p.flipped ||
           p.flippedVertical ||
-          p.effects.any((effect) => effect != '模仿者')) {
+          p.effects.any((effect) => effect != '模仿者' &&
+              !(type >= 0 && effect == '高亮'))) {
         throw UnsupportedError('当前游戏应用暂不支持缩放、翻转或装饰图像特效');
       }
       if (p.type == 'cob' && p.frameRow != 0) {
@@ -222,6 +248,7 @@ class GameBridge {
         'col': p.col,
         'imitater': p.effects.contains('模仿者'),
         'asleep': p.asleep,
+        if (p.effects.contains('高亮')) 'eatenFlash': true,
         if (PlantGameState.of(p) case final int state) 'visualState': state,
       });
     }

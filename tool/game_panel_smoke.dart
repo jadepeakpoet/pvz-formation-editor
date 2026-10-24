@@ -135,7 +135,7 @@ Future<void> main() async {
         'Archive/edit callbacks exactsnapshot');
     reports
         .add('simulated native list/read and actual read/archive/edit buttons');
-    await helpers.clickText('应用到游戏');
+    await helpers.clickText('应用阵型');
     helpers.check(
         fake.writes == 1 &&
             state.error.toString().contains('simulated native refusal'),
@@ -150,7 +150,7 @@ Future<void> main() async {
     helpers.check(fake.backupBeforeNative,
         'Current snapshot is passed for consistency checking');
     fake.reject = false;
-    await helpers.clickText('应用到游戏');
+    await helpers.clickText('应用阵型');
     helpers.check(
         fake.writes == 2 &&
             state.snapshot.formation.pieces.isEmpty &&
@@ -168,10 +168,7 @@ Future<void> main() async {
             (w.child as Text).data == '获取阵型')!
         .widget as FilledButton;
     final apply = helpers
-        .find((w) =>
-            w is OutlinedButton &&
-            w.child is Text &&
-            (w.child as Text).data == '应用到游戏')!
+        .find((w) => w.key == const ValueKey('game-panel-apply'))!
         .widget as OutlinedButton;
     helpers.check(read.onPressed == null && apply.onPressed == null,
         'Unsupported process controls disabled');
