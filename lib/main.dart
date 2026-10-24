@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'domain/formation.dart';
 import 'domain/formation_exchange.dart';
+import 'domain/placement_layout.dart';
 import 'domain/formation_formatter.dart';
 import 'domain/game_save_codec.dart';
 import 'domain/archive_bundle.dart';
@@ -768,7 +769,8 @@ class _LibraryPageState extends State<LibraryPage> {
       if (action == 'copy-code') {
         final code = FormationExchange.encode(Formation.fromJson(a.document));
         await Clipboard.setData(ClipboardData(text: code));
-        if (mounted) message(context, '已复制 Toolkit 阵型码');
+        if (mounted) message(context, PlacementLayout.completion(
+            '已复制 Toolkit 阵型码', Formation.fromJson(a.document)));
         return;
       }
       if (action == 'preview') {
@@ -975,7 +977,8 @@ class _LibraryPageState extends State<LibraryPage> {
       if (action == 'copy-code') {
         await Clipboard.setData(
             ClipboardData(text: FormationExchange.encode(preset.document)));
-        if (mounted) message(context, '已复制 Toolkit 阵型码');
+        if (mounted) message(context, PlacementLayout.completion(
+            '已复制 Toolkit 阵型码', preset.document));
         return;
       }
       if (action == 'export' && mounted) {
@@ -1069,7 +1072,7 @@ class _LibraryPageState extends State<LibraryPage> {
       final game = await chooseRunningGame(context, read: false);
       if (game == null) return;
       await GameWrites(Directory.systemTemp).apply(game.pid, target);
-      if (mounted) message(context, '已应用到游戏');
+      if (mounted) message(context, PlacementLayout.completion('已应用到游戏', target));
     } catch (e) {
       if (mounted) message(context, '应用失败：$e');
     } finally {
@@ -1158,7 +1161,8 @@ class _LibraryPageState extends State<LibraryPage> {
         try {
           await Clipboard.setData(ClipboardData(
               text: FormationExchange.encode(Formation.fromJson(d.document))));
-          if (context.mounted) message(context, '已复制 Toolkit 阵型码');
+          if (context.mounted) message(context, PlacementLayout.completion(
+              '已复制 Toolkit 阵型码', Formation.fromJson(d.document)));
         } catch (e) {
           if (context.mounted) message(context, e);
         }
@@ -1548,11 +1552,13 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
   Formation? encodedOutputDocument;
   FormationFormat? encodedOutputFormat;
   String? outputEncodingError;
+  String outputLayoutNotice = '';
 
   void refreshFormationOutput() {
     if (identical(encodedOutputDocument, s.document) &&
         encodedOutputFormat == FormationFormat.toolkit) return;
     encodedOutputDocument = s.document;
+    outputLayoutNotice = PlacementLayout.prepare(s.document).notice;
     encodedOutputFormat = FormationFormat.toolkit;
     String text;
     try {
@@ -4063,7 +4069,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
         message(context, '已获取游戏阵型，可点击“载入布阵器”');
       } else {
         await GameWrites(Directory.systemTemp).apply(selected.pid, target!);
-        if (mounted) message(context, '已应用到游戏');
+        if (mounted) message(context, PlacementLayout.completion('已应用到游戏', target));
       }
     } catch (e) {
       if (mounted) message(context, '${read ? '获取' : '应用'}失败：$e');
@@ -4632,6 +4638,10 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                   style:
                       const TextStyle(fontSize: 12, color: Colors.deepOrange))),
         ],
+        if (outputLayoutNotice.isNotEmpty)
+          Text('复制或应用时：$outputLayoutNotice；原阵图保留。',
+              key: const ValueKey('formation-layout-notice'),
+              style: const TextStyle(fontSize: 12, color: Colors.deepOrange)),
         Wrap(children: [
           classicButton('复制', outputEncodingError != null ? null : () async {
             await Clipboard.setData(ClipboardData(text: outputFormation.text));

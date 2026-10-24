@@ -15,6 +15,7 @@ import 'package:pvz_formation_editor/domain/formation.dart';
 import 'package:pvz_formation_editor/domain/formation_exchange.dart';
 import 'package:pvz_formation_editor/domain/plant_game_state.dart';
 import 'package:pvz_formation_editor/domain/website_codec.dart';
+import 'package:pvz_formation_editor/domain/placement_layout.dart';
 import 'settle_frames.dart';
 import 'package:pvz_formation_editor/storage/formation_repository.dart';
 
@@ -74,7 +75,7 @@ Future<void> main() async {
   final errors = <String>[];
   FlutterError.onError = (e) => errors.add(e.exceptionAsString());
   final repository = await FormationRepository.open(
-      '${reportFile.parent.path}/live-preset-$pid.sqlite');
+      '${reportFile.parent.path}/live-preset-${newId()}.sqlite');
   GameFormationSnapshot? original;
   int? pid;
   Future<void> save() async {
@@ -123,14 +124,14 @@ Future<void> main() async {
             .where((p) => selectedIds.isEmpty || selectedIds.contains(p.id))
             .take(limit);
     for (final preset in presets) {
-      const decorations = {'original-59', 'original-81', 'original-303'};
-      final expectedRejection = decorations.contains(preset.id);
-      final unchanged = expectedRejection ? await GameBridge.readFormation(pid) : null;
+      final layout = PlacementLayout.prepare(preset.document);
       final row = <String, dynamic>{
         'id': preset.id,
         'name': preset.name,
         'map': preset.mapId,
-        'objects': preset.document.pieces.length
+        'objects': preset.document.pieces.length,
+        'ignoredObjects': layout.skippedObjects,
+        'simplifiedAppearances': layout.simplifiedAppearances,
       };
       try {
         final field =
@@ -155,17 +156,12 @@ Future<void> main() async {
         check(library.applyingArchiveToGame == false, 'Application timed out');
         final actual = await GameBridge.readFormation(pid);
         check(composition(actual.formation) == composition(
-            unchanged?.formation ?? preset.document),
+            layout.document),
             'Readback differs: ${find((w) => w is SnackBar).map((e) => (e.widget as SnackBar).content).toList()}');
         check(actual.formation.sunValue == original.formation.sunValue,
             'Sun changed');
         row['pass'] = true;
-        row['applied'] = !expectedRejection;
-        if (expectedRejection) {
-          check(find((w) => w is Text && (w.data ?? '').contains('失败')).isNotEmpty,
-              'Unsupported decorations must show a rejection');
-          row['expectedRejection'] = true;
-        }
+        row['applied'] = true;
         row['readbackObjects'] = actual.formation.pieces.length;
       } catch (e) {
         row['pass'] = false;
@@ -194,6 +190,7 @@ Future<void> main() async {
         for (final archive in await copied.listArchives()) {
           final id = 'user-verification-${index++}';
           final document = Formation.fromJson(archive.document);
+          final gameLayout = PlacementLayout.prepare(document).document;
           await repository.saveArchive(id: id, name: id, document: document.toJson());
           await library.refresh();
           await settle();
@@ -212,7 +209,7 @@ Future<void> main() async {
           final after = await GameBridge.readFormation(pid);
           final messages = find((w) => w is Text).map((e) => (e.widget as Text).data ?? '').join('\n');
           final rejected = messages.contains('失败');
-          final unsupported = document.pieces.any((p) =>
+          final unsupported = gameLayout.pieces.any((p) =>
               (!WebsiteCodec.plantIds.contains(p.type) &&
                   !{'grave', 'ladder', 'rake'}.contains(p.type)) ||
               p.scale != 1 || p.opacity != 1 || p.flipped || p.flippedVertical ||
@@ -220,7 +217,7 @@ Future<void> main() async {
               (p.type == 'cob' && p.frameRow != 0));
           check(rejected == unsupported, 'Unexpected rejection for user archive $id');
           final matched = composition(after.formation) ==
-              composition(rejected ? before.formation : document);
+              composition(rejected ? before.formation : gameLayout);
           archiveResults.add({'id': id, 'pass': matched,
             'rejected': rejected, if (rejected) 'messages': messages});
           await save();
@@ -235,7 +232,7 @@ Future<void> main() async {
       final entryResults = <String>[];
       Future<void> verify(String name, Formation expected) async {
         final actual = await GameBridge.readFormation(pid!);
-        check(composition(actual.formation) == composition(expected),
+        check(composition(actual.formation) == composition(PlacementLayout.prepare(expected).document),
             '$name readback differs');
         check(actual.formation.sunValue == original!.formation.sunValue,
             '$name sun changed');

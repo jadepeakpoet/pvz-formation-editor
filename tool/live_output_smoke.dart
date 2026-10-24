@@ -115,19 +115,34 @@ Future<void> main() async {
             clipboard == FormationExchange.encode(session.document),
         'Clipboard must contain exact Toolkit placement code');
   });
+  await h.run('live.decorative-layout',
+      'Decorations are omitted from executable code with a visible notice', () async {
+    session.execute('zombie illustration', Formation(pieces: [
+      Piece(id: 'z', type: 'zombie', row: 0, col: 0,
+          layer: ObjectSpec.byId('zombie').layer),
+    ]));
+    await h.settle();
+    h.expect(FormationExchange.decode(output().controller!.text).pieces.isEmpty,
+        'Toolkit layout must omit zombie illustrations');
+    h.expect(h.all((w) => w.key == const ValueKey('formation-layout-notice')).isNotEmpty,
+        'Omission must be visible before copying or applying');
+    h.expect(session.document.pieces.single.type == 'zombie',
+        'Extracting output must preserve the original editor document');
+  });
   await h.run('live.unsupported',
       'Unsupported state clears stale code, disables copy and recovers',
       () async {
     final before = output().controller!.text;
     session.execute(
-        'unsupported zombie',
+        'conflicting plants',
         Formation(pieces: [
           Piece(
               id: 'unsupported',
-              type: 'zombie',
+              type: 'pea',
               row: 0,
               col: 0,
-              layer: ObjectSpec.byId('zombie').layer)
+              layer: ObjectSpec.byId('pea').layer),
+          Piece(id: 'overlap', type: 'wallnut', row: 0, col: 0, layer: 10),
         ]));
     await h.settle();
     h.expect(before.isNotEmpty && output().controller!.text.isEmpty,

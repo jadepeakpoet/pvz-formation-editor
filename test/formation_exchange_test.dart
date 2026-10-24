@@ -114,7 +114,7 @@ void main() {
             preset),
         isTrue);
   });
-  test('normalization keeps genuine unsupported attributes and website visuals',
+  test('Toolkit extraction ignores decoration while website keeps visuals',
       () {
     final source = WebsiteCodec.decode('0,0 1 1 2 3 0 1 0');
     final website = FormationExchange.layoutDocument(source,
@@ -127,7 +127,9 @@ void main() {
         col: 0,
         layer: ObjectSpec.byId('zombie').layer);
     expect(FormationExchange.exportIssues(Formation(pieces: [zombie])),
-        isNotEmpty);
+        isEmpty);
+    expect(FormationExchange.decode(FormationExchange.encode(
+        Formation(pieces: [zombie]))).pieces, isEmpty);
     final asleep = Piece(
         id: 's',
         type: 'puff',
@@ -162,7 +164,7 @@ void main() {
       asleep.copy(effects: {'冰冻'})
     ]) {
       expect(FormationExchange.exportIssues(sleeping.copy(pieces: [changed])),
-          isNotEmpty);
+          isEmpty);
     }
     expect(FormationFormat.toolkit.description, contains('不保存'));
     expect(FormationFormat.project.description, contains('完整'));

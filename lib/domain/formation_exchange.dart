@@ -3,6 +3,7 @@ import 'formation.dart';
 import 'toolkit_codec.dart';
 import 'website_codec.dart';
 import 'plant_game_state.dart';
+import 'placement_layout.dart';
 
 enum FormationFormat {
   toolkit,
@@ -78,6 +79,9 @@ class FormationExchange {
   static Formation layoutDocument(Formation document,
       {FormationFormat format = FormationFormat.toolkit}) {
     if (format == FormationFormat.project) return document;
+    if (format == FormationFormat.toolkit) {
+      document = PlacementLayout.prepare(document).document;
+    }
     return document.copy(
       seedSlots: const [],
       imitaterSeedSlots: const {},

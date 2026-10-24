@@ -1,5 +1,6 @@
 import 'dart:io';
 import '../domain/formation.dart';
+import '../domain/placement_layout.dart';
 import 'game_bridge.dart';
 
 /// Serializes live writes. Only the current consistency snapshot is retained.
@@ -17,10 +18,11 @@ class GameWrites {
       : read = read ?? GameBridge.readFormation,
         write = write ?? GameBridge.applyFormation;
   Future<GameFormationSnapshot> apply(int pid, Formation target) {
+    final layout = PlacementLayout.prepare(target).document;
     final operation =
         (_operations[pid] ?? Future<void>.value()).then((_) async {
       final current = await read(pid);
-      return write(pid, target, current);
+      return write(pid, layout, current);
     });
     _operations[pid] =
         operation.then<void>((_) {}, onError: (Object _, StackTrace __) {});

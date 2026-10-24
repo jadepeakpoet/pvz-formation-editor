@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import '../domain/formation.dart';
 import '../domain/formation_exchange.dart';
+import '../domain/placement_layout.dart';
 import '../editor/board_painter.dart';
 import '../platform/game_bridge.dart';
 import '../platform/game_writes.dart';
@@ -81,7 +82,8 @@ class _GamePanelState extends State<GamePanel> {
 
   Future<void> apply() => run(() async {
         snapshot = await (await store()).apply(selected!.pid, widget.target!);
-        notice = '已应用到游戏。';
+        final detail = PlacementLayout.prepare(widget.target!).notice;
+        notice = '已应用到游戏。${detail.isEmpty ? '' : ' $detail'}';
       });
 
   Future<Uint8List> readSave(GameSaveFile file) async {
