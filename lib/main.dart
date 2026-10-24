@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io' show Platform, File;
+import 'dart:io' show Platform, File, Directory;
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
@@ -16,6 +16,10 @@ import 'domain/original_terrain.dart';
 import 'domain/planting_support.dart';
 import 'platform/planting_preferences.dart';
 import 'platform/app_language.dart';
+import 'platform/app_theme.dart';
+import 'platform/features.dart';
+import 'platform/game_bridge.dart';
+import 'platform/game_writes.dart';
 import 'platform/language_selector.dart';
 import 'domain/layouts.dart';
 import 'domain/object_filter.dart';
@@ -23,6 +27,8 @@ import 'editor/board_painter.dart';
 import 'editor/board_sun_editor.dart';
 import 'editor/batch_selection_overlay.dart';
 import 'widgets/app_dropdown.dart';
+import 'widgets/app_about.dart';
+import 'widgets/sidebar_tabs.dart';
 import 'editor/rename_dialog.dart';
 import 'editor/map_picker_dialog.dart';
 import 'editor/archive_history_dialog.dart';
@@ -87,7 +93,7 @@ Future<void> toolboxMain() async {
                 localizationsDelegates: GlobalMaterialLocalizations.delegates,
                 title: AppLanguage.text('布阵器工具箱'),
                 debugShowCheckedModeBanner: false,
-                theme: ThemeData(
+                theme: buildAppTheme(
                     useMaterial3: true,
                     inputDecorationTheme: const InputDecorationTheme(
                         border: OutlineInputBorder(), isDense: true)),
@@ -112,7 +118,7 @@ Future<void> libraryMain() async {
                   supportedLocales: const [Locale('zh'), Locale('en')],
                   localizationsDelegates: GlobalMaterialLocalizations.delegates,
                   debugShowCheckedModeBanner: false,
-                  theme: ThemeData(
+                  theme: buildAppTheme(
                       useMaterial3: true,
                       colorScheme: ColorScheme.fromSeed(
                           seedColor: const Color(0xff456b4e))),
@@ -153,7 +159,7 @@ class _StartupAppState extends State<_StartupApp> {
                 supportedLocales: const [Locale('zh'), Locale('en')],
                 localizationsDelegates: GlobalMaterialLocalizations.delegates,
                 debugShowCheckedModeBanner: false,
-                theme: ThemeData(
+                theme: buildAppTheme(
                     colorScheme: ColorScheme.fromSeed(
                         seedColor: const Color(0xff456b4e))),
                 home: Scaffold(
@@ -199,7 +205,7 @@ class FormationApp extends StatelessWidget {
           localizationsDelegates: GlobalMaterialLocalizations.delegates,
           title: AppLanguage.text('植物大战僵尸布阵器'),
           debugShowCheckedModeBanner: false,
-          theme: ThemeData(
+          theme: buildAppTheme(
               useMaterial3: true,
               colorScheme: ColorScheme.fromSeed(
                   seedColor: const Color(0xff456b4e),
@@ -208,6 +214,22 @@ class FormationApp extends StatelessWidget {
               inputDecorationTheme: const InputDecorationTheme(
                   border: OutlineInputBorder(), isDense: true)),
           home: const LibraryPage()));
+}
+
+Future<RunningGame?> chooseRunningGame(BuildContext context, {required bool read}) async {
+  final games = await GameBridge.listGames();
+  final compatible = games.where((g) => read ? g.canRead : g.canWrite).toList();
+  if (compatible.isEmpty) {
+    throw StateError(games.isEmpty
+        ? '未找到运行中的植物大战僵尸' : '当前游戏版本或状态暂不支持此操作');
+  }
+  if (!context.mounted) return null;
+  if (compatible.length == 1) return compatible.single;
+  return showDialog<RunningGame>(context: context, builder: (ctx) => SimpleDialog(
+      title: Text(AppLanguage.text('选择游戏进程')),
+      children: [for (final game in compatible) SimpleDialogOption(
+        onPressed: () => Navigator.pop(ctx, game),
+        child: Text('${game.title} · PID ${game.pid}'))]));
 }
 
 void message(BuildContext context, Object text) {
@@ -281,7 +303,7 @@ Future<FormationFormat?> formationFormatPrompt(
                             groupValue: choice,
                             title: Text(f.label),
                             subtitle: Text(f.description,
-                                style: const TextStyle(fontSize: 11)),
+                                style: const TextStyle(fontSize: 12)),
                             dense: true,
                             onChanged: (v) {
                               if (v != null) set(() => choice = v);
@@ -319,7 +341,9 @@ class LibraryPage extends StatefulWidget {
       this.activeDraftId,
       this.onOpenSession,
       this.onOpenTab,
-      this.onDocumentAction});
+      this.onDocumentAction,
+      this.onSidebarTab});
+  final ValueChanged<int>? onSidebarTab;
   final bool independent;
   final bool showTitle;
   final FormationRepository? repository;
@@ -332,6 +356,7 @@ class LibraryPage extends StatefulWidget {
 }
 
 class _LibraryPageState extends State<LibraryPage> {
+  bool applyingArchiveToGame = false;
   FormationRepository? repo;
   List<DraftRecord> drafts = [];
   List<ArchiveRecord> archives = [];
@@ -692,7 +717,7 @@ class _LibraryPageState extends State<LibraryPage> {
             sourceArchiveId: a.id));
         return;
       }
-      if (action == 'favorite') {
+      if (action == 'favorite' && favoritesEnabled) {
         await repo!.updateArchiveMetadata(a.id, favorite: !a.favorite);
       }
       if (action == 'copy') {
@@ -878,7 +903,7 @@ class _LibraryPageState extends State<LibraryPage> {
         await addPreset(preset);
         return;
       }
-      if (action == 'favorite') {
+      if (action == 'favorite' && favoritesEnabled) {
         await repo!.setPresetFavorite(
             preset.id, !favoritePresetIds.contains(preset.id));
         await refresh();
@@ -912,9 +937,14 @@ class _LibraryPageState extends State<LibraryPage> {
         return;
       }
       if (action == 'open-current' || action == 'open-tab') {
-        final session = EditorSession(repo!,
-            document: preset.document, name: preset.name,
-            deferInitialSave: true);
+        final existing = (await repo!.listArchives()).where((archive) =>
+            ArchiveBundle.importFingerprint(Formation.fromJson(archive.document)) ==
+            ArchiveBundle.importFingerprint(preset.document)).firstOrNull;
+        final session = existing == null
+            ? EditorSession(repo!, document: preset.document, name: preset.name)
+            : EditorSession(repo!, document: Formation.fromJson(existing.document),
+                id: existing.id, name: existing.name, sourceArchiveId: existing.id,
+                savedFingerprint: Formation.fromJson(existing.document).fingerprint);
         if (!mounted) {
           session.dispose();
           return;
@@ -969,6 +999,21 @@ class _LibraryPageState extends State<LibraryPage> {
     }
   }
 
+  Future<void> applyArchiveToGame(Formation target) async {
+    if (applyingArchiveToGame) return;
+    setState(() => applyingArchiveToGame = true);
+    try {
+      final game = await chooseRunningGame(context, read: false);
+      if (game == null) return;
+      await GameWrites(Directory.systemTemp).apply(game.pid, target);
+      if (mounted) message(context, '已应用到游戏');
+    } catch (e) {
+      if (mounted) message(context, '应用失败：$e');
+    } finally {
+      if (mounted) setState(() => applyingArchiveToGame = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (repo == null || loading) {
@@ -982,10 +1027,15 @@ class _LibraryPageState extends State<LibraryPage> {
                           onPressed: _open, child: Text(AppLanguage.text('重试')))
                     ])));
     }
-    return LibraryBrowser(
+    final browser = LibraryBrowser(
       showTitle: widget.showTitle,
+      gameBusy: applyingArchiveToGame,
       onGameTools: Platform.isWindows
           ? (target) async {
+              if (target != null) {
+                await applyArchiveToGame(target);
+                return;
+              }
               await showDialog<void>(
                   context: context,
                   builder: (ctx) => GamePanel(
@@ -1050,6 +1100,19 @@ class _LibraryPageState extends State<LibraryPage> {
       onDraftAction: draftAction,
       onArchiveAction: archiveAction,
     );
+    if (!widget.independent && widget.onSidebarTab == null) return browser;
+    return Column(children: [
+      SidebarTabs(selected: 0, onSelected: (index) {
+        if (index == 0) return;
+        if (widget.independent) {
+          unawaited(WindowBridge.channel.invokeMethod('selectSidebarMode',
+              {'mode': 'toolbox', 'toolboxTab': index}));
+        } else {
+          widget.onSidebarTab!(index);
+        }
+      }),
+      Expanded(child: browser),
+    ]);
   }
 }
 
@@ -1556,6 +1619,12 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
           activeDraftId: s.readOnly ? null : s.id,
           onEvent: (method, arguments) async {
             if (!mounted) return null;
+            if (method == 'selectToolboxTab') {
+              if (widget.toolboxOnly && arguments is int && arguments >= 1 && arguments <= 5) {
+                selectToolboxTab(arguments);
+              }
+              return true;
+            }
             if (method == 'editorPointerMoved') {
               updateNativePlantingPointer(arguments);
               return null;
@@ -1832,42 +1901,13 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
           child: DecoratedBox(
               decoration: const BoxDecoration(color: Color(0xfff7f8f3)),
               child: Column(children: [
-                SizedBox(
-                    height: 34,
-                    child: Row(children: [
-                      for (var i = 1; i < 6; i++)
-                        Expanded(
-                            child: InkWell(
-                                key: ValueKey('toolbox-tab-$i'),
-                                onTap: () => selectToolboxTab(i),
-                                child: Container(
-                                    alignment: Alignment.center,
-                                    decoration: BoxDecoration(
-                                        color: (i == 0 ? seedChooserOpen : classicTab == i)
-                                            ? const Color(0xffd6e5d2)
-                                            : const Color(0xfff7f8f3),
-                                        border: Border(
-                                            bottom: BorderSide(
-                                                color: (i == 0
-                                                        ? seedChooserOpen
-                                                        : classicTab == i)
-                                                    ? const Color(0xff376b50)
-                                                    : const Color(0xffdce3d7),
-                                                width: (i == 0
-                                                        ? seedChooserOpen
-                                                        : classicTab == i)
-                                                    ? 3
-                                                    : 1))),
-                                    child: Text(AppLanguage.text(['卡槽选卡', '懒人布局', '图鉴选卡', '镜像窗口', '载入导出', '选项设置'][i]),
-                                        style: TextStyle(
-                                            fontSize: 11,
-                                            color: const Color(0xff263f35),
-                                            fontWeight: (i == 0
-                                                    ? seedChooserOpen
-                                                    : classicTab == i)
-                                                ? FontWeight.w600
-                                                : FontWeight.normal)))))
-                    ])),
+                SidebarTabs(selected: classicTab, onSelected: (index) {
+                  if (index == 0) {
+                    unawaited(leave());
+                  } else {
+                    selectToolboxTab(index);
+                  }
+                }),
                 Expanded(
                     child: pickingPresetGroup != null
                         ? presetPickerContents()
@@ -1920,6 +1960,23 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                         mode == 'toolbox' ? '工具箱' : '存档库'))))));
   }
 
+  Widget aboutButton() => Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 3),
+      child: SizedBox(height: 26, child: OutlinedButton.icon(
+          key: const ValueKey('main-about'),
+          onPressed: () => showAppAbout(context),
+          style: OutlinedButton.styleFrom(
+              foregroundColor: const Color(0xff53626b),
+              backgroundColor: const Color(0xffedf1f3),
+              side: const BorderSide(color: Color(0xffc7d1d6)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+              minimumSize: Size.zero,
+              padding: const EdgeInsets.symmetric(horizontal: 9),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              textStyle: const TextStyle(fontSize: 12)),
+          icon: const Icon(Icons.info_outline, size: 14),
+          label: Text(AppLanguage.text('关于')))));
+
   Widget fallbackSidebar() => ClassicWindow(
       key: const ValueKey('fallback-sidebar-window'),
       title: AppLanguage.text(sidebarMode == 'library' ? '存档库' : '布阵器工具箱'),
@@ -1948,6 +2005,10 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                     excluding: !toolboxVisible || sidebarMode != 'library',
                     child: LibraryPage(
                         key: fallbackLibraryKey,
+                        onSidebarTab: (index) {
+                          selectToolboxTab(index);
+                          unawaited(selectFallbackSidebarMode('toolbox'));
+                        },
                         showTitle: false,
                         repository: s.repository,
                         activeDraftId: s.readOnly ? null : s.id,
@@ -1958,6 +2019,25 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                             ? null
                             : (next) => openFallbackSession(next, true))))
           ]));
+
+  Widget autosaveIndicator() {
+    final failed = s.error != null;
+    final label = s.readOnly ? '只读' : failed ? '自动保存失败' :
+        s.saveState == '保存中' ? '正在自动保存' : s.saveState == '已保存' ? '已自动保存' : '自动保存已开启';
+    return Tooltip(
+      message: failed ? '${s.error}\n点击重试自动保存' : '编辑会自动保存到本地存档，重新打开可继续编辑。',
+      child: TextButton.icon(
+        key: const ValueKey('autosave-status'),
+        onPressed: failed ? () async { await s.flush(); } : null,
+        style: TextButton.styleFrom(
+          foregroundColor: failed ? Colors.deepOrange : const Color(0xff456b4e),
+          disabledForegroundColor: const Color(0xff456b4e),
+          padding: const EdgeInsets.symmetric(horizontal: 5), minimumSize: Size.zero,
+          textStyle: const TextStyle(fontSize: 12)),
+        icon: Icon(failed ? Icons.error_outline : s.saveState == '保存中' ? Icons.sync : Icons.cloud_done_outlined, size: 14),
+        label: Text(AppLanguage.text(label))),
+    );
+  }
 
   Widget documentHeading({bool showWindowError = false}) {
     final canRename =
@@ -2128,11 +2208,12 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                     padding: const EdgeInsets.symmetric(horizontal: 6),
                     child: Row(children: [
                       Expanded(child: documentHeading(showWindowError: true)),
+                      autosaveIndicator(),
                       historyButton(redo: false),
                       historyButton(redo: true),
                       seedChooserButton(),
                       sidebarModeButton('toolbox'),
-                      sidebarModeButton('library'),
+                      aboutButton(),
                       if (widget.tabBar == null) workspaceMoreMenu(),
                     ])),
                 SizedBox(
@@ -2543,8 +2624,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
         final document = Formation.fromJson(Map<String, dynamic>.from(
             jsonDecode(request['documentJson'] as String) as Map));
         next = EditorSession(s.repository,
-            document: document, name: request['name'] as String? ?? '未命名阵型',
-            deferInitialSave: true);
+            document: document, name: request['name'] as String? ?? '未命名阵型');
       } else if (request['kind'] == 'draft') {
         final matches =
             (await s.repository.listDrafts()).where((d) => d.id == id);
@@ -3781,6 +3861,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                                                 const SizedBox(width: 16),
                                                 Expanded(
                                                     child: documentHeading()),
+                                                autosaveIndicator(),
                                                 historyButton(redo: false),
                                                 historyButton(redo: true),
                                                 seedChooserButton(),
@@ -3794,7 +3875,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                                                           'finish-batch-toolbar')),
                                                 classicButton('窗口复位', resetWindowPositions),
                                                 sidebarModeButton('toolbox'),
-                                                sidebarModeButton('library')
+                                                                          aboutButton()
                                               ])),
                                           SizedBox(
                                               height: 680,
@@ -3855,6 +3936,31 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
           ? (Platform.isMacOS ? '恢复刚撤销的操作（⌘Y / ⇧⌘Z）' : '恢复刚撤销的操作（Ctrl+Y）')
           : (Platform.isMacOS ? '撤销上一步操作（⌘Z）' : '撤销上一步操作（Ctrl+Z）'));
 
+  bool gameBusy = false;
+  Future<void> gameFormationAction({required bool read}) async {
+    if (gameBusy) return;
+    setState(() => gameBusy = true);
+    try {
+      final target = read ? null : FormationExchange.decode(outputFormation.text);
+      final selected = await chooseRunningGame(context, read: read);
+      if (selected == null) return;
+      if (read) {
+        final current = await GameBridge.readFormation(selected.pid);
+        final code = FormationExchange.encode(current.formation);
+        if (!mounted) return;
+        inputFormation.text = code;
+        message(context, '已获取游戏阵型，可点击“载入布阵器”');
+      } else {
+        await GameWrites(Directory.systemTemp).apply(selected.pid, target!);
+        if (mounted) message(context, '已应用到游戏');
+      }
+    } catch (e) {
+      if (mounted) message(context, '${read ? '获取' : '应用'}失败：$e');
+    } finally {
+      if (mounted) setState(() => gameBusy = false);
+    }
+  }
+
   Widget classicButton(String label, VoidCallback? action,
       {bool active = false, Key? key, IconData? icon, bool iconOnly = false, String? tooltip}) {
     final button = Padding(
@@ -3876,7 +3982,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                         : const Color(0xffffffff),
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(7)),
-                    textStyle: const TextStyle(fontSize: 12)),
+                    textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
                 onPressed: action,
                 child: icon == null
                     ? Text(AppLanguage.text(label))
@@ -4152,7 +4258,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
               child: Text(AppLanguage.text(s.document.map.name),
                   style: const TextStyle(fontSize: 12),
                   overflow: TextOverflow.ellipsis)),
-          classicButton('下载地图', () async {
+          classicButton('导出底图', () async {
             try {
               final map = s.document.map;
               final path = 'image/${map.background}';
@@ -4163,7 +4269,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                       .asUint8List(bytes.offsetInBytes, bytes.lengthInBytes),
                   path.endsWith('.png') ? 'image/png' : 'image/jpeg');
             } catch (e) {
-              if (mounted) message(context, '下载地图失败：$e');
+              if (mounted) message(context, '导出底图失败：$e');
             }
           }, key: const ValueKey('original-imgBack')),
         ]),
@@ -4180,7 +4286,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
             style: const TextStyle(fontSize: 12)),
         if (OriginalAudio.soundStatus.value == 'missingAsset' && soundLevel > 0)
           Text(AppLanguage.text('种植音效暂不可用'),
-              style: const TextStyle(fontSize: 11, color: Colors.brown)),
+              style: const TextStyle(fontSize: 12, color: Colors.brown)),
         const SizedBox(height: 12),
         Row(children: [
           Text(AppLanguage.text('显示迷雾 '), style: const TextStyle(fontSize: 12)),
@@ -4204,7 +4310,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                           display: {...s.document.display, '迷雾': v! > 0}))),
           Expanded(
               child: Text(AppLanguage.text('(建议布好阵之后再选择显示)'),
-                  style: const TextStyle(fontSize: 11))),
+                  style: const TextStyle(fontSize: 12))),
         ]),
         const SizedBox(height: 10),
         originalCheck(
@@ -4362,22 +4468,19 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     if (classicTab == 4) {
       return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(AppLanguage.text('1.载入和导出布阵字符串')),
-        Text(AppLanguage.text('“载入”仅在本布阵器上生效，游戏布阵请使用：'),
-            style: const TextStyle(fontSize: 12)),
-        classicButton('PvZ Toolkit', () async {
-          await ProjectFiles.openExternal(
-              Uri.parse('https://pvz.lmintlcx.com/'));
-        }, key: const ValueKey('original-link-toolkit')),
         const SizedBox(height: 4),
+        if (Platform.isWindows)
+          classicButton('从游戏获取', gameBusy ? null : () => gameFormationAction(read: true),
+              key: const ValueKey('formation-read-game')),
         TextField(
             controller: inputFormation,
             minLines: 2,
             maxLines: 3,
             style: const TextStyle(fontSize: 12),
             decoration: InputDecoration(
-                hintText: AppLanguage.text('粘贴 Toolkit 或网页布阵器阵型码'))),
+                hintText: AppLanguage.text('粘贴 PvZ Toolkit 或网页布阵器阵型码'))),
         Wrap(children: [
-          classicButton('载入', () async {
+          classicButton('载入布阵器', () async {
             try {
               final value = inputFormation.text.trim();
               final document = FormationExchange.decode(value);
@@ -4410,23 +4513,22 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
           classicButton('一键格式化', formatForOutput,
               key: const ValueKey('formation-format')),
           Text(AppLanguage.text('后放置优先，清理冲突和不支持的内容；可撤销。'),
-              style: const TextStyle(fontSize: 11, color: Color(0xff63755f))),
+              style: const TextStyle(fontSize: 12, color: Color(0xff63755f))),
           Padding(
               padding: const EdgeInsets.only(top: 4),
               child: Text(outputEncodingError!,
                   key: const ValueKey('formation-output-error'),
                   style:
-                      const TextStyle(fontSize: 11, color: Colors.deepOrange))),
+                      const TextStyle(fontSize: 12, color: Colors.deepOrange))),
         ],
-        classicButton(
-            '复制',
-            outputEncodingError != null
-                ? null
-                : () async {
-                    await Clipboard.setData(
-                        ClipboardData(text: outputFormation.text));
-                  },
-            key: const ValueKey('formation-copy')),
+        Wrap(children: [
+          classicButton('复制', outputEncodingError != null ? null : () async {
+            await Clipboard.setData(ClipboardData(text: outputFormation.text));
+          }, key: const ValueKey('formation-copy')),
+          if (Platform.isWindows)
+            classicButton('应用到游戏', gameBusy || outputEncodingError != null ? null
+                : () => gameFormationAction(read: false), key: const ValueKey('formation-inject-game'), tooltip: '用当前阵型替换游戏中的布阵。'),
+        ]),
         const Divider(),
         Row(children: [
           Text(AppLanguage.text('输出倍率：'), style: const TextStyle(fontSize: 12)),
@@ -4479,22 +4581,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     if (classicTab == 5) return classicSettings();
     if (classicTab == 1) {
       return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [
-          Text(AppLanguage.text('懒人布局')),
-          classicButton(
-              '?',
-              () => showDialog<void>(
-                  context: context,
-                  builder: (ctx) => AlertDialog(
-                          content: Text(AppLanguage.text(
-                              '使用带参数的网址可以直接显示阵型\n比如http://jspvz.com/ArrayDesign/?66显示3C8P阵 ')),
-                          actions: [
-                            TextButton(
-                                onPressed: () => Navigator.pop(ctx),
-                                child: Text(AppLanguage.text('确定')))
-                          ])),
-              key: const ValueKey('original-help')),
-        ]),
+        Text(AppLanguage.text('懒人布局')),
         const SizedBox(height: 6),
         mapChangeControls(const ValueKey('lazy-change-map')),
         const SizedBox(height: 6),
@@ -4923,7 +5010,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                                                 (layer['rh'] as num)
                                                     .toDouble()))),
                                     Text('${row + 1}-${col + 1}',
-                                        style: const TextStyle(fontSize: 11))
+                                        style: const TextStyle(fontSize: 12))
                                   ])));
                         })),
                 actions: [
@@ -4971,8 +5058,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
       return;
     }
     final next =
-        EditorSession(s.repository, document: document, name: name ?? s.name,
-            deferInitialSave: true)
+        EditorSession(s.repository, document: document, name: name ?? s.name)
           ..filePath = filePath
           ..fileFormat = fileFormat
           ..lastFileBackup = lastFileBackup;
@@ -5151,7 +5237,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
               subtitle: Text(
                   AppLanguage.text(
                       '${presets.length} 个${label == '阵型' ? '名阵，与存档库共用' : '局部布局'}'),
-                  style: const TextStyle(fontSize: 11)),
+                  style: const TextStyle(fontSize: 12)),
               trailing: const Icon(Icons.chevron_right, size: 20),
               onTap: () => chooseFormationPreset(label))));
 
@@ -5260,7 +5346,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
       child: Text(
           AppLanguage.text(
               '${s.document.map.name} · ${s.document.pieces.length} 对象 · ${hover == null ? '点击格子' : '行 ${hover!.$1 + 1} / 列 ${hover!.$2 + 1}'} · $tool · ${cells.length} 格\n${tool == '选择' ? '点击植物切换状态；属性面板可精确选层' : tool == '平移' ? '拖动平移，双指缩放' : '单指编辑；切换“平移”后拖动画布'}'),
-          style: const TextStyle(fontSize: 11)));
+          style: const TextStyle(fontSize: 12)));
   void updateNativePlantingPointer(dynamic arguments) {
     final box = plantingBoardKey.currentContext?.findRenderObject();
     Offset? position;
@@ -5593,7 +5679,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                 padding: const EdgeInsets.all(8),
                 child: Text(AppLanguage.text('可自由叠放；没有强制游戏种植限制。'),
                     style:
-                        const TextStyle(fontSize: 11, color: Colors.black54)))
+                        const TextStyle(fontSize: 12, color: Colors.black54)))
           ])));
   Widget properties() => StatefulBuilder(
       builder: (ctx, set) =>
@@ -5738,7 +5824,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                       },
                 child: Text(AppLanguage.text('当前对象填满棋盘'))),
             Text(AppLanguage.text('效果、外表与卡槽自动保存到当前存档。'),
-                style: const TextStyle(fontSize: 11, color: Colors.black54)),
+                style: const TextStyle(fontSize: 12, color: Colors.black54)),
           ]));
   List<Widget> pieceProperties(Piece p, StateSetter set) => [
         Text(AppLanguage.text('${p.spec.name} · 占 ${p.spec.width} 格')),

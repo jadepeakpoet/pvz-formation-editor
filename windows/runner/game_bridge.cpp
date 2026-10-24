@@ -213,47 +213,32 @@ std::wstring Wide(const std::string &value) {
                         static_cast<int>(value.size()), result.data(), n);
   return result;
 }
-bool EntryMatchesDisk(HANDLE process, HANDLE file, uint32_t address) {
-  auto readAt = [file](uint64_t offset, void *output, size_t length) {
-    LARGE_INTEGER at{};
-    at.QuadPart = static_cast<LONGLONG>(offset);
-    DWORD read = 0;
-    return SetFilePointerEx(file, at, nullptr, FILE_BEGIN) &&
-           ReadFile(file, output, static_cast<DWORD>(length), &read, nullptr) &&
-           read == length;
-  };
-  uint64_t offset = 0;
-  if (!GamePe1051EntryOffset(readAt, address, 32, offset))
-    return false;
-  unsigned char disk[32]{}, memory[32]{};
-  SIZE_T bytes = 0;
-  if (!readAt(offset, disk, 32) ||
-      !ReadProcessMemory(
-          process, reinterpret_cast<LPCVOID>(static_cast<uintptr_t>(address)),
-          memory, 32, &bytes) ||
-      bytes != 32)
-    return false;
-  return memcmp(disk, memory, 32) == 0 && disk[0] != 0 && disk[0] != 0xcc &&
-         disk[0] != 0xe9;
+bool RuntimeEntryCompatible(HANDLE process, uint32_t address) {
+  MEMORY_BASIC_INFORMATION region{};
+  if (!VirtualQueryEx(process, reinterpret_cast<LPCVOID>(static_cast<uintptr_t>(address)),
+                      &region, sizeof(region)) || region.State != MEM_COMMIT ||
+      region.Type != MEM_IMAGE || reinterpret_cast<uintptr_t>(region.AllocationBase) != 0x400000 ||
+      (region.Protect & (PAGE_GUARD | PAGE_NOACCESS))) return false;
+  const DWORD protection = region.Protect & 0xff;
+  if (protection != PAGE_EXECUTE && protection != PAGE_EXECUTE_READ &&
+      protection != PAGE_EXECUTE_READWRITE && protection != PAGE_EXECUTE_WRITECOPY) return false;
+  uint8_t entry[16]{};
+  SIZE_T count=0;
+  return ReadProcessMemory(process, reinterpret_cast<LPCVOID>(static_cast<uintptr_t>(address)),
+                           entry, sizeof(entry), &count) && count==sizeof(entry) &&
+         entry[0]!=0 && entry[0]!=0xcc && entry[0]!=0xe9 && entry[0]!=0xeb && entry[0]!=0xc3;
 }
-
-bool WriteCompatible(HANDLE process, const std::string &executable) {
+bool WriteCompatible(HANDLE process, const std::string &) {
   try {
-    if (Read<uint8_t>(process, 0x552014) != 0xdb)
-      return false;
-    Handle file{
-        CreateFileW(Wide(executable).c_str(), GENERIC_READ,
-                    FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
-                    nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr)};
-    if (file.h == INVALID_HANDLE_VALUE)
-      return false;
-    // This is a live/disk code consistency check, not a claim of an official
-    // hash.
-    return EntryMatchesDisk(process, file.h, 0x40d120) &&
-           EntryMatchesDisk(process, file.h, 0x4679b0);
-  } catch (...) {
-    return false;
-  }
+    if (Read<uint8_t>(process, 0x552014) != 0xdb) return false;
+    // Like Toolkit, identify the loaded game instead of reopening its DRM-locked EXE.
+    for (uint32_t address : {0x40d120u,0x4679b0u,0x45e860u,0x40a160u,
+                              0x458d10u,0x40bc70u,0x5160c0u,0x466b80u,
+                              0x408f40u,0x426620u,0x44d000u,0x40bb2cu,0x41e1c0u}) {
+      if (!RuntimeEntryCompatible(process,address)) return false;
+    }
+    return true;
+  } catch (...) { return false; }
 }
 int Number(const M &value, const char *key) {
   auto it = value.find(V(key));
@@ -286,26 +271,24 @@ bool Flag(const M &value, const char *key) {
 }
 void RequireRepresentable(const M &snapshot) {
   const auto &map = std::get<std::string>(Field(snapshot, "map"));
-  const bool daytime = map == "day" || map == "pool" || map == "roof";
   const auto &pieces = std::get<L>(Field(snapshot, "pieces"));
   if (pieces.size() > 512)
     throw std::runtime_error("当前一次最多应用512个植物");
   for (const auto &item : pieces) {
     const auto &p = Object(item);
-    if (p.find(V("gridType")) != p.end())
-      throw std::runtime_error("当前版本尚不支持覆盖含墓碑、梯子或钉耙的阵型");
+    if (p.find(V("gridType")) != p.end()) {
+      const int kind=Number(p,"gridType"), row=Number(p,"row"), col=Number(p,"col");
+      if((kind!=1 && kind!=3 && kind!=11) || row<0 || row>(map=="pool" || map=="fog" ? 5 : 4) || col<0 || col>8 || Flag(p,"imitater"))
+        throw std::runtime_error("道具类型、位置或模仿者标志无效");
+      continue;
+    }
     const int type = Number(p, "type"), row = Number(p, "row"),
               col = Number(p, "col");
     if (type < 0 || type > 47 || row < 0 ||
         row > (map == "pool" || map == "fog" ? 5 : 4) || col < 0 || col > 8)
       throw std::runtime_error("阵型植物或坐标超出原版场地");
-    if (Flag(p, "imitater"))
-      throw std::runtime_error("当前版本尚不支持覆盖含模仿者的阵型");
-    const bool mushroom = type == 8 || type == 9 || type == 10 || type == 12 ||
-                          type == 13 || type == 14 || type == 15 ||
-                          type == 24 || type == 31 || type == 42;
-    if (Flag(p, "asleep") || (daytime && mushroom))
-      throw std::runtime_error("白天蘑菇与睡眠状态尚未适配，未修改游戏");
+
+
   }
 }
 
@@ -314,7 +297,7 @@ Composition(const M &snapshot) {
   std::vector<std::tuple<int, int, int, bool, bool>> value;
   for (const auto &p : std::get<L>(Field(snapshot, "pieces"))) {
     const auto &m = Object(p);
-    value.emplace_back(Number(m, "type"), Number(m, "row"), Number(m, "col"),
+    value.emplace_back(m.find(V("gridType"))==m.end() ? Number(m,"type") : 48+Number(m,"gridType"), Number(m, "row"), Number(m, "col"),
                        Flag(m, "imitater"), Flag(m, "asleep"));
   }
   std::sort(value.begin(), value.end());
@@ -418,7 +401,7 @@ M ApplyBoard(DWORD pid, const M &target, const M &expected) {
       pendingWrite = false;
     } else
       throw std::runtime_error(
-          "上次游戏主循环恢复未能确认，请先重新启动游戏；备份已保留");
+          "上次游戏主循环恢复未能确认，请先重新启动游戏；请重新获取阵型");
   }
   if (pendingWrite.exchange(true))
     throw std::runtime_error("上一次游戏操作尚未结束，请稍后重试");
@@ -435,11 +418,8 @@ M ApplyBoard(DWORD pid, const M &target, const M &expected) {
                                  PROCESS_CREATE_THREAD | SYNCHRONIZE,
                              FALSE, pid)};
   if (!t.supported || !process.h || !WriteCompatible(process.h, t.path))
-    throw std::runtime_error("当前原版1051程序的内存与磁盘代码校验未通过");
+    throw std::runtime_error("当前原版1051的运行内存或调用入口校验未通过");
   RequireRepresentable(target);
-  RequireRepresentable(expected);
-  if (Field(target, "map") != Field(expected, "map"))
-    throw std::runtime_error("目前仅支持应用到相同场地，未修改游戏");
   const uint32_t lawn = Read<uint32_t>(process.h, 0x6a9ec0),
                  board = Read<uint32_t>(process.h, lawn + 0x768);
   const int mode = Read<int32_t>(process.h, lawn + 0x7f8);
@@ -455,11 +435,12 @@ M ApplyBoard(DWORD pid, const M &target, const M &expected) {
   if (Read<uint32_t>(process.h, lawn + 0x768) != board)
     throw std::runtime_error("游戏场地在操作前发生变化，未应用阵型");
   const M before = ReadBoard(pid);
-  if (Field(before, "map") != Field(expected, "map") ||
+  if (std::get<std::string>(Field(before, "map")) !=
+          std::get<std::string>(Field(expected, "map")) ||
       Composition(before) != Composition(expected) ||
-      Field(before, "sunValue") != Field(expected, "sunValue"))
+      Number(before, "sunValue") != Number(expected, "sunValue"))
     throw std::runtime_error(
-        "游戏阵型在备份后发生变化，请重新读取并备份后重试");
+        "游戏阵型在读取后发生变化，请重新获取后重试");
   const int sun = Number(target, "sunValue");
   if (sun < 0 || sun > 999999)
     throw std::runtime_error("目标阳光值无效");
@@ -475,21 +456,86 @@ M ApplyBoard(DWORD pid, const M &target, const M &expected) {
       code.Call(0x4679b0);
     }
   }
+  const auto grids=Read<uint32_t>(process.h,board+0x11c), gridCount=Read<uint32_t>(process.h,board+0x120);
+  if(gridCount>4096 || (gridCount && !grids)) throw std::runtime_error("道具数组无效");
+  for(uint32_t i=0;i<gridCount;i++) {
+    const uint32_t address=grids+i*0xec;
+    const int kind=Read<int32_t>(process.h,address+8);
+    if(!Read<uint8_t>(process.h,address+0x20) && (kind==1 || kind==3 || kind==11)) {
+      code.Byte(0xbe); code.Dword(address); code.Call(0x44d000);
+    }
+  }
+  const auto targetMap = std::get<std::string>(Field(target,"map"));
+  const char* maps[] = {"day","night","pool","fog","roof","moonRoof"};
+  int targetScene=-1;
+  for (int i=0;i<6;i++) if (targetMap==maps[i]) targetScene=i;
+  if(targetScene<0) throw std::runtime_error("目标场地尚未适配");
+  const bool changeScene = targetMap != std::get<std::string>(Field(before,"map"));
+  if (changeScene) {
+    const auto mowers=Read<uint32_t>(process.h,board+0x100);
+    const auto mowerCapacity=Read<uint32_t>(process.h,board+0x104);
+    if(mowerCapacity>4096 || (mowerCapacity && !mowers))
+      throw std::runtime_error("小推车数组无效，未修改游戏");
+    bool hadMowers=false;
+    for(uint32_t i=0;i<mowerCapacity;i++) {
+      const auto address=mowers+i*0x48;
+      if(!Read<uint8_t>(process.h,address+0x30)) {
+        hadMowers=true; code.MovEax(address); code.Call(0x458d10);
+      }
+    }
+    code.StoreDword(board+0x554c,static_cast<uint32_t>(targetScene));
+    code.Byte(0xbe); code.Dword(board); // PickBackground receives Board in ESI.
+    code.Call(0x40a160);
+    const bool pool=targetScene==2 || targetScene==3;
+    for(uint32_t row=0;row<6;row++) {
+      const uint32_t rowType=pool ? ((row==2 || row==3) ? 2u : 1u) : (row==5 ? 0u : 1u);
+      code.StoreDword(board+0x5d8+row*4,rowType);
+      for(uint32_t col=0;col<9;col++)
+        code.StoreDword(board+0x168+(col*6+row)*4,pool && (row==2 || row==3) ? 3u : (!pool && row==5 ? 2u : 1u));
+    }
+    if(hadMowers) { code.MovEax(board); code.Push(board); code.Call(0x40bc70); }
+    if(!pool) {
+      const auto animations=Read<uint32_t>(process.h,lawn+0x820);
+      const auto systems=Read<uint32_t>(process.h,animations);
+      const auto particles=Read<uint32_t>(process.h,systems);
+      const auto capacity=Read<uint32_t>(process.h,systems+4);
+      if(capacity>65536 || (capacity && !particles))
+        throw std::runtime_error("场景粒子数组无效，未修改游戏");
+      for(uint32_t i=0;i<capacity;i++) {
+        const auto address=particles+i*0x2c;
+        if(!Read<uint8_t>(process.h,address+0x1c) && Read<int32_t>(process.h,address)==34) {
+          code.Push(address); code.Call(0x5160c0);
+        }
+      }
+      code.StoreDword(board+0x5620,0);
+    }
+  }
   auto pieces = std::get<L>(Field(target, "pieces"));
   auto order = [](int type) {
     return type == 16 || type == 33 ? 0 : type == 30 ? 2 : type == 35 ? 3 : 1;
   };
   std::stable_sort(pieces.begin(), pieces.end(), [&](const V &a, const V &b) {
-    return order(Number(Object(a), "type")) < order(Number(Object(b), "type"));
+    const auto rank=[&](const V& value) { const auto& p=Object(value);
+      return p.find(V("gridType"))!=p.end() ? 4 : order(Number(p,"type")); };
+    return rank(a)<rank(b);
   });
   for (const auto &item : pieces) {
     const auto &p = Object(item);
-    code.Push(0xffffffff);
-    code.Push(static_cast<uint32_t>(Number(p, "type")));
-    code.MovEax(static_cast<uint32_t>(Number(p, "row")));
-    code.Push(static_cast<uint32_t>(Number(p, "col")));
-    code.Push(board);
-    code.Call(0x40d120);
+    if(p.find(V("gridType"))!=p.end()) {
+      const int kind=Number(p,"gridType");
+      code.Byte(0xbf); code.Dword(static_cast<uint32_t>(Number(p,"row")));
+      if(kind==3) {
+        code.Push(static_cast<uint32_t>(Number(p,"col"))); code.MovEax(board); code.Call(0x408f40);
+      } else if(kind==1) {
+        code.Byte(0xbb); code.Dword(static_cast<uint32_t>(Number(p,"col")));
+        code.Push(Read<uint32_t>(process.h,board+0x160)); code.Call(0x426620);
+      } else {
+        code.PutRake(board,Number(p,"row"),Number(p,"col"));
+      }
+    } else {
+      code.PutPlant(board,Number(p,"row"),Number(p,"col"),Number(p,"type"),
+                    Flag(p,"asleep"),targetScene==0 || targetScene==2 || targetScene==4,Flag(p,"imitater"));
+    }
   }
   code.Byte(0x61);
   code.Byte(0x31);
@@ -546,26 +592,27 @@ M ApplyBoard(DWORD pid, const M &target, const M &expected) {
       }).detach();
       allocation = nullptr;
       thread = nullptr;
-      throw std::runtime_error("游戏调用超时，可能已部分应用；已保留备份，后台"
+      throw std::runtime_error("游戏调用超时，可能已部分应用；请重新获取阵型，后台"
                                "等待调用结束后恢复主循环");
     }
     DWORD exit = 0;
     if (!GetExitCodeThread(thread, &exit) || exit != 0)
       throw std::runtime_error(
-          "游戏构造函数异常退出，可能已部分应用；请使用备份恢复");
+          "游戏构造函数异常退出，可能已部分应用；请重新获取并注入阵型");
     WriteBytes(process.h, board + 0x5560, &sun, sizeof(sun));
     CloseHandle(thread);
     thread = nullptr;
     VirtualFreeEx(process.h, allocation, 0, MEM_RELEASE);
     allocation = nullptr;
     const M after = ReadBoard(pid);
-    if (Composition(after) != Composition(target) ||
-        Field(after, "sunValue") != Field(target, "sunValue"))
+    if (std::get<std::string>(Field(after,"map")) != targetMap ||
+        Composition(after) != Composition(target) ||
+        Number(after, "sunValue") != Number(target, "sunValue"))
       throw std::runtime_error(
-          "应用后阵型校验不一致，可能已部分应用；请使用备份恢复");
+          "应用后阵型校验不一致，可能已部分应用；请重新获取并注入阵型");
     if (!loop.Restore())
       throw std::runtime_error(
-          "阵型已应用但主循环恢复校验失败，请保留备份并重新启动游戏");
+          "阵型已应用但主循环恢复校验失败，请重新启动游戏");
     return M{{V("before"), V(before)}, {V("after"), V(after)}};
   } catch (...) {
     if (thread)
@@ -701,8 +748,8 @@ RegisterGameBridge(flutter::BinaryMessenger *messenger) {
             int64_t pid = 0;
             if (auto n = std::get_if<int32_t>(&it->second))
               pid = *n;
-            else if (auto n = std::get_if<int64_t>(&it->second))
-              pid = *n;
+            else if (auto widePid = std::get_if<int64_t>(&it->second))
+              pid = *widePid;
             if (pid <= 0 || pid > MAXDWORD)
               throw std::runtime_error("游戏进程无效");
             result->Success(V(ReadBoard(static_cast<DWORD>(pid))));
@@ -712,7 +759,7 @@ RegisterGameBridge(flutter::BinaryMessenger *messenger) {
         } catch (const std::exception &e) {
           std::string message = e.what();
           if (blockedPid.load() != 0)
-            message += "；游戏主循环恢复未能确认，请保留备份并重新启动游戏";
+            message += "；游戏主循环恢复未能确认，请重新启动游戏";
           result->Error("game_unavailable", message);
         }
       });

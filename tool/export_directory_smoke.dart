@@ -17,10 +17,10 @@ Future<void> main() async {
   final preference = File('${temporary.path}/support/export-preferences.json');
   ExportPreferences.fileOverride = preference;
   ExportPreferences.documentsDirectoryOverride = documents;
-  final expected = '${documents.path}/PVZ Formation Editor';
+  final expected = '${documents.path}/PvzFormationEditor';
   final custom = await Directory('${temporary.path}/My formations').create();
   final customChild =
-      await Directory('${custom.path}/PVZ Formation Editor').create();
+      await Directory('${custom.path}/PvzFormationEditor').create();
   final calls = <MethodCall>[];
   ParityBinding.handlers['pvz_formation_editor/files'] = (call) async {
     calls.add(call);
@@ -76,7 +76,7 @@ Future<void> main() async {
     h.check(
         second?.path == '$expected/second.png' &&
             await ExportPreferences.loadDirectory() == expected &&
-            !await Directory('$expected/PVZ Formation Editor').exists(),
+            !await Directory('$expected/PvzFormationEditor').exists(),
         'Remembered exports must not append nested application folders');
     await ExportPreferences.setDirectory(custom.path);
     final customSave =

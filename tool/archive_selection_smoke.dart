@@ -17,6 +17,7 @@ Future<void> main() async {
       (i) => ArchiveRecord(
           id: 'a$i',
           name: '个人阵型$i',
+          favorite: i == 0,
           document: Formation().toJson(),
           createdAt: DateTime(2026),
           updatedAt: DateTime(2026)));
@@ -42,6 +43,17 @@ Future<void> main() async {
   bool passed = false;
   String? failure;
   try {
+    h.check(h.find((w) => w.key == const ValueKey('library-favorite')).isEmpty,
+        'Favorite toggle hidden even for saved favorites');
+    h.check(
+        h.find((w) => w.key == const ValueKey('library-section-收藏')).isEmpty,
+        'Favorite category hidden');
+    h.check(
+        h
+            .find((w) =>
+                w.key == const ValueKey('library-export-favorites-direct'))
+            .isEmpty,
+        'Favorite export hidden');
     await h.tap('library-select-archives');
     await h.tap('library-select-a0');
     final field = h.find((w) => w is EditableText).single as StatefulElement;
@@ -72,7 +84,7 @@ Future<void> main() async {
     'error': failure,
     'flutterErrors': errors.map((e) => '${e.exception}').toList()
   };
-  File('/tmp/pvz-archive-selection-report.json')
+  File('${Directory.systemTemp.path}/pvz-archive-selection-report.json')
       .writeAsStringSync(jsonEncode(report));
   stdout.writeln(jsonEncode(report));
   exit(passed ? 0 : 1);

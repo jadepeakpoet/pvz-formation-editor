@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:test/test.dart';
 import 'package:pvz_formation_editor/domain/formation.dart';
+import 'package:pvz_formation_editor/domain/formation_exchange.dart';
 import 'package:pvz_formation_editor/domain/toolkit_codec.dart';
 
 String fixture(List<int> bytes, int rs) => base64.encode([
@@ -23,6 +24,43 @@ Piece piece(String type,
         effects: effects);
 
 void main() {
+  test(
+      'historical famous formation supplied by user survives all import formats',
+      () {
+    const code =
+        'LI5HDH/tAib/1HrXeldAXDjByF1AjX7kwjV5EJA18df513mXEtPBVT91RHxWRlfGVk91dlZnUYJejHa/VuVRBBhSVDSeSVlW';
+    final formation = FormationExchange.decode(code);
+    expect(formation.mapId, 'pool');
+    expect(formation.pieces.length, 86);
+    expect(ToolkitCodec.exportIssues(formation), isEmpty);
+    List<String> composition(Formation f) => f.pieces
+        .map((p) =>
+            '${p.type}:${p.row}:${p.col}:${p.asleep}:${p.effects.join(',')}')
+        .toList()
+      ..sort();
+    for (final format in [
+      FormationFormat.toolkit,
+      FormationFormat.website,
+      FormationFormat.project
+    ]) {
+      final restored = FormationExchange.decode(
+          FormationExchange.encode(formation, format: format));
+      expect(restored.mapId, formation.mapId);
+      expect(composition(restored), composition(formation));
+    }
+  });
+
+  test('user supplied Toolkit pool lineup decodes all 88 layers', () {
+    final f = ToolkitCodec.decode(
+        'LI43jH/kRlzjZrhRF3RUpjJeOFHFZEXTHtMe0tlawVVE7GI0efJc8npSWMdVLhV261Y=');
+    expect(f.mapId, 'pool');
+    expect(f.pieces.length, 88);
+    expect(f.pieces.where((p) => p.type == 'lily').length, 16);
+    expect(f.pieces.where((p) => p.type == 'gloom').length, 4);
+    expect(f.pieces.where((p) => p.type == 'pumpkin').length, 26);
+    expect(ToolkitCodec.decode(ToolkitCodec.encode(f)).pieces.length, 88);
+  });
+
   // Independent Python struct.pack('<H') + zlib.compress(level=9), from RFC1437.
   const empty = [
     'LI43NPRBVFRUDlRVVA==',

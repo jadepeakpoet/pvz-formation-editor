@@ -82,3 +82,13 @@ app.*.map.json
 /exports/
 /backups/
 /coverage/
+
+# Local SDKs
+/.local-tools/
+
+# Generated release and website output
+/release/
+/website/dist/
+/website/.wrangler/
+
+/.wrangler/

@@ -9,6 +9,7 @@
 #include <memory>
 
 #include "win32_window.h"
+#include "editor_windows.h"
 
 // A window that does nothing but host a Flutter view.
 class FlutterWindow : public Win32Window {
@@ -31,6 +32,8 @@ class FlutterWindow : public Win32Window {
   std::shared_ptr<bool> lifecycle_alive_ = std::make_shared<bool>(true);
   bool close_pending_ = false;
   bool close_approved_ = false;
+
+  std::unique_ptr<EditorWindows> editor_windows_;
 
   // The project to run.
   flutter::DartProject project_;

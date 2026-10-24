@@ -32,7 +32,7 @@ class GameFormationSnapshot {
   final Formation formation;
   final DateTime capturedAt;
 
-  /// Runtime attributes preserved with durable formation backups.
+  /// Runtime attributes retained in session formation backups.
   final List<Map<String, dynamic>> runtimePieces;
   GameFormationSnapshot(
       {required this.pid,
@@ -124,28 +124,31 @@ class GameBridge {
     return GameFormationSnapshot.fromJson(value);
   }
 
-  /// Caller must durably save expectedBefore.toJson() before invoking this.
+  /// expectedBefore is a transient consistency check, not a history backup.
   static Future<GameFormationSnapshot> applyFormation(
       int pid, Formation target, GameFormationSnapshot expectedBefore) async {
     if (pid <= 0 || expectedBefore.pid != pid) {
-      throw ArgumentError('备份对应的游戏进程不一致');
+      throw ArgumentError('读取的快照与游戏进程不一致');
     }
     final pieces = <Map<String, dynamic>>[];
     for (final p in target.pieces) {
       final type = WebsiteCodec.plantIds.indexOf(p.type);
-      if (type < 0) throw UnsupportedError('当前游戏应用暂不支持植物之外的道具或僵尸');
+      final gridType = {'grave': 1, 'ladder': 3, 'rake': 11}[p.type];
+      if (type < 0 && gridType == null) {
+        throw UnsupportedError('当前游戏应用暂不支持对象：${p.spec.name}');
+      }
       if (p.scale != 1 ||
           p.opacity != 1 ||
           p.flipped ||
           p.flippedVertical ||
-          p.effects.isNotEmpty) {
-        throw UnsupportedError('当前游戏应用暂不支持模仿者、缩放、翻转或图像特效');
+          p.effects.any((effect) => effect != '模仿者')) {
+        throw UnsupportedError('当前游戏应用暂不支持缩放、翻转或装饰图像特效');
       }
       pieces.add({
-        'type': type,
+        if (gridType == null) 'type': type else 'gridType': gridType,
         'row': p.row,
         'col': p.col,
-        'imitater': false,
+        'imitater': p.effects.contains('模仿者'),
         'asleep': p.toJson()['asleep'] == true
       });
     }
@@ -154,13 +157,14 @@ class GameBridge {
       'pid': pid,
       'target': {
         'map': target.mapId,
-        'sunValue': target.sunValue,
+        // Toolkit lineup codes contain no sun value. Inject the layout only.
+        'sunValue': expectedBefore.formation.sunValue,
         'pieces': pieces
       },
       'expectedBefore': expectedBefore.toJson()
     });
     if (result == null || result['after'] is! Map) {
-      throw StateError('游戏未返回应用后校验结果，请保留备份');
+      throw StateError('游戏未返回应用后校验结果，请重新获取阵型');
     }
     return GameFormationSnapshot.fromJson(
         Map<Object?, Object?>.from(result['after'] as Map));

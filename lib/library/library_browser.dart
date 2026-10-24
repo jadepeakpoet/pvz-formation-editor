@@ -1,3 +1,4 @@
+import '../platform/features.dart';
 import '../widgets/app_dropdown.dart';
 import '../platform/app_language.dart';
 import 'package:flutter/material.dart';
@@ -22,6 +23,7 @@ class LibraryBrowser extends StatefulWidget {
   final String? error;
   final VoidCallback? onImportGameSave;
   final bool showTitle;
+  final bool gameBusy;
   final Future<void> Function(Formation?)? onGameTools;
   final List<LibraryPreset> presets;
   final ValueChanged<LibraryPreset>? onPresetPick;
@@ -50,6 +52,7 @@ class LibraryBrowser extends StatefulWidget {
       this.onGameTools,
       this.onImportGameSave,
       this.showTitle = true,
+      this.gameBusy = false,
       this.presets = const [],
       this.onPresetPick,
       this.onAddPreset,
@@ -155,11 +158,12 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
                 key: const ValueKey('library-export-all'),
                 enabled: widget.archives.isNotEmpty,
                 child: Text(AppLanguage.text('我的存档'))),
-            PopupMenuItem(
-                value: 'favorites',
-                key: const ValueKey('library-export-favorites'),
-                enabled: favoriteCount > 0,
-                child: Text(AppLanguage.text('收藏'))),
+            if (favoritesEnabled)
+              PopupMenuItem(
+                  value: 'favorites',
+                  key: const ValueKey('library-export-favorites'),
+                  enabled: favoriteCount > 0,
+                  child: Text(AppLanguage.text('收藏'))),
             if (selectedArchiveIds.isNotEmpty)
               PopupMenuItem(
                   value: 'selected',
@@ -209,6 +213,25 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
             spacing: 4,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
+              if (widget.onExportArchives != null) selectionButton(),
+              if (widget.onExportArchives != null)
+                TextButton(
+                    key: const ValueKey('library-export-all-direct'),
+                    onPressed: exportingArchives ||
+                            deduplicatingArchives ||
+                            widget.archives.isEmpty
+                        ? null
+                        : () => exportArchives(widget.archives),
+                    child: Text(AppLanguage.text('导出全部'))),
+              if (favoritesEnabled && widget.onExportArchives != null)
+                TextButton(
+                    key: const ValueKey('library-export-favorites-direct'),
+                    onPressed: exportingArchives ||
+                            deduplicatingArchives ||
+                            favoriteExports.isEmpty
+                        ? null
+                        : () => exportArchives(favoriteExports),
+                    child: Text(AppLanguage.text('导出收藏'))),
               if (!selectingArchives) ...[
                 if (widget.onDeduplicate != null)
                   TextButton(
@@ -229,6 +252,17 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
                     onPressed: () => setState(() =>
                         selectedArchiveIds.addAll(visible.map((a) => a.id))),
                     child: Text(AppLanguage.text('全选当前结果'))),
+                TextButton(
+                    key: const ValueKey('library-selection-clear'),
+                    onPressed: () => setState(selectedArchiveIds.clear),
+                    child: Text(AppLanguage.text('清除选择'))),
+                if (widget.onExportArchives != null)
+                  TextButton(
+                      key: const ValueKey('library-export-selected-direct'),
+                      onPressed: exportingArchives || chosen.isEmpty
+                          ? null
+                          : () => exportArchives(chosen),
+                      child: Text(AppLanguage.text('导出已选'))),
               ]
             ]));
   }
@@ -259,6 +293,11 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
   @override
   void didUpdateWidget(covariant LibraryBrowser oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.archives.isEmpty && widget.archives.isNotEmpty) {
+      section = '我的存档';
+      selected = null;
+      narrowDetails = false;
+    }
     if (selected != null && !entries.any((e) => e.id == selected)) {
       selected = null;
       narrowDetails = false;
@@ -754,6 +793,12 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
   }
 
   void action(String value, _Entry e) {
+    if (value == 'apply-game') {
+      if (!widget.gameBusy && e.formation != null) {
+        widget.onGameTools?.call(e.formation);
+      }
+      return;
+    }
     if (e.preset != null) {
       presetAction(value, e);
       return;
@@ -785,10 +830,12 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
             'open-current': '当前标签页使用模板',
             'open-tab': '新标签页使用模板',
             'copy-code': '复制 Toolkit 阵型码',
+            if (widget.onGameTools != null && e.formation != null)
+              'apply-game': '应用到游戏',
             'copy-image': '复制图片',
             'export-image': '导出图片',
             'preview': '只读预览',
-            'favorite': e.favorite ? '取消收藏' : '收藏',
+            if (favoritesEnabled) 'favorite': e.favorite ? '取消收藏' : '收藏',
             'copy': '加入我的存档',
             'export': '导出完整项目',
           }
@@ -796,13 +843,15 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
             'open-current': '当前标签页打开',
             if (widget.onOpenArchiveTab != null) 'open-tab': '新标签页打开',
             'copy-code': '复制 Toolkit 阵型码',
+            if (widget.onGameTools != null && e.formation != null)
+              'apply-game': '应用到游戏',
             'copy-image': '复制图片',
             'export-image': '导出图片',
             'preview': '只读预览',
             'rename': '重命名',
             'tags': '设置标签',
             'metadata': '名称、备注、标签',
-            'favorite': e.favorite ? '取消收藏' : '收藏',
+            if (favoritesEnabled) 'favorite': e.favorite ? '取消收藏' : '收藏',
             'copy': '另存为副本',
             'versions': '历史版本与回退',
             'export': '导出完整项目',
@@ -811,9 +860,11 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
     return labels.entries
         .map((item) => PopupMenuItem(
             value: item.key,
-            enabled: e.preset == null ||
-                widget.onPresetAction != null ||
-                (item.key == 'copy' && widget.onAddPreset != null),
+            enabled: item.key == 'apply-game'
+                ? !widget.gameBusy
+                : (e.preset == null ||
+                    widget.onPresetAction != null ||
+                    (item.key == 'copy' && widget.onAddPreset != null)),
             child: Text(AppLanguage.text(item.value))))
         .toList();
   }
@@ -847,7 +898,7 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
               const Icon(Icons.grass_rounded, color: green, size: 28),
               if (!compact) ...[
                 const SizedBox(width: 9),
-                Text(AppLanguage.text('阵型收藏'),
+                Text(AppLanguage.text('存档库'),
                     style: const TextStyle(
                         fontSize: 13, fontWeight: FontWeight.w700, color: ink))
               ]
@@ -855,7 +906,8 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
         for (final item in [
           ('预制名阵', Icons.auto_awesome_outlined, widget.presets.length),
           ('我的存档', Icons.inventory_2_outlined, widget.archives.length),
-          ('收藏', Icons.star_outline_rounded, favoriteCount)
+          if (favoritesEnabled)
+            ('收藏', Icons.star_outline_rounded, favoriteCount)
         ])
           Padding(
               padding: const EdgeInsets.only(bottom: 8),
@@ -953,8 +1005,6 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
                         ]))),
                 if (widget.onExportArchives != null) exportMenu(),
               ])),
-          if (section == '我的存档' && widget.onExportArchives != null)
-            selectionButton(),
           if (widget.onGameTools != null)
             TextButton.icon(
                 key: const ValueKey('library-game-tools'),
@@ -998,7 +1048,7 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
               key: const ValueKey('library-sort'),
               value: sort,
               underline: const SizedBox(),
-              items: ['最近修改', '名称', '收藏优先']
+              items: ['最近修改', '名称', if (favoritesEnabled) '收藏优先']
                   .map((s) => DropdownMenuItem(
                       value: s,
                       child: Text(
@@ -1150,7 +1200,7 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
                                     fontSize: 11, color: Color(0xff899286)))
                           ]
                         ])),
-                    if (e.favorite)
+                    if (favoritesEnabled && e.favorite)
                       const Icon(Icons.star_rounded,
                           size: 20,
                           color: Color(0xffffb300),
@@ -1185,7 +1235,8 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
                                   e.preset != null ? '预制名阵' : '存档详情'),
                               style: const TextStyle(
                                   color: Color(0xff72816f), fontSize: 12))),
-                      if (e.archive != null || e.preset != null)
+                      if (favoritesEnabled &&
+                          (e.archive != null || e.preset != null))
                         IconButton(
                             key: const ValueKey('library-favorite'),
                             tooltip:
@@ -1235,16 +1286,9 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
                             : '修改于 ${date(e.updated)}'),
                         style: const TextStyle(
                             fontSize: 11, color: Color(0xff85917e))),
-                    if (widget.onGameTools != null && e.formation != null)
-                      TextButton.icon(
-                          key: const ValueKey('library-apply-game'),
-                          onPressed: () => widget.onGameTools!(e.formation),
-                          icon: const Icon(Icons.sports_esports_outlined,
-                              size: 16),
-                          label: Text(AppLanguage.text('应用到游戏'))),
                     const SizedBox(height: 12),
                     if (e.preset != null) ...[
-                      Text(AppLanguage.text('使用模板会创建可编辑副本。也可以直接收藏模板或加入我的存档。'),
+                      Text(AppLanguage.text('使用模板会创建可编辑副本，也可以加入我的存档。'),
                           style: const TextStyle(
                               fontSize: 12,
                               height: 1.6,
@@ -1269,13 +1313,7 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
                                   : () => action('open-tab', e),
                               icon: const Icon(Icons.tab_outlined, size: 18),
                               label: Text(AppLanguage.text('新标签页使用模板')))),
-                      TextButton.icon(
-                          key: const ValueKey('library-copy-code'),
-                          onPressed: widget.onPresetAction == null
-                              ? null
-                              : () => action('copy-code', e),
-                          icon: const Icon(Icons.copy, size: 16),
-                          label: Text(AppLanguage.text('复制 Toolkit 阵型码'))),
+                      formationCodeActions(e),
                       const SizedBox(height: 6),
                       SizedBox(
                           width: double.infinity,
@@ -1347,11 +1385,7 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
                                 icon: const Icon(Icons.tab_outlined, size: 18),
                                 label: Text(AppLanguage.text('新标签页打开')))),
                       ],
-                      TextButton.icon(
-                          key: const ValueKey('library-copy-code'),
-                          onPressed: () => action('copy-code', e),
-                          icon: const Icon(Icons.copy, size: 16),
-                          label: Text(AppLanguage.text('复制 Toolkit 阵型码'))),
+                      formationCodeActions(e),
                       const SizedBox(height: 10),
                       Text(AppLanguage.text('保存可更新原存档并保留历史；另存为可创建独立副本。'),
                           style: const TextStyle(
@@ -1360,6 +1394,37 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
                               color: Color(0xff85917e)))
                     ]
                   ])));
+  Widget formationCodeActions(_Entry e) => Row(children: [
+        Expanded(
+            flex: 3,
+            child: TextButton(
+                key: const ValueKey('library-copy-code'),
+                style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 2),
+                    minimumSize: Size.zero),
+                onPressed: e.preset != null && widget.onPresetAction == null
+                    ? null
+                    : () => action('copy-code', e),
+                child: Text(AppLanguage.text('复制 Toolkit 阵型码'),
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 12)))),
+        if (widget.onGameTools != null && e.formation != null) ...[
+          const SizedBox(width: 4),
+          Expanded(
+              flex: 2,
+              child: TextButton(
+                  key: const ValueKey('library-apply-game'),
+                  style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 2),
+                      minimumSize: Size.zero),
+                  onPressed:
+                      widget.gameBusy ? null : () => action('apply-game', e),
+                  child: Text(AppLanguage.text('应用到游戏'),
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: 12)))),
+        ],
+      ]);
+
   List<PopupMenuEntry<String>> importItems() => [
         PopupMenuItem(
             value: 'project', child: Text(AppLanguage.text('导入项目文件'))),
@@ -1390,7 +1455,7 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
         for (final category in [
           ('预制名阵', '预制', widget.presets.length),
           ('我的存档', '我的', widget.archives.length),
-          ('收藏', '收藏', favoriteCount)
+          if (favoritesEnabled) ('收藏', '收藏', favoriteCount)
         ])
           Expanded(
               child: Tooltip(
@@ -1474,8 +1539,6 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
             itemBuilder: (_) => importItems()),
         if (widget.onExportArchives != null) exportMenu(),
         if (!widget.showTitle) const Spacer(),
-        if (section == '我的存档' && widget.onExportArchives != null)
-          selectionButton(),
         if (widget.onGameTools != null)
           IconButton(
               key: const ValueKey('library-game-tools'),
@@ -1537,13 +1600,19 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
                   padding: const EdgeInsets.all(6),
                   icon: const Icon(Icons.sort, size: 20),
                   onSelected: (v) => setState(() => sort = v),
-                  itemBuilder: (_) => ['最近修改', '名称', '收藏优先']
-                      .map((v) => CheckedPopupMenuItem(
-                          value: v,
-                          checked: sort == v,
-                          child: Text(AppLanguage.text(
-                              section == '预制名阵' && v == '最近修改' ? '原站顺序' : v))))
-                      .toList())
+                  itemBuilder: (_) => [
+                        '最近修改',
+                        '名称',
+                        if (favoritesEnabled) '收藏优先'
+                      ]
+                          .map((v) => CheckedPopupMenuItem(
+                              value: v,
+                              checked: sort == v,
+                              child: Text(AppLanguage.text(
+                                  section == '预制名阵' && v == '最近修改'
+                                      ? '原站顺序'
+                                      : v))))
+                          .toList())
             ])),
         tagBrowser(),
         if (filterSummary.isNotEmpty)

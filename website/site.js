@@ -1,0 +1,1 @@
+document.querySelector('#copy-group')?.addEventListener('click',async()=>{const s=document.querySelector('#copy-status');const en=document.documentElement.lang==='en';try{await navigator.clipboard.writeText('425175276');s.textContent=en?' Copied':' 已复制';}catch{s.textContent=en?' Copy this number: 425175276':' 请手动复制：425175276';}});

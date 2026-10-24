@@ -1,7 +1,7 @@
 /// English labels for the library, dialogs, and editor widgets.
 const Map<String, String> widgetTranslations = {
-  '默认使用文稿目录下的“PVZ Formation Editor”文件夹。每次导出时仍可更改保存位置。':
-      'Uses Documents/PVZ Formation Editor by default. You can choose another folder for each export.',
+  '默认使用文稿目录下的“PvzFormationEditor”文件夹。每次导出时仍可更改保存位置。':
+      'Uses Documents/PvzFormationEditor by default. You can choose another folder for each export.',
   '布阵器专用目录': 'Formation editor folder',
   '恢复默认目录': 'Restore default folder',
   '选择标签': 'Choose a tag',

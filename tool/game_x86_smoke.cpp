@@ -62,6 +62,22 @@ void CheckPeEntries() {
                "incompatible version/machine/section rejection passed\n";
 }
 int main() {
+  GameX86 dayGloom;
+  dayGloom.PutPlant(0x12345678,2,3,42,false,true);
+  assert(dayGloom.calls.size()==2 && dayGloom.calls[0].target==0x40d120 &&
+         dayGloom.calls[1].target==0x45e860);
+  assert(dayGloom.bytes.at(30)==0x50 && Decode(dayGloom.bytes,32)==0 && dayGloom.bytes.back()==0x58);
+  GameX86 asleepGloom;
+  asleepGloom.PutPlant(0x12345678,2,3,42,true,true);
+  assert(Decode(asleepGloom.bytes,32)==1);
+  GameX86 nightGloom;
+  nightGloom.PutPlant(0x12345678,2,3,42,false,false);
+  assert(nightGloom.calls.size()==1);
+  GameX86 terrain;
+  terrain.StoreDword(0x12345678,3);
+  assert(terrain.bytes.size()==10 && terrain.bytes[0]==0xc7 && terrain.bytes[1]==5 &&
+         Decode(terrain.bytes,2)==0x12345678 && Decode(terrain.bytes,6)==3);
+
   CheckPeEntries();
   GameX86 c;
   c.Byte(0x60);

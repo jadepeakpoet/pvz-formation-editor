@@ -250,7 +250,7 @@ Future<void> main() async {
     await legacyRepo.close();
     await legacyDir.delete(recursive: true);
     results.add('legacy-session-adopts-migrated-archive-without-duplicate');
-    await File('/tmp/pvz-session-autosave-report.json')
+    await File('${Directory.systemTemp.path}/pvz-session-autosave-report.json')
         .writeAsString(jsonEncode({
       'pass': results,
       'draftUI': 'removed',

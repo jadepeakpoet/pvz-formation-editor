@@ -1,3 +1,4 @@
+import '../widgets/app_about.dart';
 import '../platform/app_language.dart';
 import '../platform/language_selector.dart';
 import 'package:flutter/material.dart';
@@ -84,7 +85,7 @@ class _ExportSettingsDialogState extends State<_ExportSettingsDialog> {
                     const SizedBox(height: 8),
                     Text(
                         AppLanguage.text(
-                            '默认使用文稿目录下的“PVZ Formation Editor”文件夹。每次导出时仍可更改保存位置。'),
+                            '默认使用文稿目录下的“PvzFormationEditor”文件夹。每次导出时仍可更改保存位置。'),
                         style: const TextStyle(
                             fontSize: 12,
                             height: 1.6,
@@ -136,6 +137,9 @@ class _ExportSettingsDialogState extends State<_ExportSettingsDialog> {
                               const TextStyle(fontSize: 12, color: Colors.red))
                   ]))),
           actions: [
+            TextButton(
+                onPressed: () => showAppAbout(context),
+                child: Text(AppLanguage.text('关于'))),
             TextButton(
                 key: const ValueKey('export-settings-cancel'),
                 onPressed: busy ? null : () => Navigator.of(context).pop(),

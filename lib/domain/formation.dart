@@ -498,7 +498,7 @@ class Formation {
         '脑子': false,
         '迷雾': false,
         '继续标识': false,
-        '泥土': true
+        '泥土': false
       }})
       : seedSlots = List.unmodifiable(seedSlots),
         imitaterSeedSlots =

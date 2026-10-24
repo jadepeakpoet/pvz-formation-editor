@@ -9,11 +9,11 @@ import '../domain/formation.dart';
 import '../domain/formation_exchange.dart';
 import '../editor/board_painter.dart';
 import '../platform/game_bridge.dart';
-import '../platform/game_backups.dart';
+import '../platform/game_writes.dart';
 import '../platform/project_files.dart';
 import '../storage/file_backups.dart';
 
-/// Windows game integration is kept in the library's own dialog/window.
+/// Shared Windows game integration for the editor and archive library.
 class GamePanel extends StatefulWidget {
   final Formation? target;
   final Future<void> Function(Formation) onArchive, onEdit;
@@ -26,12 +26,11 @@ class GamePanel extends StatefulWidget {
 class _GamePanelState extends State<GamePanel> {
   List<RunningGame> games = [];
   List<GameSaveFile> files = [];
-  List<String> memoryBackups = [];
   RunningGame? selected;
   GameFormationSnapshot? snapshot;
-  String? error, notice, lastMemoryBackup, lastFileBackup, restoredFile;
+  String? error, notice, lastFileBackup, restoredFile;
   bool busy = false;
-  GameBackups? backups;
+  GameWrites? backups;
   @override
   void initState() {
     super.initState();
@@ -61,51 +60,28 @@ class _GamePanelState extends State<GamePanel> {
             found.firstOrNull;
         games = found;
         snapshot = null;
-        lastMemoryBackup = null;
         lastFileBackup = null;
         restoredFile = null;
-        memoryBackups =
-            selected == null ? [] : await (await store()).list(selected!.pid);
-        if (memoryBackups.isNotEmpty) lastMemoryBackup = memoryBackups.first;
         files = selected == null
             ? []
             : await GameBridge.listSaveFiles(selected!.pid);
         if (mounted) setState(() {});
       });
 
-  Future<GameBackups> store() async {
+  Future<GameWrites> store() async {
     if (backups != null) return backups!;
     final directory = await getApplicationSupportDirectory();
-    return backups = GameBackups(Directory('${directory.path}/game-backups'));
+    return backups = GameWrites(Directory('${directory.path}/game-backups'));
   }
 
   Future<void> read() => run(() async {
         snapshot = await GameBridge.readFormation(selected!.pid);
-        files = await GameBridge.listSaveFiles(selected!.pid);
         if (mounted) setState(() {});
       });
 
   Future<void> apply() => run(() async {
-        try {
-          final result =
-              await (await store()).apply(selected!.pid, widget.target!);
-          snapshot = result.after;
-          lastMemoryBackup = result.backupPath;
-          memoryBackups = await (await store()).list(selected!.pid);
-          notice = '阵型已写入游戏，原阵型已备份。';
-        } on GameWriteFailure catch (e) {
-          lastMemoryBackup = e.backupPath;
-          rethrow;
-        }
-      });
-
-  Future<void> undo() => run(() async {
-        final result =
-            await (await store()).undo(selected!.pid, lastMemoryBackup!);
-        snapshot = result.after;
-        lastMemoryBackup = result.backupPath;
-        memoryBackups = await (await store()).list(selected!.pid);
-        notice = '已恢复原阵型，恢复前的内容也已备份。';
+        snapshot = await (await store()).apply(selected!.pid, widget.target!);
+        notice = '已应用到游戏。';
       });
 
   Future<Uint8List> readSave(GameSaveFile file) async {
@@ -148,7 +124,7 @@ class _GamePanelState extends State<GamePanel> {
                 'originalPath': file.path,
                 'createdAt': DateTime.now().toUtc().toIso8601String(),
                 'bytes': bytes.length,
-                'crc32': GameBackups.checksum(bytes)
+                'crc32': GameWrites.checksum(bytes)
               }),
               flush: true);
           lastFileBackup = path;
@@ -181,7 +157,7 @@ class _GamePanelState extends State<GamePanel> {
                           tooltip: AppLanguage.text('关闭'),
                           icon: const Icon(Icons.close))
                     ]),
-                    Text(AppLanguage.text('原版 PvZ 1.0.0.1051 · 写入前自动备份原阵型'),
+                    Text(AppLanguage.text('原版 PvZ 1.0.0.1051 · 读取 / 注入当前游戏阵型'),
                         style: const TextStyle(
                             fontSize: 12, color: Colors.black54)),
                     const SizedBox(height: 8),
@@ -220,18 +196,9 @@ class _GamePanelState extends State<GamePanel> {
                                             selected = games.firstWhere(
                                                 (g) => g.pid == pid);
                                             snapshot = null;
-                                            lastMemoryBackup = null;
                                             lastFileBackup = null;
                                             restoredFile = null;
-                                            memoryBackups = [];
                                             await run(() async {
-                                              memoryBackups =
-                                                  await (await store())
-                                                      .list(selected!.pid);
-                                              if (memoryBackups.isNotEmpty) {
-                                                lastMemoryBackup =
-                                                    memoryBackups.first;
-                                              }
                                               files = await GameBridge
                                                   .listSaveFiles(selected!.pid);
                                             });
@@ -242,45 +209,15 @@ class _GamePanelState extends State<GamePanel> {
                                           busy || selected?.canRead != true
                                               ? null
                                               : read,
-                                      child: Text(AppLanguage.text('读取游戏现场'))),
-                                  OutlinedButton(
-                                      onPressed: busy ||
-                                              widget.target == null ||
-                                              selected?.canWrite != true
-                                          ? null
-                                          : apply,
-                                      child:
-                                          Text(AppLanguage.text('应用所选阵型到游戏'))),
-                                  OutlinedButton(
-                                      onPressed:
-                                          busy || lastMemoryBackup == null
-                                              ? null
-                                              : undo,
-                                      child: Text(AppLanguage.text('撤销上次覆盖'))),
+                                      child: Text(AppLanguage.text('获取阵型'))),
+                                  if (widget.target != null)
+                                    OutlinedButton(
+                                        onPressed:
+                                            busy || selected?.canWrite != true
+                                                ? null
+                                                : apply,
+                                        child: Text(AppLanguage.text('应用到游戏'))),
                                 ]),
-                                if (memoryBackups.isNotEmpty)
-                                  AppDropdown<String>(
-                                      value: lastMemoryBackup,
-                                      isExpanded: true,
-                                      hint:
-                                          Text(AppLanguage.text('选择要恢复的阵型备份')),
-                                      items: memoryBackups
-                                          .map((p) => DropdownMenuItem(
-                                              value: p,
-                                              child: Text(
-                                                  p
-                                                      .replaceAll('\\', '/')
-                                                      .split('/')
-                                                      .last,
-                                                  overflow:
-                                                      TextOverflow.ellipsis,
-                                                  style: const TextStyle(
-                                                      fontSize: 11))))
-                                          .toList(),
-                                      onChanged: busy
-                                          ? null
-                                          : (value) => setState(
-                                              () => lastMemoryBackup = value)),
                                 if (snapshot != null) ...[
                                   const SizedBox(height: 10),
                                   SizedBox(

@@ -6,7 +6,7 @@ import 'package:path_provider/path_provider.dart';
 /// Read from disk on every call so independent Flutter windows share settings.
 class ExportPreferences {
   static const _channel = MethodChannel('pvz_formation_editor/files');
-  static const applicationDirectoryName = 'PVZ Formation Editor';
+  static const applicationDirectoryName = 'PvzFormationEditor';
 
   // Isolated harnesses never need to create folders in the user's Documents.
   static File? fileOverride;
@@ -51,7 +51,10 @@ class ExportPreferences {
     }
     try {
       final documents = await _documents();
-      if (stored != null && !_sameDirectory(stored, documents.path)) {
+      final legacyDefault = Directory(
+          '${documents.path}${Platform.pathSeparator}PVZ Formation Editor').path;
+      if (stored != null && !_sameDirectory(stored, documents.path) &&
+          !_sameDirectory(stored, legacyDefault)) {
         return stored;
       }
       return Directory(

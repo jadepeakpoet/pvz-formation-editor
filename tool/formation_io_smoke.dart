@@ -1,3 +1,4 @@
+// ignore_for_file: invalid_use_of_visible_for_testing_member
 // Real Flutter editor + temporary files/SQLite; ONLY file dialog channel mocked.
 import 'dart:async';
 import 'dart:convert';
@@ -8,6 +9,8 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:pvz_formation_editor/main.dart' as app;
 import 'package:pvz_formation_editor/domain/formation.dart';
+import 'package:pvz_formation_editor/platform/project_files.dart';
+import 'package:pvz_formation_editor/platform/export_preferences.dart';
 import 'package:pvz_formation_editor/domain/formation_exchange.dart';
 import 'package:pvz_formation_editor/domain/toolkit_codec.dart';
 import 'package:pvz_formation_editor/domain/website_codec.dart';
@@ -113,6 +116,10 @@ Future<void> main() async {
     await settle();
   }
 
+  ProjectFiles.desktopDialogOverride = ({required save, required name}) async =>
+      save ? dialogs.savePath : dialogs.pickPath;
+  ExportPreferences.fileOverride = File('${dir.path}/export-preferences.json');
+  ExportPreferences.documentsDirectoryOverride = dir;
   try {
     await mount();
     dialogs.savePath = '${dir.path}/default.txt';
@@ -194,6 +201,13 @@ Future<void> main() async {
             session.document.mapId == 'roof',
         'Toolkit import exactscene andpath');
     report.add('Toolkit file import detected with exact scene/path');
+    final historical = '${dir.path}/历史名阵.txt';
+    await File(historical).writeAsString('LI5HDH/tAib/1HrXeldAXDjByF1AjX7kwjV5EJA18df513mXEtPBVT91RHxWRlfGVk91dlZnUYJejHa/VuVRBBhSVDSeSVlW');
+    dialogs.pickPath = historical;
+    await page.transfer('import');
+    check(session.document.mapId == 'pool' && session.document.pieces.length == 86,
+        'User historical formation loads through the real editor');
+    report.add('user historical famous formation imports 86 objects through editor');
     final source = await repo.saveArchive(
         id: 'original-archive',
         name: session.name,
@@ -238,7 +252,8 @@ Future<void> main() async {
         'Readonly source remains readonly unchangedidentity');
     report.add('readonly archive SaveAs preserves source');
     check(errors.isEmpty, 'Flutter errors $errors');
-    await File('/tmp/pvz-formation-io-report.json').writeAsString(jsonEncode({
+    await File('${Directory.systemTemp.path}/pvz-formation-io-report.json')
+        .writeAsString(jsonEncode({
       'pass': report,
       'errors': errors,
       'scope':

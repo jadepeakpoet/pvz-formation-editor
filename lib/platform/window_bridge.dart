@@ -75,6 +75,7 @@ class WindowBridge {
         case 'toolboxVisibilityChanged':
         case 'sidebarStateChanged':
         case 'editorPointerMoved':
+        case 'selectToolboxTab':
         case 'mainAction':
         case 'libraryOpen':
         case 'showHistory':

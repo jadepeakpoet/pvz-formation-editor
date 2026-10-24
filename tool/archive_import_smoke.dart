@@ -44,7 +44,7 @@ Future<void> main() async {
     } on FormatException {/* Whole file validated before writes. */}
     check(
         (await repo.listArchives()).length == 3, 'invalid file wrote nothing');
-    await File('/tmp/pvz-archive-import-report.json').writeAsString(jsonEncode({
+    await File('${Directory.systemTemp.path}/pvz-archive-import-report.json').writeAsString(jsonEncode({
       'status': 'pass',
       'checks': [
         'same content skip independent of name',

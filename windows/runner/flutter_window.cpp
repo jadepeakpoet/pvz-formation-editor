@@ -35,6 +35,7 @@ bool FlutterWindow::OnCreate() {
           "pvz_formation_editor/lifecycle",
           &flutter::StandardMethodCodec::GetInstance());
   SetChildContent(flutter_controller_->view()->GetNativeWindow());
+  editor_windows_ = std::make_unique<EditorWindows>(this, flutter_controller_->engine()->messenger(), project_);
 
   flutter_controller_->engine()->SetNextFrameCallback([&]() {
     this->Show();
@@ -50,6 +51,7 @@ bool FlutterWindow::OnCreate() {
 
 void FlutterWindow::OnDestroy() {
   *lifecycle_alive_ = false;
+  editor_windows_.reset();
   lifecycle_channel_.reset();
   game_channel_.reset();
   if (flutter_controller_) {

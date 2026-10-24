@@ -89,7 +89,7 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "yuexiaomeng" "\0"
+            VALUE "CompanyName", "越小梦" "\0"
             VALUE "FileDescription", "植物大战僵尸布阵器" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
             VALUE "InternalName", "pvz_formation_editor" "\0"

@@ -7,7 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:pvz_formation_editor/domain/formation.dart';
 import 'package:pvz_formation_editor/editor/original_assets.dart';
 import 'package:pvz_formation_editor/library/game_panel.dart';
-import 'package:pvz_formation_editor/platform/game_backups.dart';
+import 'package:pvz_formation_editor/platform/game_writes.dart';
 import 'formation_io_smoke.dart' as helpers;
 
 late FakeGame fake;
@@ -26,7 +26,6 @@ class FakeGame extends BinaryMessenger {
   FakeGame(this.delegate);
   int writes = 0;
   bool reject = true, backupBeforeNative = false;
-  late Directory backupDirectory;
   @override
   Future<ByteData?> send(String channel, ByteData? data) async {
     if (channel != 'pvz_formation_editor/game') {
@@ -70,8 +69,7 @@ class FakeGame extends BinaryMessenger {
         });
       case 'applyFormation':
         writes++;
-        backupBeforeNative = (await backupDirectory.list().toList())
-            .any((f) => f.path.endsWith('.json'));
+        backupBeforeNative = (call.arguments as Map)['expectedBefore'] is Map;
         if (!reject) {
           final args = call.arguments as Map;
           return codec.encodeSuccessEnvelope({
@@ -124,10 +122,9 @@ Future<void> main() async {
     await helpers.settle();
     dynamic state =
         (helpers.find((w) => w is GamePanel) as StatefulElement).state;
-    state.backups = GameBackups(Directory('${dir.path}/backups'));
-    fake.backupDirectory = Directory('${dir.path}/backups');
+    state.backups = GameWrites(Directory('${dir.path}/backups'));
     helpers.check(state.games.length == 2, 'Two game capabilities displayed');
-    await helpers.clickText('读取游戏现场');
+    await helpers.clickText('获取阵型');
     helpers.check(
         state.snapshot.formation.pieces.length == 1, 'Read snapshot shown');
     await helpers.clickText('加入我的存档');
@@ -138,21 +135,22 @@ Future<void> main() async {
         'Archive/edit callbacks exactsnapshot');
     reports
         .add('simulated native list/read and actual read/archive/edit buttons');
-    await helpers.clickText('应用所选阵型到游戏');
+    await helpers.clickText('应用到游戏');
     helpers.check(
         fake.writes == 1 &&
             state.error.toString().contains('simulated native refusal'),
         'Native refusal visible');
     helpers.check(
-        state.lastMemoryBackup != null &&
-            await File(state.lastMemoryBackup as String).exists(),
-        'Failure retains durable prewrite backup');
-    reports.add(
-        'apply failure remains visible and preserves durable backup before native call');
+        helpers.find((w) =>
+                w is OutlinedButton &&
+                w.child is Text &&
+                (w.child as Text).data == '回退注入') ==
+            null,
+        'No injection history controls');
     helpers.check(fake.backupBeforeNative,
-        'Backup exists before native apply invocation');
+        'Current snapshot is passed for consistency checking');
     fake.reject = false;
-    await helpers.clickText('应用所选阵型到游戏');
+    await helpers.clickText('应用到游戏');
     helpers.check(
         fake.writes == 2 &&
             state.snapshot.formation.pieces.isEmpty &&
@@ -167,34 +165,19 @@ Future<void> main() async {
         .find((w) =>
             w is FilledButton &&
             w.child is Text &&
-            (w.child as Text).data == '读取游戏现场')!
+            (w.child as Text).data == '获取阵型')!
         .widget as FilledButton;
     final apply = helpers
         .find((w) =>
             w is OutlinedButton &&
             w.child is Text &&
-            (w.child as Text).data == '应用所选阵型到游戏')!
+            (w.child as Text).data == '应用到游戏')!
         .widget as OutlinedButton;
     helpers.check(read.onPressed == null && apply.onPressed == null,
         'Unsupported process controls disabled');
     reports.add('unsupported game read/apply controls disabled');
-    final writesBeforeUndo = fake.writes;
-    final undo = helpers
-        .find((w) =>
-            w is OutlinedButton &&
-            w.child is Text &&
-            (w.child as Text).data == '撤销上次覆盖')!
-        .widget as OutlinedButton;
-    if (undo.onPressed != null) {
-      await helpers.clickText('撤销上次覆盖');
-      helpers.check(state.error.toString().contains('进程'),
-          'Cross-process undo refusal visible');
-    }
-    helpers.check(fake.writes == writesBeforeUndo,
-        'Switching processes cannot undo A into B');
-    reports.add('cross-process undo never invokes native write');
     helpers.check(errors.isEmpty, 'Flutter errors $errors');
-    await File('/tmp/pvz-game-panel-report.json').writeAsString(jsonEncode({
+    await File('${dir.path}/report.json').writeAsString(jsonEncode({
       'pass': reports,
       'errors': errors,
       'scope':

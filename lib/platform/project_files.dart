@@ -1,5 +1,6 @@
 import 'dart:typed_data' show BytesBuilder;
 import 'dart:io';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter/services.dart';
 import '../storage/file_backups.dart';
 import 'export_preferences.dart';
@@ -18,6 +19,11 @@ class SavedFormationFile {
 
 class ProjectFiles {
   static const _channel = MethodChannel('pvz_formation_editor/files');
+
+  /// Test seam for OS-owned dialogs; all validation and file I/O still run.
+  @visibleForTesting
+  static Future<String?> Function({required bool save, required String name})?
+      desktopDialogOverride;
   static const maxProjectBytes = 8 * 1024 * 1024;
 
   /// Opens a public web address in the system browser. No shell interpolation.
@@ -130,6 +136,9 @@ class ProjectFiles {
 
   static Future<String?> _desktopDialog(
       {required bool save, String name = 'formation.pvzproject'}) async {
+    if (desktopDialogOverride != null) {
+      return desktopDialogOverride!(save: save, name: name);
+    }
     ProcessResult result;
     try {
       String? directory;

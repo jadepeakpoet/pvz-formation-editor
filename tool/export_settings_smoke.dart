@@ -42,7 +42,7 @@ Future<void> main() async {
     h.check(
         h
             .find((w) =>
-                w is Text && (w.data ?? '').contains('PVZ Formation Editor'))
+                w is Text && (w.data ?? '').contains('PvzFormationEditor'))
             .isNotEmpty,
         'default folder explained');
     await h.tap('export-settings-default');

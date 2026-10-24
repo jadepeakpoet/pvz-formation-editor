@@ -519,6 +519,9 @@ class MainFlutterWindow: NSWindow, NSWindowDelegate {
       guard selectSidebarMode(mode) else {
         result(FlutterError(code: "sidebar_unavailable", message: "侧栏尚未准备好，请先初始化存档库路径", details: nil)); return
       }
+      if mode == "toolbox", let tab = arguments["toolboxTab"] as? Int {
+        toolboxChannel?.invokeMethod("selectToolboxTab", arguments: tab)
+      }
       result(true)
     case "setSidebarVisible":
       guard let visible = arguments["visible"] as? Bool else {
