@@ -1,6 +1,6 @@
 """Create the complete Windows x64 ZIP, including app-local MSVC runtimes."""
 from pathlib import Path
-import argparse, shutil, zipfile, hashlib, tempfile
+import argparse, shutil, zipfile, hashlib, uuid
 repo=Path(__file__).resolve().parent.parent
 parser=argparse.ArgumentParser()
 parser.add_argument('--build',default='build/windows-release-1.0.0/runner/Release')
@@ -8,7 +8,7 @@ parser.add_argument('--crt',default=r'C:\Program Files (x86)\Microsoft Visual St
 args=parser.parse_args()
 root=repo/'release/1.0.0';name='PvZ-Formation-Editor-1.0.0-windows-x64'
 root.mkdir(parents=True,exist_ok=True)
-stage=Path(tempfile.mkdtemp(prefix='pvz-release-stage-',dir=repo/'build'));dst=stage/name
+stage=repo/'build'/('pvz-release-stage-'+uuid.uuid4().hex[:12]);stage.mkdir();dst=stage/name
 source=repo/args.build
 for required in ['pvz_formation_editor.exe','flutter_windows.dll','data/app.so']:
     assert (source/required).is_file(),required
