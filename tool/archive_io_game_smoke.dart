@@ -154,9 +154,13 @@ Future<void> main() async {
     final apply =
         h.find((w) => w.key == const ValueKey('library-apply-game')).single;
     h.check(
-        copy.findAncestorWidgetOfExactType<Row>() ==
+        copy.findAncestorWidgetOfExactType<Row>() !=
             apply.findAncestorWidgetOfExactType<Row>(),
-        'Copy and apply share the same action group');
+        'Copy is separate from the game action row');
+    final clear = h.find((w) => w.key == const ValueKey('library-clear-zombies')).single;
+    h.check(clear.findAncestorWidgetOfExactType<Row>() ==
+        apply.findAncestorWidgetOfExactType<Row>(),
+        'Apply and clear zombies share a row');
     h.check(copy.widget is OutlinedButton && apply.widget is FilledButton,
         'Copy and apply have visible button surfaces');
     final formatGroup = h.find((w) => w is RadioGroup<FormationFormat>).single.widget

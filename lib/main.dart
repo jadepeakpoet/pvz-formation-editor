@@ -4746,7 +4746,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
           }),
           classicButton('清空输入', inputFormation.clear)
         ]),
-        const Divider(height: 16, thickness: .5),
+        const SizedBox(height: 16),
         Text(AppLanguage.text('当前阵型码（随阵图实时更新）'),
             style: const TextStyle(fontSize: 12)),
         const SizedBox(height: 4),
@@ -4785,7 +4785,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
           formationCodeChoices(read: false),
         ]),
         if (Platform.isWindows) ...[
-          const Divider(height: 16, thickness: .5),
+          const SizedBox(height: 16),
           Wrap(crossAxisAlignment: WrapCrossAlignment.center, spacing: 8, children: [classicButton('应用阵型', gameBusy ? null
               : () => gameFormationAction(read: false), key: const ValueKey('formation-inject-game'),
               icon: Icons.play_arrow_rounded,
@@ -4797,7 +4797,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
           Text(AppLanguage.text('PvZ Toolkit 码用于复制和分享；应用阵型直接替换游戏中的布阵，可包含僵尸及其所选状态。'),
               style: const TextStyle(fontSize: 12, color: Color(0xff63755f))),
         ],
-        const Divider(height: 16, thickness: .5),
+        const SizedBox(height: 16),
         Row(children: [
           Text(AppLanguage.text('输出倍率：'), style: const TextStyle(fontSize: 12)),
           AppDropdown<double>(
@@ -4830,7 +4830,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
         presetSelector('阵型', OriginalCatalog.formations),
         presetSelector('炮位', OriginalCatalog.cobLayouts),
         presetSelector('无炮', OriginalCatalog.gloomLayouts),
-        const Divider(),
+        const SizedBox(height: 16),
         Text(AppLanguage.text('一键布局'), style: const TextStyle(fontSize: 12)),
         Wrap(children: [
           for (final label in OriginalActions.labels)
@@ -4849,7 +4849,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
               key: const ValueKey('lazy-clear-game-zombies'),
               icon: Icons.delete_sweep_outlined,
               tooltip: '清除正在运行的游戏中的全部僵尸。'),
-        const Divider(),
+        const SizedBox(height: 16),
         Text(AppLanguage.text('一键模仿'), style: const TextStyle(fontSize: 12)),
         Wrap(children: [
           for (final scope in ['南瓜', '荷叶', '花盆', '非紫卡植物', '全部植物'])
@@ -4862,7 +4862,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
               }
             })
         ]),
-        const Divider(),
+        const SizedBox(height: 16),
         classicButton('植物恢复默认状态', s.readOnly ? null : resetAllPlantStates,
             key: const ValueKey('lazy-reset-plant-states'),
             tooltip: '将全部植物恢复为默认状态，可撤销'),

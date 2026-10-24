@@ -815,6 +815,7 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
       return;
     }
     if (e.preset != null) {
+      if (const {'rename', 'tags', 'metadata', 'versions', 'delete'}.contains(value)) return;
       presetAction(value, e);
       return;
     }
@@ -1317,25 +1318,7 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
                               height: 1.6,
                               color: Color(0xff71806c))),
                       const SizedBox(height: 12),
-                      SizedBox(
-                          width: double.infinity,
-                          child: FilledButton.icon(
-                              key: const ValueKey('library-open-current'),
-                              onPressed: widget.onPresetAction == null
-                                  ? null
-                                  : () => action('open-current', e),
-                              icon: const Icon(Icons.edit_outlined, size: 18),
-                              label: Text(AppLanguage.text('当前标签页使用模板')))),
-                      const SizedBox(height: 8),
-                      SizedBox(
-                          width: double.infinity,
-                          child: OutlinedButton.icon(
-                              key: const ValueKey('library-open-tab'),
-                              onPressed: widget.onPresetAction == null
-                                  ? null
-                                  : () => action('open-tab', e),
-                              icon: const Icon(Icons.tab_outlined, size: 18),
-                              label: Text(AppLanguage.text('新标签页使用模板')))),
+                      openActions(e),
                       formationCodeActions(e),
                       const SizedBox(height: 6),
                       SizedBox(
@@ -1390,24 +1373,7 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
                           onPressed: () => action('metadata', e),
                           child: Text(AppLanguage.text('编辑名称、备注与标签'))),
                       const SizedBox(height: 12),
-                      SizedBox(
-                          width: double.infinity,
-                          child: FilledButton.icon(
-                              key: const ValueKey('library-open-current'),
-                              onPressed: () => widget.onOpenArchive(e.archive!),
-                              icon: const Icon(Icons.edit_outlined, size: 18),
-                              label: Text(AppLanguage.text('当前标签页打开')))),
-                      if (widget.onOpenArchiveTab != null) ...[
-                        const SizedBox(height: 8),
-                        SizedBox(
-                            width: double.infinity,
-                            child: OutlinedButton.icon(
-                                key: const ValueKey('library-open-tab'),
-                                onPressed: () =>
-                                    widget.onOpenArchiveTab!(e.archive!),
-                                icon: const Icon(Icons.tab_outlined, size: 18),
-                                label: Text(AppLanguage.text('新标签页打开')))),
-                      ],
+                      openActions(e),
                       formationCodeActions(e),
                       const SizedBox(height: 10),
                       Text(AppLanguage.text('编辑修改会自动保存；另存为可创建独立副本。'),
@@ -1417,6 +1383,35 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
                               color: Color(0xff85917e)))
                     ]
                   ])));
+  Widget openActions(_Entry e) {
+    final preset = e.preset != null;
+    final enabled = !preset || widget.onPresetAction != null;
+    final style = OutlinedButton.styleFrom(
+        minimumSize: const Size(0, 38),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 9),
+        textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)));
+    return Row(children: [
+      Expanded(child: FilledButton.icon(
+          key: const ValueKey('library-open-current'),
+          style: style,
+          onPressed: !enabled ? null : () => preset
+              ? action('open-current', e) : widget.onOpenArchive(e.archive!),
+          icon: const Icon(Icons.tab, size: 16),
+          label: Text(AppLanguage.text('当前页打开')))),
+      if (preset || widget.onOpenArchiveTab != null) ...[
+        const SizedBox(width: 10),
+        Expanded(child: OutlinedButton.icon(
+            key: const ValueKey('library-open-tab'),
+            style: style,
+            onPressed: !enabled ? null : () => preset
+                ? action('open-tab', e) : widget.onOpenArchiveTab!(e.archive!),
+            icon: const Icon(Icons.tab_outlined, size: 16),
+            label: Text(AppLanguage.text('新页打开')))),
+      ],
+    ]);
+  }
+
   Widget formationCodeActions(_Entry e) {
     final canCopy = e.preset == null || widget.onPresetAction != null;
     final canApply = widget.onGameTools != null && e.formation != null;
@@ -1427,6 +1422,7 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)));
     const help = 'PvZ Toolkit 码用于标准植物布局；网页码可保留僵尸和外观。';
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      const SizedBox(height: 10),
       Row(children: [
         Expanded(child: RadioGroup<FormationFormat>(
             groupValue: copyFormat,
@@ -1453,15 +1449,15 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
                 icon: const Icon(Icons.help_outline, size: 18))),
       ]),
       const SizedBox(height: 6),
-      Row(children: [
-        Expanded(child: OutlinedButton.icon(
+      SizedBox(width: double.infinity, child: OutlinedButton.icon(
             key: const ValueKey('library-copy-code'), style: buttonStyle,
             onPressed: canCopy ? () => action(copyFormat == FormationFormat.toolkit ? 'copy-code' : 'copy-website-code', e) : null,
             icon: const Icon(Icons.content_copy_rounded, size: 16),
             label: Text(AppLanguage.text('复制阵型码')))),
-        if (canApply) ...[
-          const SizedBox(width: 10),
-          Expanded(child: Tooltip(
+      if (canApply) ...[
+        const SizedBox(height: 10),
+        Row(children: [
+          Tooltip(
               message: AppLanguage.text('PvZ Toolkit 码用于复制和分享；应用阵型直接替换游戏中的布阵，可包含僵尸及其所选状态。'),
               child: FilledButton.icon(
                   key: const ValueKey('library-apply-game'),
@@ -1471,14 +1467,15 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
                   onPressed: widget.gameBusy ? null : () => action('apply-game', e),
                   icon: const Icon(Icons.play_arrow_rounded, size: 18),
-                  label: Text(AppLanguage.text('应用阵型'))))),
-        ],
-      ]),
-      if (canApply && widget.onClearZombiesChanged != null)
-        Padding(padding: const EdgeInsets.only(top: 6),
-            child: ClearGameZombiesOption(key: const ValueKey('library-clear-zombies'),
+                  label: Text(AppLanguage.text('应用阵型')))),
+          if (widget.onClearZombiesChanged != null) ...[
+            const SizedBox(width: 8),
+            Flexible(child: ClearGameZombiesOption(key: const ValueKey('library-clear-zombies'),
                 value: widget.clearZombiesOnApply,
                 onChanged: widget.gameBusy ? null : widget.onClearZombiesChanged)),
+          ],
+        ]),
+      ],
       const SizedBox(height: 4),
     ]);
   }

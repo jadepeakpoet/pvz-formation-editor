@@ -184,6 +184,8 @@ Future<void> main() async {
         (key('library-search')!.widget as TextField).controller!.text == '阵型00',
         'Detail/back lost search');
     passed.add('narrow current/new tab, Toolkit copy and query retention');
+    // Copy feedback temporarily covers the bottom of this short viewport.
+    await Future<void>.delayed(const Duration(milliseconds: 4500));
     final field = key('library-search')!.widget as TextField;
     field.controller!.clear();
     field.onChanged!('');

@@ -15,7 +15,7 @@ class ClearGameZombiesOption extends StatelessWidget {
             SizedBox(width: 32, height: 36,
                 child: Checkbox(value: value,
                     onChanged: onChanged == null ? null : (next) => onChanged!(next!))),
-            Text(AppLanguage.text('清除场上僵尸'), style: const TextStyle(fontSize: 12)),
+            Flexible(child: Text(AppLanguage.text('清除场上僵尸'), style: const TextStyle(fontSize: 12))),
             const SizedBox(width: 6),
           ])));
 }

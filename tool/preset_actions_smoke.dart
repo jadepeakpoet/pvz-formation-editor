@@ -121,6 +121,14 @@ Future<void> main() async {
   await tap('library-section-预制名阵');
   await tap('library-item-preset:${presets.first.id}');
   await test('template-explicit-actions', () async {
+    check(find((w) => w.key == const ValueKey('library-edit-tags') ||
+        w.key == const ValueKey('library-edit-metadata') ||
+        w.key == const ValueKey('library-tags')).isEmpty,
+        'Preset details must not expose personal archive editing');
+    final current = find((w) => w.key == const ValueKey('library-open-current')).single;
+    final newTab = find((w) => w.key == const ValueKey('library-open-tab')).single;
+    check(current.findAncestorWidgetOfExactType<Row>() ==
+        newTab.findAncestorWidgetOfExactType<Row>(), 'Open buttons share one row');
     for (final pair in [
       ('library-open-current', 'open-current'),
       ('library-open-tab', 'open-tab'),
@@ -148,7 +156,7 @@ Future<void> main() async {
       check(
           find((w) =>
               w is Text &&
-              ['删除存档', '重命名', '历史版本与回退', '名称、备注、标签'].contains(w.data)).isEmpty,
+              ['删除存档', '重命名', '设置标签', '历史版本与回退', '名称、备注、标签'].contains(w.data)).isEmpty,
           'template mutations visible');
       await tapElement(find((w) => w is Text && w.data == pair.$1).single);
       check(actions.last == pair.$2, 'wrong menu action');

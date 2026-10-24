@@ -1,5 +1,7 @@
 /// English translations for the main editor interface.
 const Map<String, String> mainTranslations = {
+  '当前页打开': 'Open here',
+  '新页打开': 'New tab',
   '复制阵型码': 'Copy formation code',
   '清除场上僵尸': 'Clear zombies',
   '应用阵型前清除游戏中已有的僵尸。': 'Clear existing zombies before applying the formation.',
