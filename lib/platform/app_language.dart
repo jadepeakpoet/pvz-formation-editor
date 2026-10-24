@@ -116,7 +116,8 @@ class AppLanguage {
   static Future<void> _syncNative(String language,
       {bool initializeOnly = false}) async {
     try {
-      await const MethodChannel('pvz_formation_editor/files')
+      await MethodChannel(Platform.isWindows
+          ? 'pvz_formation_editor/windows' : 'pvz_formation_editor/files')
           .invokeMethod<void>('setLanguage',
               {'language': language, 'initializeOnly': initializeOnly});
     } on MissingPluginException {

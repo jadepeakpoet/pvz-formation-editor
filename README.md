@@ -96,7 +96,7 @@ Windows 使用 Visual Studio C++ 桌面工具链与 Windows SDK；其他平台�
 
 主要参考 [jspvz 网页布阵器](http://jspvz.com/ArrayDesign/)，作者 **LonelyStar（囧丫乙）**。本项目在其功能和 UI 基础上实现本地编辑、桌面交互、自动存档和游戏接入。
 
-技术参考：[PvZ Toolkit](https://pvz.tools/toolkit/)（lmintlcx）、[PvZ-Portable](https://github.com/wszqkzqk/PvZ-Portable)（wszqkzqk 及社区贡献者）。感谢 PopCap Games、Flutter / Dart 社区及相关开源项目。
+技术参考：[PvZ Toolkit](https://pvz.tools/toolkit/)（lmintlcx）、[PvZ-Portable](https://github.com/wszqkzqk/PvZ-Portable)（wszqkzqk）。感谢 PopCap Games、Flutter / Dart 社区及相关开源项目。
 
 项目源代码采用 [GNU GPL v3.0](LICENSE)，Copyright (C) 2026 越小梦。游戏素材与第三方依赖分别保留其权利及许可声明，见 [鸣谢](ACKNOWLEDGMENTS.md) 与 [素材来源](docs/assets.md)。
 

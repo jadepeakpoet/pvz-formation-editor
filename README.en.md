@@ -8,7 +8,7 @@
 
 **v1.0.1** · [Website](https://xmpvz.pages.dev/en/) · [User guide](https://xmpvz.pages.dev/en/docs/) · [Windows x64 ZIP](https://xmpvz.pages.dev/downloads/PvZ-Formation-Editor-1.0.1-windows-x64.zip) · [Releases](https://github.com/jadepeakpoet/pvz-formation-editor/releases) · [QQ group 425175276](https://qm.qq.com/q/BbkV57ELaa)
 
-Author and maintainer: **越小梦**. Source license: [GNU GPL v3.0](LICENSE).
+Author and maintainer: **越小梦 (yuexiaomeng)**. Source license: [GNU GPL v3.0](LICENSE).
 
 ## Features
 
@@ -94,8 +94,8 @@ Windows builds use Visual Studio 2022 C++ desktop tools. Build other platform pr
 
 Primary reference: [jspvz ArrayDesign](http://jspvz.com/ArrayDesign/) by **LonelyStar (囧丫乙)**, extended with local editing, desktop interaction, autosave and game integration.
 
-Technical references: [PvZ Toolkit](https://pvz.tools/toolkit/) by lmintlcx and [PvZ-Portable](https://github.com/wszqkzqk/PvZ-Portable) by wszqkzqk and contributors. Thanks to PopCap Games and the Flutter / Dart community.
+Technical references: [PvZ Toolkit](https://pvz.tools/toolkit/) by lmintlcx and [PvZ-Portable](https://github.com/wszqkzqk/PvZ-Portable) by wszqkzqk. Thanks to PopCap Games and the Flutter / Dart community.
 
-Source code: [GNU GPL v3.0](LICENSE), Copyright (C) 2026 越小梦. Assets and third-party dependencies retain their own rights and licenses; see [Acknowledgments](ACKNOWLEDGMENTS.md) and [asset provenance](docs/assets.md).
+Source code: [GNU GPL v3.0](LICENSE), Copyright (C) 2026 越小梦 (yuexiaomeng). Assets and third-party dependencies retain their own rights and licenses; see [Acknowledgments](ACKNOWLEDGMENTS.md) and [asset provenance](docs/assets.md).
 
 Apply formation offers an unchecked-by-default Clear zombies option. Lazy Layout also provides a standalone clear action that retains existing plants and sunlight. Formations containing zombies still replace them with the target layout. Archive details use mutually exclusive Toolkit/website choices and one Copy formation code button.

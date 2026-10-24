@@ -74,7 +74,7 @@ class LanguageMessenger extends BinaryMessenger {
         return codec.encodeSuccessEnvelope(connected ? canonical : null);
       }
     }
-    if (name == 'pvz_formation_editor/files') {
+    if (name == 'pvz_formation_editor/files' || name == 'pvz_formation_editor/windows') {
       final call = codec.decodeMethodCall(data);
       if (call.method == 'setLanguage') {
         if (connected) {

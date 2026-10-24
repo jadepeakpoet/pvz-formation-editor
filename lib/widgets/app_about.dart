@@ -53,12 +53,12 @@ void showAppAbout(BuildContext context) => showAboutDialog(
           TextButton(
               onPressed: () => openAppLink(
                   context, 'https://github.com/wszqkzqk/PvZ-Portable'),
-              child: const Text('PvZ-Portable — wszqkzqk 及社区贡献者 ↗')),
+              child: const Text('PvZ-Portable — wszqkzqk ↗')),
           const SelectableText('https://github.com/wszqkzqk/PvZ-Portable'),
           const SizedBox(height: 12),
           Text(AppLanguage.text('致谢')),
           const Text('lmintlcx（PvZ Toolkit）\n'
-              'wszqkzqk 及社区贡献者（PvZ-Portable）\n'
+              'wszqkzqk（PvZ-Portable）\n'
               '囧丫乙（LonelyStar）\nPopCap Games\nFlutter / Dart'),
         ]);
 

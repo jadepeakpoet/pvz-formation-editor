@@ -74,7 +74,7 @@ const Map<String, String> mainTranslations = {
   '选择游戏进程': 'Select game process',
   '已获取游戏阵型，可点击“载入布阵器”': 'Game lineup fetched. Click Load into editor.',
   '阵型已注入游戏': 'Formation injected into game',
-  '作者：越小梦': 'Author: 越小梦',
+  '作者：越小梦': 'Author: 越小梦 (yuexiaomeng)',
   '参考项目': 'Reference projects',
   '主要参考项目': 'Primary reference',
   '技术参考项目': 'Technical references',

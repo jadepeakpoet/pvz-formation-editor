@@ -76,6 +76,7 @@ struct EditorWindows::Impl {
   V latest;
   M configuration;
   std::string mode="toolbox";
+  std::string language;
   bool toolbox_ready=false, library_ready=false;
   std::shared_ptr<bool> alive=std::make_shared<bool>(true);
   Impl(Win32Window* owner,flutter::BinaryMessenger* messenger,const flutter::DartProject& p)
@@ -115,7 +116,7 @@ struct EditorWindows::Impl {
     const UINT dpi=GetDpiForWindow(main->GetHandle());
     const unsigned int x=static_cast<unsigned int>(MulDiv(frame.right+8,96,static_cast<int>(dpi)));
     const unsigned int y=static_cast<unsigned int>(MulDiv(frame.top,96,static_cast<int>(dpi)));
-    if(!sidebar->Create(L"布阵器工具箱",Win32Window::Point(x,y),Win32Window::Size(410,695))) {
+    if(!sidebar->Create(language=="en" ? L"Formation Toolbox" : L"布阵器工具箱",Win32Window::Point(x,y),Win32Window::Size(410,695))) {
       sidebar.reset(); return false;
     }
     // Independent top-level window: minimizing the editor must not hide the sidebar.
@@ -168,7 +169,7 @@ struct EditorWindows::Impl {
     mode=selected;
     sidebar->SetChildContent(toolbox->view()->GetNativeWindow());
     toolbox_channel->InvokeMethod("selectSidebarPage",std::make_unique<V>(selected));
-    SetWindowTextW(sidebar->GetHandle(),L"布阵器工具箱");
+    SetWindowTextW(sidebar->GetHandle(),language=="en" ? L"Formation Toolbox" : L"布阵器工具箱");
     if(show) {
       if(IsIconic(sidebar->GetHandle())) ShowWindow(sidebar->GetHandle(),SW_RESTORE);
       sidebar->Show(); SetForegroundWindow(sidebar->GetHandle());
@@ -179,6 +180,18 @@ struct EditorWindows::Impl {
   void Handle(const Call& call,std::unique_ptr<Result> result,bool secondary) {
     const auto& method=call.method_name(); const auto args=Arguments(call);
     Configure(args);
+    if(method=="setLanguage") {
+      const auto requested=Text(args,"language");
+      if(requested!="zh" && requested!="en") {
+        result->Error("arguments","不支持的语言"); return;
+      }
+      if(!Flag(args,"initializeOnly") || language.empty()) {
+        language=requested;
+        SetWindowTextW(main->GetHandle(),language=="en" ? L"PVZ Formation Editor" : L"植物大战僵尸布阵器");
+        if(sidebar) SetWindowTextW(sidebar->GetHandle(),language=="en" ? L"Formation Toolbox" : L"布阵器工具箱");
+      }
+      result->Success(); return;
+    }
     if(method=="getDialogOwner") {
       HWND owner=secondary && sidebar ? sidebar->GetHandle() : main->GetHandle();
       result->Success(V(static_cast<int64_t>(reinterpret_cast<intptr_t>(owner)))); return;
