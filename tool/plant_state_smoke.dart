@@ -48,6 +48,11 @@ Future<void> main() async {
         (h.find((w) => w is CustomPaint && w.painter is BoardPainter).widget
                 as CustomPaint)
             .painter as BoardPainter;
+    h.expect(painter().plantingPreview == null && page.tool == '选择',
+        'Startup must not preview an unselected plant');
+    page.setState(() => page.tool = '放置');
+    page.updateNativePlantingPointer({'x': global.dx, 'y': global.dy});
+    await h.settle();
     h.expect(
         painter().plantingPreview?.type == 'pea' &&
             (painter().plantingPosition! - target).distance < .01 &&

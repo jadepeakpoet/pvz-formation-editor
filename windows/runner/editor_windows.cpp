@@ -150,9 +150,11 @@ struct EditorWindows::Impl {
       }
       if(method=="openEditor") {
         auto guard=alive;
-        Forward(main_channel.get(),"libraryOpen",call.arguments(),std::move(result),[this,guard](const V* value){
+        const auto kind=Text(Arguments(call),"kind");
+        const bool keepLibrary=kind=="archives-delete" || kind=="archive-delete" || kind=="archive-rename";
+        Forward(main_channel.get(),"libraryOpen",call.arguments(),std::move(result),[this,guard,keepLibrary](const V* value){
           const auto* ok=value ? std::get_if<bool>(value) : nullptr;
-          if(*guard && ok && *ok) Select("toolbox",true);
+          if(*guard && ok && *ok && !keepLibrary) Select("toolbox",true);
         }); return;
       }
       if(method=="showToolbox" || method=="activateWindow") { result->Success(V(Select("toolbox",true))); return; }

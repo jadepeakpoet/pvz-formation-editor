@@ -418,6 +418,24 @@ Future<void> main() async {
         'removing last entry creates transient blank');
     local.dispose();
   });
+  await test('bulk-removal-prunes-open-tabs-and-history', () async {
+    final local = EditorTabsController(repo);
+    await local.ready;
+    await local.active.flush(forceSave: true);
+    final first = local.active.sourceArchiveId!;
+    await local.open(EditorSession(repo, name: 'Bulk second'), newTab: true);
+    await local.active.flush(forceSave: true);
+    final second = local.active.sourceArchiveId!;
+    await local.removeArchives([first, second]);
+    await repo.deleteArchives([first, second]);
+    check(local.sessions.length == 1 &&
+        local.allSessions.every((s) => s.sourceArchiveId != first && s.sourceArchiveId != second),
+        'All selected open and retained pages removed together');
+    await local.flushAll();
+    check((await repo.listArchives()).every((a) => a.id != first && a.id != second),
+        'Autosave cannot recreate deleted archives');
+    local.dispose();
+  });
   await test('archive-removal-save-failure-preserves-history', () async {
     final brokenRepo =
         await FormationRepository.open('${dir.path}/remove-failure.sqlite');

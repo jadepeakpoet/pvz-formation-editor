@@ -471,9 +471,13 @@ class EditorTabsController extends ChangeNotifier {
 
   /// Removes an archive from every tab and navigation history before deletion.
   /// Saving or preparing the active page may reject without changing history.
-  Future<void> removeArchive(String archiveId) => _serial(() async {
+  Future<void> removeArchive(String archiveId) => removeArchives([archiveId]);
+
+  Future<void> removeArchives(Iterable<String> archiveIds) {
+    final ids = archiveIds.toSet();
+    return _serial(() async {
         bool matches(EditorSession session) =>
-            session.id == archiveId || session.sourceArchiveId == archiveId;
+            ids.contains(session.id) || ids.contains(session.sourceArchiveId);
         final removed = _allSessions.where(matches).toList();
         if (removed.isEmpty) return;
         final previousActive = active;
@@ -550,6 +554,8 @@ class EditorTabsController extends ChangeNotifier {
               nextActive ?? previousTab.clamp(0, _sessions.length - 1);
         }
       });
+
+  }
 
   Future<void> newBlank() => _serial(() async {
         await _prepareSwitch();

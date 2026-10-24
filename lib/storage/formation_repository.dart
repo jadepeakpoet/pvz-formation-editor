@@ -714,11 +714,18 @@ class FormationRepository {
                 .single);
           }));
 
-  Future<void> deleteArchive(String id) => _serial(() => _transaction(() async {
+  Future<void> deleteArchive(String id) => deleteArchives([id]);
+
+  Future<void> deleteArchives(Iterable<String> ids) {
+    final targets = ids.toSet();
+    if (targets.isEmpty) return Future<void>.value();
+    final values = targets.map(_q).join(',');
+    return _serial(() => _transaction(() async {
         await _query(
-            'UPDATE drafts SET source_archive_id=NULL,saved_fingerprint=NULL WHERE source_archive_id=${_q(id)}');
-        await _query('DELETE FROM archives WHERE id=${_q(id)}');
+            'UPDATE drafts SET source_archive_id=NULL,saved_fingerprint=NULL WHERE source_archive_id IN ($values)');
+        await _query('DELETE FROM archives WHERE id IN ($values)');
       }));
+  }
   Future<void> updateArchiveMetadata(String id,
           {String? name, String? note, List<String>? tags, bool? favorite}) =>
       _serial(() => _transaction(() async {

@@ -33,6 +33,23 @@ void main() {
     await repo.close();
     await directory.delete(recursive: true);
   });
+  test('bulk deletion removes selected history and detaches only selected drafts', () async {
+    for (final id in ['a', 'b', 'keep']) {
+      await repo.saveArchive(id: id, name: id, document: document(1));
+      await repo.saveArchive(id: id, updateId: id, name: id, document: document(2));
+      await repo.saveDraft(draft('draft-$id', 1, source: id));
+    }
+    await repo.deleteArchives(['a', 'b', 'a']);
+    expect((await repo.listArchives()).map((a) => a.id), ['keep']);
+    expect(await repo.listVersions('a'), isEmpty);
+    expect(await repo.listVersions('b'), isEmpty);
+    expect(await repo.listVersions('keep'), hasLength(1));
+    for (final row in await repo.listDrafts()) {
+      expect(row.sourceArchiveId, row.id == 'draft-keep' ? 'keep' : null);
+    }
+    await repo.deleteArchives([]);
+    expect(await repo.listArchives(), hasLength(1));
+  });
   test('persist overlapping and spanning objects across reopen', () async {
     await repo.saveDraft(draft('a', 1));
     await repo.close();

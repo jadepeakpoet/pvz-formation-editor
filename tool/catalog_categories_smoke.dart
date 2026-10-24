@@ -144,6 +144,11 @@ Future<void> main() async {
   expectCards(zombies, 'Zombie group must use exact source list and order');
   await h.tap('物品效果选卡');
   expectCards(items, 'Items/effects should be one exact source group');
+  final grid = h.find((w) => w.key == const ValueKey('catalog-card-grid')).renderObject as RenderBox;
+  h.expect((grid.size.height - 100).abs() < 1,
+      'Two rows of items must not reserve empty card rows');
+  h.expect(page.toolboxScrollControllers[2].position.maxScrollExtent == 0,
+      'A fully visible catalog must not scroll through blank space');
   await h.screenshot('catalog-items');
   await h.tap('物品效果选卡');
   expectCards(const [], 'Items group should also collapse on repeat click');

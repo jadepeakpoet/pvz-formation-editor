@@ -1082,6 +1082,25 @@ class _LibraryPageState extends State<LibraryPage> {
     }
   }
 
+  Future<bool> deleteArchives(List<ArchiveRecord> records) async {
+    if (records.isEmpty || !mounted) return false;
+    if (!await confirm(context, '删除所选存档？',
+        '将删除所选 ${records.length} 个存档及其历史版本。此操作无法撤销。')) return false;
+    final request = <String, dynamic>{'kind': 'archives-delete',
+      'ids': records.map((a) => a.id).toList()};
+    if (widget.independent) {
+      if (await libraryChannel.invokeMethod<bool>('openEditor', request) != true)
+        throw StateError('主窗口未接受删除');
+    } else if (widget.onDocumentAction != null) {
+      if (!await widget.onDocumentAction!(request)) throw StateError('主窗口未接受删除');
+    } else {
+      await repo!.deleteArchives(records.map((a) => a.id));
+    }
+    await refresh();
+    if (mounted) message(context, '已删除 ${records.length} 个存档');
+    return true;
+  }
+
   Future<void> applyArchiveToGame(Formation target) async {
     if (applyingArchiveToGame) return;
     setState(() => applyingArchiveToGame = true);
@@ -1191,6 +1210,7 @@ class _LibraryPageState extends State<LibraryPage> {
       onOpenArchiveTab: (a) => continueArchive(a, newTab: true),
       onDraftAction: draftAction,
       onArchiveAction: archiveAction,
+      onDeleteArchives: deleteArchives,
     );
     if (!widget.independent && widget.onSidebarTab == null) return browser;
     return Column(children: [
@@ -1441,7 +1461,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
   final Set<int> batchRows = {}, batchColumns = {};
   bool batchSelectionMode = false, batchSelectorsVisible = true;
   String batchShovelFilter = '普通植物';
-  String tool = '放置', category = '植物', search = '', selectedType = 'pea';
+  String tool = '选择', category = '植物', search = '', selectedType = 'pea';
   String? selectedId;
   String shovelFilter = '智能';
   int classicTab = 2;
@@ -2703,6 +2723,19 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
         if (result != null && mounted) {
           message(context, '已清理 ${result.removedCount} 个重复存档，历史版本已保留。');
         }
+        return true;
+      }
+      if (request['kind'] == 'archives-delete') {
+        final ids = (request['ids'] as List).cast<String>().toSet();
+        if (ids.isEmpty) return true;
+        final controller = context.findAncestorWidgetOfExactType<EditorWorkspace>()?.controller;
+        if (controller != null && !await controller.flushAll())
+          throw StateError(controller.error ?? '无法保存其他标签页');
+        if (controller == null && ids.contains(s.sourceArchiveId))
+          throw StateError('请先关闭此存档的编辑窗口再删除');
+        if (controller != null) await controller.removeArchives(ids);
+        await s.repository.deleteArchives(ids);
+        await refreshLibraryView();
         return true;
       }
       EditorSession next;
@@ -4507,7 +4540,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
               child: Text(AppLanguage.text(s.document.map.name),
                   style: const TextStyle(fontSize: 12),
                   overflow: TextOverflow.ellipsis)),
-          classicButton('导出底图', () async {
+          classicButton('导出地图', () async {
             try {
               final map = s.document.map;
               final path = 'image/${map.background}';
@@ -4518,7 +4551,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                       .asUint8List(bytes.offsetInBytes, bytes.lengthInBytes),
                   path.endsWith('.png') ? 'image/png' : 'image/jpeg');
             } catch (e) {
-              if (mounted) message(context, '导出底图失败：$e');
+              if (mounted) message(context, '导出地图失败：$e');
             }
           }, key: const ValueKey('original-imgBack')),
         ]),
@@ -5082,10 +5115,13 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
             }))
       ]),
       if (category.isNotEmpty)
-      SizedBox(height: 360, width: 300,
+      SizedBox(width: 300,
           child: Align(alignment: Alignment.topLeft, child: SizedBox(
               width: 290.25,
               child: GridView.count(
+                  key: const ValueKey('catalog-card-grid'),
+                  primary: false,
+                  padding: EdgeInsets.zero,
                   crossAxisCount: 8,
                   childAspectRatio: 36.28125 / 50,
                   shrinkWrap: true,

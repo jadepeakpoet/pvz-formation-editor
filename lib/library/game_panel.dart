@@ -342,7 +342,7 @@ class _GamePanelState extends State<GamePanel> {
                                               );
                                             }),
                                     child: Text(
-                                        AppLanguage.text('另存为 Toolkit 阵图')),
+                                        AppLanguage.text('另存为 PvZ Toolkit 阵型码')),
                                   ),
                                 ],
                               ),

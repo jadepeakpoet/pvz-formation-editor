@@ -62,6 +62,7 @@ Future<void> main() async {
     matches();
     h.expect(output().readOnly, 'Output must be readonly');
     final dynamic editorState = (h.find((w) => w is app.EditorPage) as StatefulElement).state;
+    h.expect(editorState.tool == '选择', 'Startup must not arm a plant');
     h.expect(editorState.keepPlantsOnMapChange == true,
         'Changing maps must retain plants by default');
     h.expect(editorState.pokerWidth == false,
@@ -95,6 +96,9 @@ Future<void> main() async {
   await h.run(
       'live.pointer-history', 'Actual board plant, undo and redo refresh code',
       () async {
+    final dynamic editorState = (h.find((w) => w is app.EditorPage) as StatefulElement).state;
+    editorState.setState(() => editorState.tool = '放置');
+    await h.settle();
     final board = h
         .find((w) => w is CustomPaint && w.painter is BoardPainter)
         .renderObject as RenderBox;

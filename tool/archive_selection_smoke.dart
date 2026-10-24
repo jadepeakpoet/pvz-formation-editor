@@ -63,7 +63,8 @@ Future<void> main() async {
     h.check(
         h.find((w) => w is Text && w.data == '已选 1（含 1 个筛选外存档）').length == 1,
         'hidden selected hint');
-    h.check(h.find((w) => w is Text && w.data == '全选当前结果').length == 1,
+    h.check(h.find((w) => w is Text && w.data == '全选').length == 1 &&
+        h.find((w) => w.key == const ValueKey('library-select-all') && w is Checkbox).length == 1,
         'explicit visible-select label');
     await h.tap('library-select-all');
     h.check(

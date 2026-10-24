@@ -24,7 +24,8 @@ Future<void> main() async {
         home: app.EditorPage(session: session, continueArchive: (_) async {})));
     await h.settle();
     await h.settle();
-    h.check(h.find((w) => w is Text && w.data == '自动保存已开启').isNotEmpty,
+    h.check(h.find((w) => w is Text &&
+        (w.data == '自动保存已开启' || w.data == '已自动保存')).isNotEmpty,
         'Autosave enabled indicator');
     session.execute(
         '放置豌豆',

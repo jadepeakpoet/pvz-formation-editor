@@ -15,7 +15,7 @@ Author and maintainer: **越小梦**. Source license: [GNU GPL v3.0](LICENSE).
 - Edit 26 maps with plants, zombies and objects; select sprite appearances, adjust layers, flip, batch-place/remove, add supporting bases, undo and redo.
 - Choose encyclopedia and Imitater cards, use ten seed slots, and browse 363 complete presets plus partial layouts with search and map/cannon filters.
 - Work with an independent main board and shared sidebar containing Archive Library, Layout Presets, Plant Encyclopedia, Mirrors, Load / Export and Settings. Create up to three read-only mirror snapshots.
-- Autosave editable work to local archives, with names, notes, tags, search, batch import/export, deduplication and version history.
+- Autosave editable work to local archives, with names, notes, tags, search, select-all, bulk import/export and deletion, deduplication and version history.
 - Restore all previously open tabs, the selected tab and file associations when restarting.
 - Exchange PvZ Toolkit codes, reference-site codes, complete project JSON and archive collections; save back to source files with overwrite backups and recovery.
 - Export PNGs and backgrounds, preserve the game's aspect ratio by default, and preview/copy/save generated images in a popup inside the toolbox. The default export folder is Documents/PvzFormationEditor.

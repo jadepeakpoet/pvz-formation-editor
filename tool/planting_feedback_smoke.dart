@@ -36,6 +36,7 @@ Future<void> main() async {
   await h.settle();
   final dynamic page =
       (h.find((w) => w is app.EditorPage) as StatefulElement).state;
+  page.tool = '放置';
   Future<void> plant(int row, int col) async {
     final board = h
         .find((w) => w is CustomPaint && w.painter is BoardPainter)

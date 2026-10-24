@@ -152,6 +152,8 @@ Future<void> main() async {
       'Actual tab pointers preserve independent session undo history',
       () async {
     await clickKey('editor-tab-${initial.id}');
+    page().setState(() => page().tool = '放置');
+    await h.settle();
     final board = h
         .find((w) => w is CustomPaint && w.painter is BoardPainter)
         .renderObject as RenderBox;

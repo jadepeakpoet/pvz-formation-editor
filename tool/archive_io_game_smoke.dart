@@ -191,6 +191,25 @@ Future<void> main() async {
     await h.settle();
     h.check(writes == 3 && !methods.contains('listSaveFiles'),
         'More menu uses the same direct apply action');
+    await h.tap('library-select-archives');
+    Checkbox all() => h.find((w) => w.key == const ValueKey('library-select-all')).single.widget as Checkbox;
+    h.check(all().value == false, 'Select all starts unchecked');
+    await h.tap('library-select-all');
+    h.check(all().value == true, 'Checkbox selects all current results');
+    await h.tap('library-select-all');
+    h.check(all().value == false, 'Unchecking clears every selection');
+    await h.tap('library-select-${item.id}');
+    h.check(all().value == null, 'Partial selection is indeterminate');
+    await h.tap('library-select-all');
+    await h.tap('library-delete-selected');
+    await h.tapElement(h.find((w) => w is Text && w.data == '取消').single);
+    h.check((await target.listArchives()).length == 2 && all().value == true,
+        'Canceling bulk delete preserves records and selection');
+    await h.tap('library-delete-selected');
+    await h.tapElement(h.find((w) => w is Text && w.data == '确认').single);
+    await h.settle();
+    h.check((await target.listArchives()).isEmpty,
+        'Confirmed bulk delete removes the selected archives');
     h.check(
         errors.isEmpty, errors.map((e) => e.exceptionAsString()).join('\n'));
     stdout.writeln(

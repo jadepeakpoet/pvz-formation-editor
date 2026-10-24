@@ -552,11 +552,12 @@ class MainFlutterWindow: NSWindow, NSWindowDelegate {
           result(FlutterError(code: "closed", message: "编辑器未准备好", details: nil)); return
         }
         let archiveMaintenance = arguments["kind"] as? String == "archive-dedup"
+        let keepLibrary = archiveMaintenance || ["archives-delete", "archive-delete", "archive-rename"].contains(arguments["kind"] as? String ?? "")
         if archiveMaintenance { window.activateWindow(window) }
         main.invokeMethod("libraryOpen", arguments: arguments) { response in
           if let error = response as? FlutterError { result(error); return }
           if let accepted = response as? Bool, accepted {
-            if archiveMaintenance {
+            if keepLibrary {
               window.activateWindow(window.sidebarWindow)
             } else {
               _ = window.selectSidebarMode("toolbox")

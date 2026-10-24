@@ -79,7 +79,7 @@ const Map<String, String> widgetTranslations = {
   '选择要恢复的阵型备份': 'Choose a formation backup to restore',
   '在编辑器打开': 'Open in editor',
   '加入我的存档': 'Add to my formations',
-  '另存为 Toolkit 阵图': 'Save as Toolkit formation',
+  '另存为 PvZ Toolkit 阵型码': 'Save as PvZ Toolkit code',
   '游戏存档文件': 'Game save files',
   '未找到游戏存档文件。': 'No game save files found.',
   '备份': 'Back up',

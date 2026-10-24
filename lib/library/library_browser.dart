@@ -37,6 +37,7 @@ class LibraryBrowser extends StatefulWidget {
   final Set<String> favoritePresetIds;
   final Future<void> Function(List<ArchiveRecord>)? onExportArchives;
   final Future<void> Function()? onDeduplicate;
+  final Future<bool> Function(List<ArchiveRecord>)? onDeleteArchives;
   const LibraryBrowser(
       {super.key,
       required this.drafts,
@@ -66,6 +67,7 @@ class LibraryBrowser extends StatefulWidget {
       this.onPresetAction,
       this.onExportArchives,
       this.onDeduplicate,
+      this.onDeleteArchives,
       this.favoritePresetIds = const {}});
   @override
   State<LibraryBrowser> createState() => _LibraryBrowserState();
@@ -121,6 +123,7 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
   bool narrowDetails = false;
   bool selectingArchives = false,
       exportingArchives = false,
+      deletingArchives = false,
       deduplicatingArchives = false;
   final selectedArchiveIds = <String>{};
   void toggleArchive(String id) => setState(() {
@@ -199,7 +202,7 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
       style: TextButton.styleFrom(
           minimumSize: const Size(0, 32),
           padding: const EdgeInsets.symmetric(horizontal: 6)),
-      onPressed: deduplicatingArchives || exportingArchives
+      onPressed: deduplicatingArchives || exportingArchives || deletingArchives
           ? null
           : () => setState(() {
                 selectingArchives = !selectingArchives;
@@ -210,7 +213,7 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
 
   Widget archiveSelectionBar() {
     if (section != '我的存档' ||
-        (widget.onExportArchives == null && widget.onDeduplicate == null)) {
+        (widget.onExportArchives == null && widget.onDeduplicate == null && widget.onDeleteArchives == null)) {
       return const SizedBox.shrink();
     }
     final visible = filtered
@@ -222,13 +225,16 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
         .toList();
     final visibleIds = visible.map((a) => a.id).toSet();
     final hiddenCount = chosen.where((a) => !visibleIds.contains(a.id)).length;
+    final selectedVisible = visibleIds.where(selectedArchiveIds.contains).length;
+    final bool? allSelected = visibleIds.isEmpty ? chosen.isNotEmpty : selectedVisible == 0 ? false
+        : selectedVisible == visibleIds.length ? true : null;
     return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
         child: Wrap(
             spacing: 4,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              if (widget.onExportArchives != null) selectionButton(),
+              if (widget.onExportArchives != null || widget.onDeleteArchives != null) selectionButton(),
               if (widget.onExportArchives != null)
                 TextButton(
                     key: const ValueKey('library-export-all-direct'),
@@ -262,24 +268,49 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
                         '已选 ${chosen.length}${hiddenCount > 0 ? '（含 $hiddenCount 个筛选外存档）' : ''}'),
                     key: const ValueKey('library-selected-count'),
                     style: const TextStyle(fontSize: 12)),
-                TextButton(
+                Row(mainAxisSize: MainAxisSize.min, children: [
+                  Checkbox(
                     key: const ValueKey('library-select-all'),
-                    onPressed: () => setState(() =>
-                        selectedArchiveIds.addAll(visible.map((a) => a.id))),
-                    child: Text(AppLanguage.text('全选当前结果'))),
-                TextButton(
-                    key: const ValueKey('library-selection-clear'),
-                    onPressed: () => setState(selectedArchiveIds.clear),
-                    child: Text(AppLanguage.text('清除选择'))),
+                    tristate: true,
+                    value: allSelected,
+                    onChanged: deletingArchives || exportingArchives || (visible.isEmpty && chosen.isEmpty) ? null
+                        : (_) => setState(() {
+                            if (allSelected == true) { selectedArchiveIds.clear(); }
+                            else { selectedArchiveIds.addAll(visibleIds); }
+                          })),
+                  Text(AppLanguage.text('全选'), style: const TextStyle(fontSize: 12)),
+                ]),
                 if (widget.onExportArchives != null)
                   TextButton(
                       key: const ValueKey('library-export-selected-direct'),
-                      onPressed: exportingArchives || chosen.isEmpty
+                      onPressed: exportingArchives || deletingArchives || chosen.isEmpty
                           ? null
                           : () => exportArchives(chosen),
                       child: Text(AppLanguage.text('导出已选'))),
+                if (widget.onDeleteArchives != null)
+                  OutlinedButton.icon(
+                      key: const ValueKey('library-delete-selected'),
+                      onPressed: exportingArchives || deletingArchives || chosen.isEmpty
+                          ? null : () => deleteArchives(chosen),
+                      icon: const Icon(Icons.delete_outline, size: 17),
+                      label: Text(AppLanguage.text(deletingArchives ? '正在删除…' : '删除所选'))),
               ]
             ]));
+  }
+
+  Future<void> deleteArchives(List<ArchiveRecord> chosen) async {
+    if (deletingArchives || chosen.isEmpty || widget.onDeleteArchives == null) return;
+    setState(() => deletingArchives = true);
+    try {
+      if (await widget.onDeleteArchives!(chosen) && mounted) {
+        setState(() => selectedArchiveIds.removeAll(chosen.map((a) => a.id)));
+      }
+    } catch (error) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(AppLanguage.text('删除失败：$error'))));
+    } finally {
+      if (mounted) setState(() => deletingArchives = false);
+    }
   }
 
   Future<void> deduplicateArchives() async {
@@ -1183,6 +1214,7 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
                   selected = e.id;
                   if (narrow) narrowDetails = true;
                 });
+                ScaffoldMessenger.maybeOf(context)?.removeCurrentSnackBar();
               },
               onSecondaryTapDown: (details) =>
                   contextMenu(e, details.globalPosition),

@@ -8,6 +8,7 @@ import 'package:pvz_formation_editor/storage/formation_repository.dart';
 import 'package:pvz_formation_editor/platform/export_preferences.dart';
 import 'package:pvz_formation_editor/widgets/sidebar_tabs.dart';
 import 'package:pvz_formation_editor/platform/app_theme.dart';
+import 'package:pvz_formation_editor/platform/app_language.dart';
 import 'sidebar_title_smoke.dart' as h;
 
 Future<void> main() async {
@@ -17,6 +18,7 @@ Future<void> main() async {
   FlutterError.onError = errors.add;
   final temp = await Directory.systemTemp.createTemp('pvz-sidebar-tabs-');
   final repo = await FormationRepository.open('${temp.path}/test.sqlite');
+  final previousLanguage = AppLanguage.locale.value;
   ExportPreferences.fileOverride = File('${temp.path}/preferences.json');
   ExportPreferences.documentsDirectoryOverride = temp;
   try {
@@ -65,11 +67,26 @@ Future<void> main() async {
         (await ExportPreferences.loadDirectory())!
             .endsWith('PvzFormationEditor'),
         'Old default resolves new folder');
-    h.check(
-        errors.isEmpty, errors.map((e) => e.exceptionAsString()).join('\n'));
+    AppLanguage.locale.value = 'en';
+    runApp(MaterialApp(theme: buildAppTheme(), home: const Align(
+        alignment: Alignment.topLeft,
+        child: SizedBox(width: 410, height: 34,
+            child: SidebarTabs(selected: 4, onSelected: ignoreTab)))));
+    await h.settle();
+    for (var i = 0; i < SidebarTabs.englishLabels.length; i++) {
+      final label = SidebarTabs.englishLabels[i];
+      final text = h.find((w) => w is Text && w.data == label).single.renderObject as RenderBox;
+      final tab = h.find((w) => w.key == ValueKey(i == 0 ? 'sidebar-library-tab' : 'toolbox-tab-$i')).single.renderObject as RenderBox;
+      final center = text.localToGlobal(text.size.center(Offset.zero));
+      final tabCenter = tab.localToGlobal(tab.size.center(Offset.zero));
+      h.check(!label.contains(' ') && (center.dx - tabCenter.dx).abs() < .5 &&
+          text.size.width <= tab.size.width, 'English tab must be one word, centered and fit: $label');
+    }
+    h.check(errors.isEmpty, errors.map((e) => e.exceptionAsString()).join('\n'));
     stdout.writeln(
         'PASS shared sidebar tab navigation, first page, read button position and export folder migration');
   } finally {
+    AppLanguage.locale.value = previousLanguage;
     runApp(const SizedBox.shrink());
     await h.settle();
     await repo.close();
@@ -79,3 +96,5 @@ Future<void> main() async {
   }
   exit(0);
 }
+
+void ignoreTab(int index) {}

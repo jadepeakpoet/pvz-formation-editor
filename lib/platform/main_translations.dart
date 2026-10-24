@@ -1,5 +1,12 @@
 /// English translations for the main editor interface.
 const Map<String, String> mainTranslations = {
+  '全选': 'Select all',
+  '删除所选': 'Delete selected',
+  '正在删除…': 'Deleting…',
+  '删除所选存档？': 'Delete selected archives?',
+  '将删除所选 {count} 个存档及其历史版本。此操作无法撤销。': 'Delete {count} selected archives and their history? This cannot be undone.',
+  '已删除 {count} 个存档': '{count} archives deleted',
+  '删除失败：{error}': 'Could not delete: {error}',
   '当前页打开': 'Open here',
   '新页打开': 'New tab',
   '复制阵型码': 'Copy formation code',
@@ -51,8 +58,8 @@ const Map<String, String> mainTranslations = {
   '官网': 'Website',
   '使用文档': 'User guide',
   '交流 QQ 群': 'QQ community',
-  '导出底图': 'Export background',
-  '导出底图失败：{error}': 'Could not export background: {error}',
+  '导出地图': 'Export map',
+  '导出地图失败：{error}': 'Could not export map: {error}',
   '存档仓库': 'Archive library',
   '自动保存失败': 'Autosave failed',
   '正在自动保存': 'Saving…',
