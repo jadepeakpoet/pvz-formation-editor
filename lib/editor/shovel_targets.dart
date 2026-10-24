@@ -9,7 +9,7 @@ import 'board_painter.dart';
 class ShovelTargets {
   static Set<String> at(Formation doc, Offset point, String filter) {
     if (filter == '智能') {
-      unawaited(OriginalAssets.ensureHitMasks(doc.pieces.map((p) => p.type)));
+      unawaited(OriginalAssets.ensurePieceImages(doc.pieces, hitMasks: true));
     }
     final geometry = BoardGeometry(doc);
     Set<String> ids;

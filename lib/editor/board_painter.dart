@@ -117,13 +117,10 @@ class BoardGeometry {
       }
       final rw = (part['rw'] as num).toDouble();
       final rh = (part['rh'] as num).toDouble();
-      final sx = ((piece.frameCol % (part['cols'] as num).toInt()) * rw +
-              (local.dx - x) * rw / w)
-          .floor();
-      final sy = ((piece.frameRow % (part['rows'] as num).toInt()) * rh +
-              (local.dy - y) * rh / h)
-          .floor();
-      if (OriginalAssets.opaqueAt(path, sx, sy)) return true;
+      final sx = ((local.dx - x) * rw / w).floor();
+      final sy = ((local.dy - y) * rh / h).floor();
+      if (OriginalAssets.frameOpaqueAt(
+          part, piece.frameRow, piece.frameCol, sx, sy)) return true;
     }
     return false;
   }
@@ -169,8 +166,10 @@ class GrowthEffect {
 class FogTile {
   final int row, column, maskFrame, textureFrame;
   final double opacity;
-  const FogTile(this.row, this.column, this.maskFrame, this.textureFrame, this.opacity);
-  Rect get rect => Rect.fromLTWH(-12 + column * 80.0, 20 + row * 85.0, 210, 190);
+  const FogTile(
+      this.row, this.column, this.maskFrame, this.textureFrame, this.opacity);
+  Rect get rect =>
+      Rect.fromLTWH(-12 + column * 80.0, 20 + row * 85.0, 210, 190);
 }
 
 /// Source MakeFog/GatherFog geometry is independent of the lawn's row count.
@@ -183,15 +182,21 @@ class FogGeometry {
     final result = <(int, int)>{};
     final firstColumn = 9 - document.fogColumns;
     for (final piece in document.pieces) {
-      final rowRadius = piece.type == 'torch' ? 1 : piece.type == 'plantern' ? 2 : 0;
+      final rowRadius = piece.type == 'torch'
+          ? 1
+          : piece.type == 'plantern'
+              ? 2
+              : 0;
       if (rowRadius == 0) continue;
       final colRadius = piece.type == 'torch' ? 1 : 3;
       final minRow = piece.row - rowRadius, maxRow = piece.row + rowRadius;
       final minCol = piece.col - colRadius, maxCol = piece.col + colRadius;
       final firstRow = math.max(0, minRow), lastRow = math.min(9, maxRow);
       for (var row = firstRow; row <= lastRow; row++) {
-        final corner = row == firstRow && minRow >= 0 || row == lastRow && maxRow < 10;
-        final first = math.max(math.max(0, minCol + (corner ? 1 : 0)), firstColumn);
+        final corner =
+            row == firstRow && minRow >= 0 || row == lastRow && maxRow < 10;
+        final first =
+            math.max(math.max(0, minCol + (corner ? 1 : 0)), firstColumn);
         final last = math.min(9, maxCol - (corner ? 1 : 0));
         for (var col = first; col <= last; col++) {
           result.add((row, col));
@@ -235,6 +240,7 @@ class BoardPainter extends CustomPainter {
   final Set<(int, int)> selectedCells;
   final String? selectedId, stateHoverId;
   final bool background, helpers, paintSunValue;
+  final double resourceScale;
   BoardPainter(
       {required this.document,
       this.plantingPreview,
@@ -246,6 +252,7 @@ class BoardPainter extends CustomPainter {
       this.selectedCells = const {},
       this.selectedId,
       this.stateHoverId,
+      this.resourceScale = 1,
       this.background = true,
       this.paintSunValue = true,
       this.helpers = true})
@@ -283,12 +290,20 @@ class BoardPainter extends CustomPainter {
     final hasMap = layers != null;
     if (background && layers != null) {
       for (final layer in layers) {
-        final image = OriginalAssets.image(layer['path'] as String);
+        final path = layer['path'] as String;
+        final image = OriginalAssets.image(path, scale: resourceScale);
         if (image != null) {
-          canvas.drawImage(
+          final sourceSize = OriginalAssets.sourceSize(path) ??
+              ui.Size(image.width.toDouble(), image.height.toDouble());
+          canvas.drawImageRect(
               image,
-              Offset((layer['x'] as num).toDouble(),
-                  (layer['y'] as num).toDouble()),
+              Rect.fromLTWH(
+                  0, 0, image.width.toDouble(), image.height.toDouble()),
+              Rect.fromLTWH(
+                  (layer['x'] as num).toDouble(),
+                  (layer['y'] as num).toDouble(),
+                  sourceSize.width,
+                  sourceSize.height),
               Paint());
         }
       }
@@ -405,7 +420,10 @@ class BoardPainter extends CustomPainter {
         ..layout();
       sunlight.paint(canvas, const Offset(30, 62));
     }
-    final menu = OriginalAssets.image('image/Button.png');
+    final menu = document.display['\u9633\u5149'] == true ||
+            document.display['\u5361\u69fd'] == true
+        ? OriginalAssets.image('image/Button.png')
+        : null;
     if (menu != null &&
         (document.display['阳光'] == true || document.display['卡槽'] == true)) {
       canvas.drawImage(menu, const Offset(683, -9), Paint());
@@ -637,14 +655,31 @@ class BoardPainter extends CustomPainter {
     final maskPaint = Paint()
       ..blendMode = BlendMode.dstIn
       ..colorFilter = const ColorFilter.matrix([
-        1, 0, 0, 0, 0,
-        0, 1, 0, 0, 0,
-        0, 0, 1, 0, 0,
-        1, 0, 0, 0, 0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
       ]);
     for (final tile in FogGeometry(document).tiles) {
       final rect = tile.rect;
-      canvas.saveLayer(rect, Paint()..color = Colors.white.withOpacity(tile.opacity));
+      canvas.saveLayer(
+          rect, Paint()..color = Colors.white.withOpacity(tile.opacity));
       canvas.drawImageRect(texture,
           Rect.fromLTWH(tile.textureFrame * 210.0, 0, 210, 190), rect, Paint());
       canvas.drawImageRect(mask,
@@ -677,8 +712,10 @@ class BoardPainter extends CustomPainter {
     final data = OriginalAssets.sprites[OriginalAssets.names[p.type] ?? p.type];
     if (data == null) return false;
     final parts = data['images'] as List;
-    if (!parts
-        .any((part) => OriginalAssets.image(part['path'] as String) != null)) {
+    if (!parts.any((part) =>
+        OriginalAssets.spriteImage(part as Map, p.frameRow, p.frameCol,
+            scale: resourceScale) !=
+        null)) {
       return false;
     }
     // Sprite anchors are local to each part. Preview addons share a canvas,
@@ -749,26 +786,20 @@ class BoardPainter extends CustomPainter {
     }
     for (final part in parts) {
       final path = part['path'] as String;
-      final image = p.effects.contains('模仿者')
-          ? OriginalAssets.grayImage(
-                  OriginalAssets.names[p.type] ?? p.type, path) ??
-              OriginalAssets.image(path)
-          : OriginalAssets.image(path);
+      final image = OriginalAssets.spriteImage(
+          part as Map, p.frameRow, p.frameCol,
+          scale: resourceScale,
+          imitation: p.effects.contains('\u6a21\u4eff\u8005')
+              ? OriginalAssets.names[p.type] ?? p.type
+              : null);
       if (image == null) continue;
       final shadow = path.endsWith('/shadow.png');
-      final rw =
-          shadow ? image.width.toDouble() : (part['rw'] as num).toDouble();
-      final rh =
-          shadow ? image.height.toDouble() : (part['rh'] as num).toDouble();
       final w =
           shadow && part['w'] == 100 ? 86.0 : (part['w'] as num).toDouble();
       final h =
           shadow && part['h'] == 100 ? 36.0 : (part['h'] as num).toDouble();
-      final source = Rect.fromLTWH(
-          shadow ? 0 : (p.frameCol % (part['cols'] as num).toInt()) * rw,
-          shadow ? 0 : (p.frameRow % (part['rows'] as num).toInt()) * rh,
-          rw,
-          rh);
+      final source =
+          Rect.fromLTWH(0, 0, image.width.toDouble(), image.height.toDouble());
       final target = Rect.fromLTWH(
           (part['x'] as num).toDouble() - (data['px'] as num),
           (part['y'] as num).toDouble() - (data['py'] as num),
@@ -832,13 +863,11 @@ Future<Uint8List> _exportPng(Formation document,
     throw ArgumentError.value(multiplier, 'multiplier', '输出倍率必须在 0.25～4 之间');
   }
   await OriginalAssets.ensureBoardImages(document.map.name, document.seedSlots);
-  await OriginalAssets.ensureTypes([
-    ...document.pieces.map((piece) => piece.type),
-    if (document.display['小推车'] == true) ...['Lawnmower', 'Poolcleaner', 'Roofcleaner'],
-  ]);
-  await OriginalAssets.ensureImitationImages(document.pieces
-      .where((piece) => piece.effects.contains('模仿者'))
-      .map((piece) => piece.type));
+  await OriginalAssets.ensurePieceImages(document.pieces);
+  if (document.display['\u5c0f\u63a8\u8f66'] == true) {
+    await OriginalAssets.ensureSpriteTypes(
+        ['Lawnmower', 'Poolcleaner', 'Roofcleaner']);
+  }
   final size = BoardGeometry(document).size;
   final recorder = ui.PictureRecorder();
   final widthScale = pokerWidth ? 917 / 800 : 1.0;
@@ -858,3 +887,28 @@ Future<Uint8List> _exportPng(Formation document,
     picture.dispose();
   }
 }
+
+/// A list preview only decodes small shared map/sprite resources. No card bank,
+/// sun text, fog atlas, mower artwork, or full-image export pipeline is involved.
+Future<ui.Image?> renderThumbnail(Formation document,
+        {bool Function()? isNeeded}) =>
+    OriginalAssets.images.retainDuring(() =>
+        OriginalAssets.retainImitationDuring(() async {
+          const scale = .32;
+          if (isNeeded != null && !isNeeded()) return null;
+          await OriginalAssets.ensureMapImages(document.map.name, scale: scale);
+          if (isNeeded != null && !isNeeded()) return null;
+          await OriginalAssets.ensurePieceImages(document.pieces, scale: scale);
+          if (isNeeded != null && !isNeeded()) return null;
+          final preview = document.copy(display: const {});
+          final recorder = ui.PictureRecorder();
+          final canvas = Canvas(recorder)..scale(scale);
+          BoardPainter(document: preview, helpers: false, resourceScale: scale)
+              .paint(canvas, const Size(800, 600));
+          final picture = recorder.endRecording();
+          try {
+            return await picture.toImage(256, 192);
+          } finally {
+            picture.dispose();
+          }
+        }));

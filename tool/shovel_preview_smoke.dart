@@ -34,7 +34,8 @@ Future<List<int>> render(Formation doc,
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   try {
-    await OriginalAssets.ensureLoaded();
+    await OriginalAssets.ensureBoardImages('', []);
+    await OriginalAssets.ensureSpriteTypes(OriginalAssets.names.keys);
     await OriginalAssets.ensureHitMasks(OriginalAssets.names.keys);
     if (OriginalAssets.image('image/Shovel.png') == null) {
       throw StateError('Bundled shovel asset missing');

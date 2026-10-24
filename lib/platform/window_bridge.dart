@@ -82,6 +82,7 @@ class WindowBridge {
         case 'sidebarStateChanged':
         case 'editorPointerMoved':
         case 'selectToolboxTab':
+        case 'resourceDiagnostics':
         case 'mainAction':
         case 'libraryOpen':
         case 'showHistory':

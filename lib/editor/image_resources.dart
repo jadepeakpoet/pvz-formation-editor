@@ -5,12 +5,28 @@ import 'dart:ui' as ui;
 /// Owns decoded images. Recently painted resources stay resident; cold entries
 /// are disposed after the frame has released its references, under byte pressure.
 class ImageResources extends MapBase<String, ui.Image> {
-  ImageResources({required this.maximumBytes});
+  ImageResources(
+      {required this.maximumBytes,
+      this.evictionDelay = const Duration(seconds: 3),
+      this.minimumAge = const Duration(seconds: 2)});
+  final Duration evictionDelay, minimumAge;
   final int maximumBytes;
   final _entries = <String, ui.Image>{};
   final _used = <String, DateTime>{};
   int bytes = 0;
   int _leases = 0;
+  final _pins = <String, int>{};
+  void pin(String key) => _pins.update(key, (n) => n + 1, ifAbsent: () => 1);
+  void unpin(String key) {
+    final n = (_pins[key] ?? 1) - 1;
+    if (n <= 0) {
+      _pins.remove(key);
+    } else {
+      _pins[key] = n;
+    }
+    _scheduleTrim();
+  }
+
   Timer? _timer;
   @override
   ui.Image? operator [](Object? key) {
@@ -30,8 +46,11 @@ class ImageResources extends MapBase<String, ui.Image> {
   }
 
   void _scheduleTrim() {
-    if (bytes > maximumBytes && _timer == null) {
-      _timer = Timer(const Duration(seconds: 3), () {
+    if (bytes > maximumBytes &&
+        _timer == null &&
+        _leases == 0 &&
+        _entries.keys.any((key) => !_pins.containsKey(key))) {
+      _timer = Timer(evictionDelay, () {
         _timer = null;
         trim();
         _scheduleTrim();
@@ -39,15 +58,14 @@ class ImageResources extends MapBase<String, ui.Image> {
     }
   }
 
-  void trim(
-      {Duration minimumAge = const Duration(seconds: 2), int? targetBytes}) {
+  void trim({Duration? minimumAge, int? targetBytes}) {
     if (_leases != 0) return;
-    final cutoff = DateTime.now().subtract(minimumAge);
+    final cutoff = DateTime.now().subtract(minimumAge ?? this.minimumAge);
     final keys = _entries.keys.toList()
       ..sort((a, b) => _used[a]!.compareTo(_used[b]!));
     for (final key in keys) {
       if (bytes <= (targetBytes ?? maximumBytes)) break;
-      if (!_used[key]!.isAfter(cutoff)) remove(key);
+      if (!_pins.containsKey(key) && !_used[key]!.isAfter(cutoff)) remove(key);
     }
   }
 

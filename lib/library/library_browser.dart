@@ -83,9 +83,16 @@ class _Entry {
   Map<String, dynamic> get document =>
       preset?.document.toJson() ?? archive!.document;
   String get mapId => preset?.mapId ?? (document['map'] as String? ?? 'pool');
-  late final int cannonCount =
-      formation?.pieces.where((p) => p.type == 'cob').length ?? 0;
-  Formation? get formation {
+  late final int cannonCount = preset?.cannonCount ?? _archiveCannons();
+  int _archiveCannons() {
+    final objects = archive?.document['objects'];
+    return objects is List ? objects.whereType<Map>().where((p)=>p['type']=='cob').length : 0;
+  }
+  String get sceneName {
+    try { return BoardMap.byId(mapId).name; } catch (_) { return 'Unknown'; }
+  }
+  late final Formation? formation = _decodeFormation();
+  Formation? _decodeFormation() {
     if (preset != null) return preset!.document;
     try {
       return Formation.fromJson(document);
@@ -808,21 +815,23 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
   }
 
   Widget preview(_Entry e, {bool thumbnail = true}) {
-    final f = e.formation;
+    final builtinKey = thumbnail ? e.preset?.thumbnailKey : null;
+    final f = builtinKey == null ? e.formation : null;
     return AspectRatio(
         aspectRatio: 4 / 3,
         child: ClipRRect(
             borderRadius: BorderRadius.circular(9),
             child: ColoredBox(
                 color: const Color(0xffe5eadf),
-                child: f == null
+                child: f == null && builtinKey == null
                     ? const Center(
                         child: Icon(Icons.broken_image_outlined,
                             color: Colors.grey))
                     : RepaintBoundary(
                         child: thumbnail
-                            ? FormationThumbnail(document: f)
-                            : CustomPaint(painter: BoardPainter(document: f, helpers: false))))));
+                            ? FormationThumbnail(document: f, cacheKey: builtinKey,
+                              documentLoader: builtinKey == null ? null : () => e.preset!.document)
+                            : CustomPaint(painter: BoardPainter(document: f!, helpers: false))))));
   }
 
   List<PopupMenuEntry<String>> menuItems(_Entry e) {
@@ -1188,7 +1197,7 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
                           const SizedBox(height: 6),
                           Text(
                               AppLanguage.text(
-                                  '${narrow ? '' : '${AppLanguage.text(e.preset != null ? '预制名阵' : '存档')} · '}${AppLanguage.text(e.formation?.map.name ?? '未知场景')} · ${cannonLabel(e.cannonCount)}'),
+                                  '${narrow ? '' : '${AppLanguage.text(e.preset != null ? '预制名阵' : '存档')} · '}${AppLanguage.text(e.sceneName)} · ${cannonLabel(e.cannonCount)}'),
                               style: const TextStyle(
                                   fontSize: 12, color: Color(0xff6a786c))),
                           if (!narrow) ...[
@@ -1277,7 +1286,7 @@ class _LibraryBrowserState extends State<LibraryBrowser> {
                     const SizedBox(height: 10),
                     Text(
                         AppLanguage.text(
-                            '${AppLanguage.text(e.formation?.map.name ?? '未知场景')} · ${cannonLabel(e.cannonCount)} · ${e.formation?.pieces.length ?? 0} 个对象'),
+                            '${AppLanguage.text(e.sceneName)} · ${cannonLabel(e.cannonCount)} · ${e.formation?.pieces.length ?? 0} 个对象'),
                         style: const TextStyle(
                             fontSize: 13, color: Color(0xff63755f))),
                     const SizedBox(height: 6),

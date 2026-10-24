@@ -17,6 +17,7 @@ import 'domain/planting_support.dart';
 import 'platform/planting_preferences.dart';
 import 'platform/app_language.dart';
 import 'platform/app_theme.dart';
+import 'platform/image_memory.dart';
 import 'platform/features.dart';
 import 'platform/game_bridge.dart';
 import 'platform/game_writes.dart';
@@ -46,6 +47,7 @@ import 'platform/window_bridge.dart';
 import 'storage/formation_repository.dart';
 import 'library/library_browser.dart';
 import 'library/formation_thumbnail.dart';
+import 'library/thumbnail_store.dart';
 import 'library/archive_tags_dialog.dart';
 import 'library/library_presets.dart';
 import 'library/archive_dedup_dialog.dart';
@@ -70,18 +72,18 @@ void initializeExitHandling() {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  PaintingBinding.instance.imageCache
-    ..maximumSizeBytes = 16 << 20
-    ..maximumSize = 120;
+  await ImageMemory.configure();
   initializeExitHandling();
   runApp(_StartupApp(
       label: '正在打开庭院…',
       prepare: () async {
         await Future.wait([
           OriginalAssets.ensureLoaded(),
+          LibraryPresets.ensurePreviewIndex(),
           PlantingPreferences.load(),
           AppLanguage.load()
         ]);
+        await ThumbnailStore.primeBuiltins();
         return const FormationApp();
       }));
 }
@@ -89,13 +91,11 @@ Future<void> main() async {
 @pragma('vm:entry-point')
 Future<void> toolboxMain() async {
   WidgetsFlutterBinding.ensureInitialized();
-  PaintingBinding.instance.imageCache
-    ..maximumSizeBytes = 16 << 20
-    ..maximumSize = 120;
+  await ImageMemory.configure(secondary: true);
   runApp(_StartupApp(
       label: '正在加载工具箱…',
       prepare: () async {
-        await Future.wait([OriginalAssets.ensureLoaded(), AppLanguage.load()]);
+        await Future.wait([OriginalAssets.ensureLoaded(), LibraryPresets.ensurePreviewIndex(), AppLanguage.load()]);
         final repository = await FormationRepository.open(':memory:');
         final session = EditorSession(repository, persistDraft: false);
         return LanguageScope(
@@ -153,13 +153,11 @@ class _SidebarHostState extends State<SidebarHost> {
 @pragma('vm:entry-point')
 Future<void> libraryMain() async {
   WidgetsFlutterBinding.ensureInitialized();
-  PaintingBinding.instance.imageCache
-    ..maximumSizeBytes = 16 << 20
-    ..maximumSize = 120;
+  await ImageMemory.configure(secondary: true);
   runApp(_StartupApp(
       label: '正在加载存档库…',
       prepare: () async {
-        await Future.wait([OriginalAssets.ensureLoaded(), AppLanguage.load()]);
+        await Future.wait([OriginalAssets.ensureLoaded(), LibraryPresets.ensurePreviewIndex(), AppLanguage.load()]);
         return LanguageScope(
             builder: () => MaterialApp(
                   locale: Locale(AppLanguage.locale.value),
@@ -218,8 +216,8 @@ class _StartupAppState extends State<_StartupApp> {
                             child: Column(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  const Icon(Icons.grass_rounded,
-                                      size: 36, color: Color(0xff456b4e)),
+                                  ClipRRect(borderRadius: BorderRadius.circular(24),
+                                    child: Image.asset('assets/branding/app-logo.png',width:96,height:96,cacheWidth:192)),
                                   const SizedBox(height: 18),
                                   Text(
                                       AppLanguage.text(state.hasError
@@ -228,6 +226,13 @@ class _StartupAppState extends State<_StartupApp> {
                                       style: const TextStyle(
                                           color: Color(0xff304b32))),
                                   const SizedBox(height: 18),
+                                  ValueListenableBuilder<double?>(
+                                    valueListenable: ThumbnailStore.preparationProgress,
+                                    builder: (context, progress, _) => progress == null ? const SizedBox.shrink()
+                                      : SizedBox(width:240,child:Column(children:[
+                                          LinearProgressIndicator(value:progress), const SizedBox(height:8),
+                                          Text('${AppLanguage.locale.value == 'en' ? 'Preparing previews' : '\u6b63\u5728\u51c6\u5907\u9884\u89c8'} ${(progress*100).round()}%'),
+                                        ]))),
                                   if (state.hasError)
                                     OutlinedButton(
                                         onPressed: () => setState(
@@ -412,6 +417,7 @@ class _LibraryPageState extends State<LibraryPage> {
   String? error, dataPath;
   String? activeDraftId;
   bool openedEditor = false;
+  bool openingInitialEditor = false;
   bool loading = true;
   EditorTabsController? workspace;
   static const libraryChannel = MethodChannel('pvz_formation_editor/library');
@@ -419,6 +425,7 @@ class _LibraryPageState extends State<LibraryPage> {
   void initState() {
     super.initState();
     activeDraftId = widget.activeDraftId;
+    openingInitialEditor = !widget.independent && widget.repository == null;
     _open();
   }
 
@@ -430,6 +437,7 @@ class _LibraryPageState extends State<LibraryPage> {
 
   Future<void> _open() async {
     try {
+      await LibraryPresets.ensurePreviewIndex();
       if (widget.independent) {
         libraryChannel.setMethodCallHandler((call) async {
           if (call.method == 'refresh') {
@@ -454,20 +462,22 @@ class _LibraryPageState extends State<LibraryPage> {
         dataPath = '${dir.path}/formations.sqlite';
       }
       repo = widget.repository ?? await FormationRepository.open(dataPath!);
-      await refresh();
-      if (!widget.independent &&
-          widget.repository == null &&
-          !openedEditor &&
-          mounted) {
+      final restoreWorkspace = !widget.independent && widget.repository == null && !openedEditor;
+      if (!restoreWorkspace) await refresh();
+      if (restoreWorkspace && mounted) {
         openedEditor = true;
-        final session = await EditorSession.resume(repo!);
+        final restored = await EditorTabsController.restore(repo!);
         if (!mounted) {
-          session.dispose();
+          restored.dispose();
           return;
         }
-        await edit(session);
+        workspace=restored;
+        await showWorkspace();
+        if (mounted) setState(() => openingInitialEditor = false);
       }
     } catch (e) {
+      if (workspace == null) openedEditor = false;
+      openingInitialEditor = false;
       if (mounted) setState(() => error = '$e');
     }
   }
@@ -554,15 +564,20 @@ class _LibraryPageState extends State<LibraryPage> {
       return;
     }
     workspace = EditorTabsController(repo!, initial: session);
+    await showWorkspace();
+  }
+
+  Future<void> showWorkspace() async {
+    final controller=workspace!;
     final route = MaterialPageRoute<void>(
         builder: (_) => EditorWorkspace(
-            controller: workspace!,
+            controller: controller,
             libraryPath: dataPath,
             continueArchive: (a) => continueArchive(a)));
     await Navigator.push<void>(context, route);
     await route.completed;
-    await workspace!.flushAll();
-    workspace!.dispose();
+    await controller.flushAll();
+    controller.dispose();
     workspace = null;
     await refresh();
   }
@@ -1075,6 +1090,11 @@ class _LibraryPageState extends State<LibraryPage> {
                           onPressed: _open, child: Text(AppLanguage.text('重试')))
                     ])));
     }
+    // While the initial editor route is active, do not build the hidden archive
+    // browser and start previews behind it. This does not change sidebar pages.
+    if (openingInitialEditor) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
     final browser = LibraryBrowser(
       showTitle: widget.showTitle,
       gameBusy: applyingArchiveToGame,
@@ -1556,6 +1576,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
   String sidebarMode = 'toolbox';
   bool sharedSidebarProtocol = false;
   final fallbackLibraryKey = GlobalKey<_LibraryPageState>();
+  bool windowHandshakeComplete = false;
   bool nativeWindows = false,
       receivingWindowState = false,
       windowPublishQueued = false;
@@ -1575,9 +1596,8 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
       fn();
       refreshFormationOutput();
     });
-    if (tool == '铲除' || tool == '选择') {
-      unawaited(
-          OriginalAssets.ensureHitMasks(s.document.pieces.map((p) => p.type)));
+    if (tool == '\u94f2\u9664' || tool == '\u9009\u62e9') {
+      prepareDocumentMasks();
     }
     if (!receivingWindowState) queueWindowState();
   }
@@ -1607,7 +1627,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
               .fingerprint;
         }
       } catch (e) {
-        if (mounted) super.setState(() => windowError = '$e');
+        if (mounted) super.setState(() {windowError = '$e'; windowHandshakeComplete = true;});
       } finally {
         windowPublishInFlight = false;
         windowInFlightFingerprint = null;
@@ -1667,6 +1687,11 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
           activeDraftId: s.readOnly ? null : s.id,
           onEvent: (method, arguments) async {
             if (!mounted) return null;
+            if (method == 'resourceDiagnostics') {
+              return {...OriginalAssets.resourceStats(), 'thumbnailBytes': FormationThumbnail.cachedBytes,
+                'bundledHits':ThumbnailStore.bundledHits,'diskHits':ThumbnailStore.diskHits,
+                'generatedThumbnails':ThumbnailStore.generated};
+            }
             if (method == 'selectToolboxTab') {
               if (widget.toolboxOnly && arguments is int && arguments >= 1 && arguments <= 5) {
                 selectToolboxTab(arguments);
@@ -1768,7 +1793,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
             return null;
           });
       if (!mounted) return;
-      super.setState(() => nativeWindows = supported);
+      super.setState(() { nativeWindows = supported; windowHandshakeComplete = true; });
       if (supported && !widget.toolboxOnly) {
         await WindowBridge.publish(windowState());
         await WindowBridge.setVisible(true);
@@ -2311,8 +2336,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     s.addListener(update);
     OriginalAssets.revision.addListener(updateArtwork);
     unawaited(OriginalAssets.ensureLoaded());
-    unawaited(
-        OriginalAssets.ensureHitMasks(s.document.pieces.map((p) => p.type)));
+    prepareDocumentMasks();
     exitGuard = () async {
       await finishDocumentRename();
       finishGesture();
@@ -2375,6 +2399,13 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     queueWindowState();
   }
 
+  Formation? preparedMaskDocument;
+  void prepareDocumentMasks() {
+    if (widget.toolboxOnly || identical(preparedMaskDocument, s.document)) return;
+    preparedMaskDocument = s.document;
+    unawaited(OriginalAssets.ensurePieceImages(s.document.pieces, hitMasks: true));
+  }
+
   bool artworkRefreshScheduled = false;
   void updateArtwork() {
     if (!mounted || artworkRefreshScheduled) return;
@@ -2435,6 +2466,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
   void didHaveMemoryPressure() {
     OriginalAssets.releaseColdImages();
     FormationThumbnail.clearCache();
+    LibraryPreset.clearDocumentCache();
   }
 
   @override
@@ -3830,6 +3862,16 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
           backgroundColor: const Color(0xfff7f8f3),
           body: classicToolboxContents());
     }
+    // Do not instantiate the embedded fallback library/toolbox while Windows is
+    // still creating its native sidebar. Those hidden widgets decode resources.
+    if (Platform.isWindows && !windowHandshakeComplete) {
+      return Scaffold(backgroundColor: const Color(0xfff3f6eb),
+        body: Center(child: Column(mainAxisSize:MainAxisSize.min,children:[
+          ClipRRect(borderRadius:BorderRadius.circular(24),
+            child:Image.asset('assets/branding/app-logo.png',width:96,height:96,cacheWidth:192)),
+          const SizedBox(height:18),const CircularProgressIndicator(),
+        ])));
+    }
     if (nativeWindows) {
       return CallbackShortcuts(
           bindings: {
@@ -5015,7 +5057,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     bool stillCurrent() => mounted && identical(s, target) &&
         documentToken == token && s.document.fingerprint == fingerprint &&
         selectedType == typeAtOpen;
-    await Future.wait([OriginalAssets.ensureLoaded(), AppLanguage.load()]);
+    await Future.wait([OriginalAssets.ensureLoaded(), LibraryPresets.ensurePreviewIndex(), AppLanguage.load()]);
     if (!stillCurrent()) return;
     final piece = selected;
     final type = piece?.type ?? selectedType;
@@ -5032,11 +5074,12 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
     await OriginalAssets.ensureTypes([type]);
     if (!stillCurrent()) return;
     final layer = layers.last;
-    final image = OriginalAssets.image(layer['path'] as String);
+    final image = OriginalAssets.image(layer['path'] as String)?.clone();
     if (image == null || !mounted) return;
     final rows = (layer['rows'] as num).toInt().clamp(1, 100),
         cols = (layer['cols'] as num).toInt().clamp(1, 100);
-    final value = await showDialog<(int, int)>(
+    OriginalAssets.releaseTypeSheets(type);
+    final route = DialogRoute<(int, int)>(
         context: context,
         builder: (ctx) => AlertDialog(
                 title: Text(
@@ -5088,13 +5131,19 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                       onPressed: () => Navigator.pop(ctx, (0, 0)),
                       child: Text(AppLanguage.text('默认外表')))
                 ]));
-    if (value == null || !stillCurrent()) return;
+    (int,int)? value;
+    try {
+      value = await Navigator.of(context,rootNavigator:true).push(route);
+      await route.completed;
+    } finally { image.dispose(); }
+    final chosen = value;
+    if (chosen == null || !stillCurrent()) return;
     setState(() {
-      plantingFrameRow = value.$1;
-      plantingFrameCol = value.$2;
+      plantingFrameRow = chosen.$1;
+      plantingFrameCol = chosen.$2;
     });
     if (piece != null) {
-      changePiece(piece.copy(frameRow: value.$1, frameCol: value.$2));
+      changePiece(piece.copy(frameRow: chosen.$1, frameCol: chosen.$2));
     }
     if (plantBatch && batchSelectionMode) batchPlace();
   }

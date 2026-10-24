@@ -1,5 +1,7 @@
 import '../platform/app_language.dart';
 import 'dart:async';
+import 'dart:convert';
+import '../domain/formation.dart';
 import 'package:flutter/material.dart';
 import '../storage/formation_repository.dart';
 import 'editor_session.dart';
@@ -21,6 +23,7 @@ class EditorTabsController extends ChangeNotifier {
   Future<bool> Function()? beforeSwitch;
   Future<void> _tail = Future.value();
   String? _rememberedArchiveId;
+  String? _rememberedWorkspace;
   bool _resumeQueued = false;
 
   String _blankName() {
@@ -38,12 +41,111 @@ class EditorTabsController extends ChangeNotifier {
   Future<void> _rememberActive() async {
     final session = active;
     final id = session.sourceArchiveId;
-    if (session.readOnly ||
-        session.deleted ||
-        id == null ||
-        id == _rememberedArchiveId) return;
-    await repository.rememberOpenedArchive(id);
-    _rememberedArchiveId = id;
+    if (!session.readOnly &&
+        !session.deleted &&
+        id != null &&
+        id != _rememberedArchiveId) {
+      await repository.rememberOpenedArchive(id);
+      _rememberedArchiveId = id;
+    }
+    final snapshot = <String, dynamic>{
+      'version': 1,
+      'active': _activeIndex,
+      'tabs': [
+        for (final tab in _sessions)
+          {
+            'id': tab.id,
+            'name': tab.name,
+            'readOnly': tab.readOnly,
+            if (tab.sourceArchiveId != null) 'archiveId': tab.sourceArchiveId,
+            if (tab.sourceArchiveId == null) 'document': tab.document.toJson(),
+            if (tab.filePath != null) 'filePath': tab.filePath,
+            if (tab.fileFormat != null) 'fileFormat': tab.fileFormat,
+            if (tab.lastFileBackup != null)
+              'lastFileBackup': tab.lastFileBackup,
+          }
+      ]
+    };
+    final signature = jsonEncode(snapshot);
+    if (signature != _rememberedWorkspace) {
+      await repository.rememberEditorWorkspace(snapshot);
+      _rememberedWorkspace = signature;
+    }
+  }
+
+  static Future<EditorTabsController> restore(
+      FormationRepository repository) async {
+    final snapshot = await repository.editorWorkspace();
+    final tabs = <EditorSession>[];
+    var selected = 0;
+    final entries = snapshot?['tabs'];
+    if (entries is List) {
+      for (var index = 0; index < entries.length; index++) {
+        try {
+          final entry = Map<String, dynamic>.from(entries[index] as Map);
+          final archiveId = entry['archiveId'] as String?;
+          final readOnly = entry['readOnly'] == true;
+          EditorSession session;
+          if (archiveId != null) {
+            final archive = await repository.archiveById(archiveId);
+            if (archive == null) continue;
+            final document = Formation.fromJson(archive.document);
+            session = EditorSession(repository,
+                id: archive.id,
+                document: document,
+                name: archive.name,
+                sourceArchiveId: archive.id,
+                savedFingerprint: document.fingerprint,
+                readOnly: readOnly);
+          } else {
+            final document = Formation.fromJson(
+                Map<String, dynamic>.from(entry['document'] as Map));
+            session = EditorSession(repository,
+                id: entry['id'] as String?,
+                name: entry['name'] as String? ?? '\u65b0\u5efa\u9635\u578b',
+                document: document,
+                readOnly: readOnly,
+                persistDraft: !readOnly);
+          }
+          session.filePath = entry['filePath'] as String?;
+          session.fileFormat = entry['fileFormat'] as String?;
+          session.lastFileBackup = entry['lastFileBackup'] as String?;
+          if (index == snapshot?['active']) selected = tabs.length;
+          tabs.add(session);
+        } on FormatException {
+          // Skip invalid content, but propagate database/I/O errors for retry.
+          continue;
+        } on TypeError {
+          continue;
+        } on RangeError {
+          continue;
+        }
+      }
+      // A saved empty workspace means the user closed all pages. Never fall
+      // back to a previous archive in that case.
+      if (tabs.isEmpty) tabs.add(EditorSession(repository));
+    }
+    if (tabs.isEmpty) {
+      return EditorTabsController(repository,
+          initial: await EditorSession.resume(repository));
+    }
+    final controller =
+        EditorTabsController._restored(repository, tabs, selected);
+    await controller.ready;
+    return controller;
+  }
+
+  EditorTabsController._restored(
+      this.repository, List<EditorSession> sessions, int selected) {
+    for (final session in sessions) {
+      _adopt(session);
+    }
+    _activeIndex = selected.clamp(0, _sessions.length - 1);
+    unawaited(_serial(() async {
+      for (final session in _sessions) {
+        await _flush(session);
+      }
+    }).catchError((Object _) {}));
   }
 
   EditorTabsController(this.repository, {EditorSession? initial}) {

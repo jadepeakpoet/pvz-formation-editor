@@ -217,6 +217,11 @@ struct EditorWindows::Impl {
       return;
     }
 #endif
+    if(method=="resourceDiagnostics") {
+      if(toolbox_channel) Forward(toolbox_channel.get(),method,nullptr,std::move(result));
+      else result->Success();
+      return;
+    }
     if(method=="diagnostics") {
       auto dimensions=[](HWND hwnd) {
         RECT r{}; if(hwnd) GetClientRect(hwnd,&r);

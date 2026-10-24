@@ -334,6 +334,31 @@ class FormationRepository {
             "INSERT OR REPLACE INTO editor_preferences(key,value) SELECT 'last_opened_archive',id FROM archives WHERE id=${_q(id)}");
       });
 
+  Future<ArchiveRecord?> archiveById(String id) => _serial(() async {
+        final rows = await _query('SELECT * FROM archives WHERE id=${_q(id)}');
+        return rows.isEmpty ? null : _archive(rows.single);
+      });
+
+  Future<Map<String, dynamic>?> editorWorkspace() => _serial(() async {
+        final rows = await _query(
+            "SELECT value FROM editor_preferences WHERE key='open_workspace'");
+        if (rows.isEmpty) return null;
+        try {
+          final value = jsonDecode(rows.single['value'] as String);
+          return value is Map<String, dynamic> && value['version'] == 1
+              ? value
+              : null;
+        } catch (_) {
+          return null;
+        }
+      });
+
+  Future<void> rememberEditorWorkspace(Map<String, dynamic> value) =>
+      _serial(() async {
+        await _query(
+            "INSERT OR REPLACE INTO editor_preferences(key,value) VALUES('open_workspace',${_q(jsonEncode(value))})");
+      });
+
   /// Built-in preset favorites are separate from editable user formations.
   Future<
       Set<String>> listFavoritePresets() => _serial(() async => (await _query(
@@ -683,8 +708,8 @@ class FormationRepository {
             final contentChanged = (name != null && name != previous['name']) ||
                 (note != null && note != previous['note']) ||
                 (tags != null && jsonEncode(tags) != previous['tags']);
-            final favoriteChanged = favorite != null &&
-                (favorite ? 1 : 0) != previous['favorite'];
+            final favoriteChanged =
+                favorite != null && (favorite ? 1 : 0) != previous['favorite'];
             if (!contentChanged && !favoriteChanged) return;
             final now =
                 await _nextArchiveTimestamp(id, previous['updated_at'] as int);

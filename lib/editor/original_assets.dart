@@ -2,66 +2,46 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
+import 'dart:io' show ZLibDecoder;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
-import '../domain/original_catalog.dart';
+import '../domain/formation.dart';
 import 'image_resources.dart';
 
 /// Original site's local artwork and DOM sprite frame definitions.
 class OriginalAssets {
   static final images = ImageResources(maximumBytes: 24 << 20);
   static final Map<String, Uint8List> _hitMasks = {};
-  static final Map<String, Future<void>> _hitLoading = {};
 
-  /// Compact one-bit silhouettes, loaded only for objects in the editor.
+  /// Compatibility helper for tools that inspect every appearance of a type.
+  /// The editor itself requests only its current frames via ensurePieceImages.
   static Future<void> ensureHitMasks(Iterable<String> types) async {
     await ensureLoaded();
-    final paths = <String>{
-      for (final type in types)
-        for (final part
-            in sprites[names[type] ?? type]?['images'] as List? ?? [])
-          if (!(part['path'] as String).endsWith('/shadow.png'))
-            part['path'] as String
-    };
-    await Future.wait(paths.map(_loadImage));
-    await Future.wait(
-        paths.map((path) => _hitLoading.putIfAbsent(path, () async {
-              final source = images[path]?.clone();
-              if (source == null) return;
-              try {
-                final raw =
-                    await source.toByteData(format: ui.ImageByteFormat.rawRgba);
-                if (raw == null) return;
-                final rgba = raw.buffer
-                    .asUint8List(raw.offsetInBytes, raw.lengthInBytes);
-                final mask = Uint8List((source.width * source.height + 7) ~/ 8);
-                for (var pixel = 0;
-                    pixel < source.width * source.height;
-                    pixel++) {
-                  if (rgba[pixel * 4 + 3] >= 16) {
-                    mask[pixel >> 3] |= 1 << (pixel & 7);
-                  }
-                }
-                _hitMasks[path] = mask;
-                revision.value++;
-              } finally {
-                source.dispose();
-              }
-            })));
+    final pending = <Future<void>>[];
+    for (final type in types) {
+      for (final part
+          in sprites[names[type] ?? type]?['images'] as List? ?? []) {
+        if ((part['path'] as String).endsWith('/shadow.png')) continue;
+        for (var row = 0; row < (part['rows'] as num).toInt(); row++) {
+          for (var col = 0; col < (part['cols'] as num).toInt(); col++) {
+            pending.add(_ensureFrameMask(part as Map, row, col));
+          }
+        }
+      }
+    }
+    await Future.wait(pending);
   }
 
-  static bool opaqueAt(String path, int x, int y) {
-    final source = images[path];
-    final mask = _hitMasks[path];
-    if (source == null ||
-        mask == null ||
-        x < 0 ||
-        y < 0 ||
-        x >= source.width ||
-        y >= source.height) return false;
-    final pixel = y * source.width + x;
-    return mask[pixel >> 3] & (1 << (pixel & 7)) != 0;
-  }
+  static Map<String, Object> resourceStats() => {
+        'decodedBytes': images.bytes,
+        'decodedImages': images.length,
+        'imageKeys': images.keys.toList(),
+        'imitationBytes': _grayImages.bytes,
+        'imitationImages': _grayImages.length,
+        'maskBytes': _hitMasks.values.fold<int>(0, (a, b) => a + b.length),
+        'fullSpriteSheets':
+            images.keys.where((key) => _frameIndex.containsKey(key)).toList(),
+      };
 
   static final Map<String, dynamic> sprites = {};
   static final _grayImages = ImageResources(maximumBytes: 8 << 20);
@@ -69,6 +49,7 @@ class OriginalAssets {
     images.trim(minimumAge: Duration.zero, targetBytes: 0);
     _grayImages.trim(minimumAge: Duration.zero, targetBytes: 0);
   }
+
   static Future<T> retainImitationDuring<T>(Future<T> Function() work) =>
       _grayImages.retainDuring(work);
   static final Map<String, double> _lights = {};
@@ -78,12 +59,13 @@ class OriginalAssets {
   // Imitation artwork is derived only when a visible sprite requests it. Loading
   // the library should not read back and transform every source texture first.
   // The next revision repaints callers once the exact HSL image is ready.
-  static ui.Image? grayImage(String name, String path) {
+  static ui.Image? grayImage(String name, String path, {double scale = 1}) {
     final light = _lights[name] ?? 1.9;
-    final key = '$path:$light';
+    final sourceKey = imageKey(path, scale);
+    final key = '$sourceKey:$light';
     final cached = _grayImages[key];
     if (cached != null) return cached;
-    final source = images[path];
+    final source = images[sourceKey];
     if (source != null) {
       _grayLoading.putIfAbsent(
           key, () => _loadGray(key, path, source.clone(), light));
@@ -119,8 +101,9 @@ class OriginalAssets {
     try {
       final raw = await source.toByteData(format: ui.ImageByteFormat.rawRgba);
       if (raw == null) throw StateError('Cannot read original sprite $path');
-      final pixels = Uint8List.fromList(
-          raw.buffer.asUint8List(raw.offsetInBytes, raw.lengthInBytes));
+      // toByteData already returns an independent writable readback buffer.
+      final pixels =
+          raw.buffer.asUint8List(raw.offsetInBytes, raw.lengthInBytes);
       // Source imitation uses HSL lightness and the template multiplier.
       // Retain its premultiplied-alpha clamp; a color matrix is not equivalent.
       for (var i = 0; i < pixels.length; i += 4) {
@@ -228,10 +211,119 @@ class OriginalAssets {
   static String cardPath(String type, {bool imitater = false}) =>
       'assets/original/image/Card/${type == 'grave' ? 'Tombstone' : names[type] ?? type}${imitater ? '_i' : ''}.png';
   static final Map<String, Future<void>> _imageLoading = {};
-  static ui.Image? image(String path) {
-    final cached = images[path];
-    if (cached == null) unawaited(_loadImage(path));
+  static final _sourceSizes = <String, ui.Size>{};
+  static ui.Size? sourceSize(String path) => _sourceSizes[path];
+  static String imageKey(String path, double scale) =>
+      scale == 1 ? path : "$path@${scale.toStringAsFixed(3)}";
+  static ui.Image? image(String path, {double scale = 1}) {
+    final cached = images[imageKey(path, scale)];
+    if (cached == null) unawaited(_loadImage(path, scale: scale));
     return cached;
+  }
+
+  static final _frameIndex = <String, dynamic>{};
+  static String spriteFramePath(Map part, int row, int col) {
+    final path = part['path'] as String;
+    final entry = _frameIndex[path] as Map?;
+    if (entry == null) return path;
+    final index = (row % (entry['rows'] as int)) * (entry['cols'] as int) +
+        col % (entry['cols'] as int);
+    return 'frames/${(entry['frames'] as List)[index]}.png';
+  }
+
+  static ui.Image? spriteImage(Map part, int row, int col,
+      {double scale = 1, String? imitation}) {
+    final path = spriteFramePath(part, row, col);
+    final normal = image(path, scale: scale);
+    return imitation == null
+        ? normal
+        : grayImage(imitation, path, scale: scale) ?? normal;
+  }
+
+  static Future<void> _ensureSprite(String type, int row, int col,
+      {double scale = 1, bool imitation = false, bool hitMasks = false}) async {
+    final name = names[type] ?? type;
+    for (final variant in [
+      name,
+      '${name}_back',
+      if (name == 'Gloomshroom') 'GloomPuff'
+    ]) {
+      for (final part in sprites[variant]?['images'] as List? ?? []) {
+        final path = spriteFramePath(part as Map, row, col);
+        await _loadImage(path, scale: scale);
+        if (imitation && variant != 'GloomPuff') {
+          grayImage(variant, path, scale: scale);
+          await _grayLoading[
+              '${imageKey(path, scale)}:${_lights[variant] ?? 1.9}'];
+        }
+        if (hitMasks && !(part['path'] as String).endsWith('/shadow.png')) {
+          await _ensureFrameMask(part, row, col);
+        }
+      }
+    }
+  }
+
+  static Future<void> ensurePieceImages(Iterable<Piece> pieces,
+      {double scale = 1, bool hitMasks = false}) async {
+    await ensureLoaded();
+    await Future.wait(pieces.map((piece) => _ensureSprite(
+        piece.type, piece.frameRow, piece.frameCol,
+        scale: scale,
+        imitation: piece.effects.contains('\u6a21\u4eff\u8005'),
+        hitMasks: hitMasks)));
+  }
+
+  static Future<void> ensureSpriteTypes(Iterable<String> types,
+      {double scale = 1}) async {
+    await ensureLoaded();
+    await Future.wait(
+        types.map((type) => _ensureSprite(type, 0, 0, scale: scale)));
+  }
+
+  static final _frameMaskLoading = <String, Future<void>>{};
+  static Future<void> _ensureFrameMask(Map part, int row, int col) {
+    final path = spriteFramePath(part, row, col);
+    return _frameMaskLoading.putIfAbsent(path, () async {
+      final data = await rootBundle
+          .load('assets/original/${path.replaceFirst('.png', '.mask')}');
+      _hitMasks[path] = Uint8List.fromList(ZLibDecoder().convert(
+          data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes)));
+      revision.value++;
+    });
+  }
+
+  static bool frameOpaqueAt(Map part, int row, int col, int x, int y) {
+    final path = spriteFramePath(part, row, col);
+    final mask = _hitMasks[path];
+    if (mask == null) {
+      unawaited(_ensureFrameMask(part, row, col));
+      return false;
+    }
+    final width = (part['rw'] as num).toInt(),
+        height = (part['rh'] as num).toInt();
+    if (x < 0 || y < 0 || x >= width || y >= height) return false;
+    final pixel = y * width + x;
+    return mask[pixel >> 3] & (1 << (pixel & 7)) != 0;
+  }
+
+  static Future<void> ensureMapImages(String mapName,
+      {double scale = 1}) async {
+    await ensureLoaded();
+    await Future.wait((maps[mapName] as List? ?? [])
+        .map((layer) => _loadImage(layer['path'] as String, scale: scale)));
+  }
+
+  static void releaseTypeSheets(String type) {
+    final name = names[type] ?? type;
+    for (final variant in [
+      name,
+      '${name}_back',
+      if (name == 'Gloomshroom') 'GloomPuff'
+    ]) {
+      for (final part in sprites[variant]?['images'] as List? ?? []) {
+        images.remove(part['path'] as String);
+      }
+    }
   }
 
   static Future<void> ensureTypes(Iterable<String> types) async {
@@ -239,7 +331,11 @@ class OriginalAssets {
     final paths = <String>{};
     for (final type in types) {
       final name = names[type] ?? type;
-      for (final variant in [name, '${name}_back', if (name == 'Gloomshroom') 'GloomPuff']) {
+      for (final variant in [
+        name,
+        '${name}_back',
+        if (name == 'Gloomshroom') 'GloomPuff'
+      ]) {
         for (final part in sprites[variant]?['images'] as List? ?? []) {
           paths.add(part['path'] as String);
         }
@@ -251,25 +347,37 @@ class OriginalAssets {
   static final _decodeSlots =
       List<Future<void>>.generate(4, (_) => Future.value());
   static int _decodeSlot = 0;
-  static Future<void> _loadImage(String path) {
-    if (images.containsKey(path)) return Future.value();
-    return _imageLoading.putIfAbsent(path, () {
+  static Future<void> _loadImage(String path, {double scale = 1}) {
+    final key = imageKey(path, scale);
+    if (images.containsKey(key)) return Future.value();
+    return _imageLoading.putIfAbsent(key, () {
       final slot = _decodeSlot++ % _decodeSlots.length;
       final job = _decodeSlots[slot].then((_) async {
         try {
           final data = await rootBundle.load('assets/original/$path');
-          final codec = await ui.instantiateImageCodec(
+          final buffer = await ui.ImmutableBuffer.fromUint8List(
               data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes));
+          final descriptor = await ui.ImageDescriptor.encoded(buffer);
           try {
-            images[path] = (await codec.getNextFrame()).image;
+            _sourceSizes[path] = ui.Size(
+                descriptor.width.toDouble(), descriptor.height.toDouble());
+            final codec = await descriptor.instantiateCodec(
+                targetWidth: (descriptor.width * scale).ceil(),
+                targetHeight: (descriptor.height * scale).ceil());
+            try {
+              images[key] = (await codec.getNextFrame()).image;
+            } finally {
+              codec.dispose();
+            }
           } finally {
-            codec.dispose();
+            descriptor.dispose();
+            buffer.dispose();
           }
           revision.value++;
         } catch (error) {
           debugPrint('Original artwork $path: $error');
         } finally {
-          _imageLoading.remove(path);
+          _imageLoading.remove(key);
         }
       });
       _decodeSlots[slot] = job;
@@ -285,20 +393,22 @@ class OriginalAssets {
     maps.addAll(
         jsonDecode(await rootBundle.loadString('assets/original/maps.json'))
             as Map<String, dynamic>);
+    _frameIndex.addAll(jsonDecode(
+            await rootBundle.loadString('assets/original/frames/index.json'))
+        as Map<String, dynamic>);
     sprites.addAll(
         jsonDecode(await rootBundle.loadString('assets/original/sprites.json'))
             as Map<String, dynamic>);
 
-    // The original imitation filter uses HSL lightness, then the template's
-    // light multiplier. Its min/max operation cannot be a linear color matrix.
-    for (final template in OriginalCatalog.templates) {
-      final name = (template['id'] as String).substring(1);
-      final match =
-          RegExp(r'\blight="([^"]+)"').firstMatch(template['html'] as String);
-      final kind =
-          RegExp(r'\bpkind="([^"]+)"').firstMatch(template['html'] as String);
-      if (kind != null) kinds[name] = kind.group(1)!;
-      _lights[name] = double.tryParse(match?.group(1) ?? '') ?? 1.9;
+    final styles = jsonDecode(
+            await rootBundle.loadString('assets/original/frames/styles.json'))
+        as Map;
+    for (final entry in styles.entries) {
+      final style = entry.value as Map;
+      _lights[entry.key as String] = (style['light'] as num).toDouble();
+      if (style['kind'] != null) {
+        kinds[entry.key as String] = style['kind'] as String;
+      }
     }
     revision.value++;
   }
