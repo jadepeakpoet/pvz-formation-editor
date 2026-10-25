@@ -13,8 +13,7 @@ class GameSaveImport {
 }
 
 /// Read-only placement extraction from the original 32-bit PC v2 save schema.
-/// This does not load a battle or rewrite the source save. Experimental until
-/// an actual Windows 1051 save has been independently accepted.
+/// Extracts an editable placement without loading a battle or rewriting its save.
 class GameSaveCodec {
   static const maxBytes = 32 * 1024 * 1024;
   static const _magic = 0xfeeddead;
@@ -67,7 +66,7 @@ class GameSaveCodec {
     final zombies = reader.array(stride: 0x15c);
     final plants = reader.array(stride: 0x14c);
     final projectiles = reader.array(stride: 0x94);
-    final coins = reader.array(stride: 0xd4);
+    final coins = reader.array(stride: 0xd8);
     final mowers = reader.array(stride: 0x48);
     final grids = reader.array(stride: 0xec);
     // Particle/reanimation/trail/attachment arrays are framed but intentionally
@@ -129,7 +128,6 @@ class GameSaveCodec {
     final warnings = <String>[
       '实验性 PC 存档导入：仅提取六种标准场地的植物、睡眠、模仿者、墓碑、弹坑、梯子和钉耙。',
       '不恢复波数、血量、冷却、僵尸、子弹、掉落物、小推车或战斗动画；原文件保持不变。',
-      '已按原版 32 位存档结构检查，尚未完成真实 Windows 1051 存档互验。',
     ];
     if (zombies.isNotEmpty ||
         projectiles.isNotEmpty ||
@@ -194,6 +192,8 @@ class _SaveReader {
     final live = <ByteData>[];
     for (var i = 0; i < maxUsed; i++) {
       final id = bytes.getUint32((i + 1) * width - 4, Endian.little);
+      // Some original saves terminate a free list with UINT32_MAX.
+      if (id == 0xffffffff) continue;
       if ((id & 0xffff0000) != 0) {
         if ((id & 0xffff) != i) throw const FormatException('PC 存档对象索引损坏');
         live.add(ByteData.sublistView(bytes, i * width, (i + 1) * width - 4));

@@ -677,13 +677,13 @@ class _LibraryPageState extends State<LibraryPage> {
                           Text(AppLanguage.text(
                               '仅导入布阵，不恢复完整战斗进度。源 .dat 文件不会被修改。')),
                           const SizedBox(height: 12),
-                          Text(AppLanguage.text('场地：${document.map.name}\n'
+                          Text(AppLanguage.text('场地：${AppLanguage.text(document.map.name)}\n'
                               '植物：$plantCount，场地物品：${document.pieces.length - plantCount}，'
                               '阳光：${document.sunValue}')),
                           const SizedBox(height: 12),
                           ...imported.warnings.map((warning) => Padding(
                               padding: const EdgeInsets.only(bottom: 8),
-                              child: Text(warning))),
+                              child: Text(AppLanguage.text(warning)))),
                         ]))),
                 actions: [
                   TextButton(
@@ -4877,7 +4877,12 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                 if (mounted) message(context, e);
               }
             }, key: ValueKey('lazy-action-$label'),
-                tooltip: label == '搭梯' ? '为陆地第2–6列的南瓜搭梯' : null)
+                tooltip: switch (label) {
+                  '搭梯' => '为陆地第2–6列的南瓜搭梯',
+                  '碾花盆' => '移除陆地玉米炮右侧格子的底座，保留左侧底座和玉米炮。',
+                  '炸荷叶' => '移除水路玉米炮右侧格子的底座，保留左侧底座和玉米炮。',
+                  _ => null,
+                })
         ]),
         if (Platform.isWindows)
           classicButton('清除场上僵尸', gameBusy ? null : clearGameZombies,
@@ -5689,8 +5694,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
       padding: const EdgeInsets.all(8),
       color: const Color(0xffe7ebe2),
       child: Text(
-          AppLanguage.text(
-              '${s.document.map.name} · ${s.document.pieces.length} 对象 · ${hover == null ? '点击格子' : '行 ${hover!.$1 + 1} / 列 ${hover!.$2 + 1}'} · $tool · ${cells.length} 格\n${tool == '选择' ? '点击植物切换状态；属性面板可精确选层' : tool == '平移' ? '拖动平移，双指缩放' : '单指编辑；切换“平移”后拖动画布'}'),
+          '${AppLanguage.text(s.document.map.name)} · ${AppLanguage.text('${s.document.pieces.length} 对象')} · ${AppLanguage.text(hover == null ? '点击格子' : '行 ${hover!.$1 + 1} / 列 ${hover!.$2 + 1}')} · ${AppLanguage.text(tool)} · ${AppLanguage.text('${cells.length} 格')}\n${AppLanguage.text(tool == '选择' ? '点击植物切换状态；属性面板可精确选层' : tool == '平移' ? '拖动平移，双指缩放' : '单指编辑；切换“平移”后拖动画布')}',
           style: const TextStyle(fontSize: 12)));
   void updateNativePlantingPointer(dynamic arguments) {
     final box = plantingBoardKey.currentContext?.findRenderObject();

@@ -10,7 +10,8 @@ Uint8List save(
     bool asleep = true,
     bool mimic = true,
     int? gridKind = 3,
-    bool dead = false}) {
+    bool dead = false,
+    bool coinFreeSentinel = false}) {
   final result = BytesBuilder();
   void u(int n) {
     final b = ByteData(4)..setUint32(0, n, Endian.little);
@@ -79,7 +80,13 @@ Uint8List save(
   }
   array(0x14c, item: plant);
   array(0x94);
-  array(0xd4);
+  if (coinFreeSentinel) {
+    u(0); u(1); u(0);
+    final freeCoin = ByteData(0xd8)..setUint32(0xd4, 0xffffffff, Endian.little);
+    block(freeCoin.buffer.asUint8List());
+  } else {
+    array(0xd8);
+  }
   array(0x48);
   final grid = gridKind == null
       ? null
@@ -99,6 +106,12 @@ Uint8List save(
 }
 
 void main() {
+  test('original 216-byte coin records accept an empty free-list end sentinel', () {
+    final input = save(coinFreeSentinel: true), before = [...save(coinFreeSentinel: true)];
+    final imported = GameSaveCodec.decode(input);
+    expect(imported.formation.pieces.map((p) => p.type), ['gloom', 'ladder']);
+    expect(input, before);
+  });
   test('schema plant, asleep, mimic, sun, ladder and warnings', () {
     final input = save(), before = [...save()];
     final imported = GameSaveCodec.decode(input);

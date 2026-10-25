@@ -151,17 +151,17 @@ class WebsiteCodec {
     if (formation.seedSlots.isNotEmpty) issues.add('原站阵型字符串不能表达自定义卡槽');
     if (!mapIds.contains(formation.mapId)) issues.add('此地图没有原站地图编号');
     if (formation.pieces.length > 5000) issues.add('对象数量超过 5000');
-    if (formation.sunValue != 9990) issues.add('已验证原站字符串不能表达自定义阳光数值');
+    if (formation.sunValue != 9990) issues.add('当前网页码导出不支持自定义阳光数值');
     final defaults = Formation().display;
     if (formation.display.length != defaults.length ||
         defaults.entries.any((e) => formation.display[e.key] != e.value)) {
-      issues.add('原站已验证字符串不能表达当前显示设置，请恢复默认显示设置');
+      issues.add('当前网页码导出不支持这些显示设置，请恢复默认设置');
     }
     final occupied = <String>{};
     for (final p in formation.pieces) {
       final label = '${p.type}（${p.row + 1},${p.col + 1}）';
       if (indexForType(p.type) < 0) {
-        issues.add('$label：尚未验证此对象类型');
+        issues.add('$label：当前网页码导出不支持此对象类型');
         continue;
       }
       final spec = ObjectSpec.byId(p.type);
@@ -169,10 +169,10 @@ class WebsiteCodec {
       if (p.asleep && !Piece.mushroomTypes.contains(p.type)) {
         issues.add('$label：此对象不支持睡眠状态');
       }
-      if (p.appearance != '默认') issues.add('$label：非默认外表尚未验证');
-      if (p.scale != 1) issues.add('$label：缩放字段尚未验证');
-      if (![.5, 1].contains(p.opacity)) issues.add('$label：此透明度的原站字段尚未验证');
-      if (p.flippedVertical) issues.add('$label：垂直翻转字段尚未验证');
+      if (p.appearance != '默认') issues.add('$label：当前网页码导出不支持自定义外表名称');
+      if (p.scale != 1) issues.add('$label：当前网页码导出不支持缩放');
+      if (![.5, 1].contains(p.opacity)) issues.add('$label：当前网页码导出仅支持完全显示或半透明');
+      if (p.flippedVertical) issues.add('$label：当前网页码导出不支持上下翻转');
       if (p.layer != spec.layer) issues.add('$label：自定义图层不能表示');
       if (p.effects.any((e) => !Piece.allowedEffects.contains(e))) {
         issues.add('$label：此效果没有原站对应位');

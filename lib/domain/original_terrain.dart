@@ -56,6 +56,12 @@ class OriginalTerrain {
     ],
   };
 
+  static int rowType(BoardMap map, int row) {
+    if (row < 0 || row >= map.rows) return 0;
+    if (map.id == 'aquarium' || map.id == 'mushroomGardenRestricted' || map.id == 'greenhouseRestricted') return 1;
+    return at(map, row, 0);
+  }
+
   static int at(BoardMap map, int row, int col) {
     if (row < 0 || row >= map.rows || col < 0 || col >= map.columns) return 0;
     final matrix = _source[map.id];

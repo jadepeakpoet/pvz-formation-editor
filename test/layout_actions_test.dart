@@ -1,4 +1,6 @@
 import 'dart:math';
+import 'dart:convert';
+import 'dart:io';
 import 'package:test/test.dart';
 import 'package:pvz_formation_editor/domain/formation.dart';
 import 'package:pvz_formation_editor/domain/layouts.dart';
@@ -10,6 +12,40 @@ const richInput = '0,0 1 1 0 0 0,21 1 1 0 0 0,1E 1 1 0 0 1,'
     '1E 3 3 0 0 1,17 5 5 0 0 0,21 5 5 0 0 0,1E 5 5 0 0 0';
 
 void main() {
+  final reference = jsonDecode(File('test/fixtures/cannon_support_reference.json').readAsStringSync()) as Map;
+  for (final raw in reference['cases'] as List) {
+    final testCase = raw as Map;
+    final mapId = testCase['map'] as String;
+    final baseType = testCase['baseType'] as String;
+    final action = testCase['action'] as String;
+    test('source cannon support removal: $mapId / $baseType / $action', () {
+      final map = BoardMap.all.singleWhere((m) => m.id == mapId);
+      final pieces = <Piece>[
+        for (var row = 0; row < map.rows; row++) ...[
+          for (final col in [0, 2, 7]) ...[
+            Piece(id: 'c-$row-$col', type: 'cob', row: row, col: col, layer: 10),
+            for (final cell in [col, col + 1])
+              Piece(id: 'b-$row-$cell', type: baseType, row: row, col: cell,
+                  layer: 0, frameRow: baseType == 'pot' ? 1 : 0,
+                  frameCol: 1, effects: {'模仿者'}),
+          ],
+          Piece(id: 'other-$row', type: baseType, row: row, col: 5, layer: 0),
+        ],
+      ];
+      final base = Formation(mapId: mapId, pieces: pieces);
+      final before = jsonEncode(base.toJson());
+      final result = OriginalActions.apply(base, action);
+      final expectedRemoved = {for (final cell in testCase['removed'] as List)
+        'b-${cell[0]}-${cell[1]}'};
+      expect(base.pieces.map((p) => p.id).toSet().difference(result.pieces.map((p) => p.id).toSet()),
+          expectedRemoved);
+      for (final piece in result.pieces) {
+        expect(piece.toJson(), base.pieces.singleWhere((p) => p.id == piece.id).toJson());
+      }
+      expect(jsonEncode(base.toJson()), before);
+      expect(OriginalActions.apply(result, action).toJson(), result.toJson());
+    });
+  }
   test('one-click lily leaves aquatic plants and their existing bases untouched', () {
     final plants = [
       for (final entry in ['cattail', 'tangle', 'seashroom'].asMap().entries)
@@ -194,7 +230,7 @@ void main() {
         isEmpty);
   });
 
-  test('crushing and bombing preserve original saved container objects', () {
+  test('support removal leaves boards without cannons unchanged', () {
     final base = WebsiteCodec.decode(richInput);
     for (final action in ['碾花盆', '炸荷叶']) {
       expect(WebsiteCodec.encode(OriginalActions.apply(base, action)),
@@ -208,7 +244,7 @@ void main() {
         isTrue);
   });
 
-  test('original damage probes retain nondefault support frames and bare nuts',
+  test('non-cannon support frames and bare nuts remain unchanged',
       () {
     final base = WebsiteCodec.decode('0,0 1 1 0 0 0,21 1 1 1 1 0,21 2 2 1 1 0,'
         '10 3 3 0 2 0,2A 3 3 1 0 0,3 5 5 0 0 0,17 6 6 0 0 0');

@@ -862,7 +862,7 @@ Future<void> main() async {
               'Broken pumpkin appearance did not change');
         if (action == '碾花盆' || action == '炸荷叶')
           h.expect(session.document.fingerprint == before,
-              'Original no-op support action unexpectedly changed supports');
+              'Boards without cannons must retain their supports');
       });
     }
 

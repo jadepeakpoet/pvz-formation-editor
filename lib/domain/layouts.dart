@@ -89,7 +89,16 @@ class OriginalActions {
             layer: ObjectSpec.byId('ladder').layer));
       }
     } else if (action == '碾花盆' || action == '炸荷叶') {
-      // Browser probes confirm these preserve supports and their saved frames.
+      final terrain = action == '碾花盆' ? 1 : 2;
+      final fronts = <(int, int)>{
+        for (final cannon in base.pieces.where((piece) => piece.type == 'cob'))
+          if (cannon.col + 1 < base.map.columns &&
+              OriginalTerrain.rowType(base.map, cannon.row) == terrain)
+            (cannon.row, cannon.col + 1),
+      };
+      out.removeWhere((piece) =>
+          (piece.type == 'pot' || piece.type == 'lily') &&
+          fronts.contains((piece.row, piece.col)));
     } else if (action == '破南瓜') {
       for (var i = 0; i < out.length; i++) {
         if (out[i].type == 'pumpkin') out[i] = out[i].copy(frameRow: 2);

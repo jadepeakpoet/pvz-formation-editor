@@ -172,7 +172,7 @@ Uint8List save(
   }
   array(0x14c, item: plant);
   array(0x94);
-  array(0xd4);
+  array(0xd8);
   array(0x48);
   final grid = gridKind == null
       ? null
