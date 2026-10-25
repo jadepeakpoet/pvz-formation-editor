@@ -1,6 +1,6 @@
 # macOS 构建与运行
 
-macOS 工程使用 Flutter、Xcode 和 CocoaPods，包含主窗口与共享侧窗的原生桥接。已有 macOS 构建、启动及桌面交互验证记录；主要发布包为 Windows 版本，见 [平台支持](platforms.md)。
+macOS 工程使用 Flutter 3.47.8、Xcode、Swift Package Manager 和 CocoaPods，最低运行版本为 macOS 12.0。工程已迁移到新版 Flutter 的 Swift Package Manager 集成；尚未支持该方式的 sqflite 继续由 CocoaPods 管理。项目包含主窗口与共享侧窗的原生桥接。已有 macOS 构建、启动及桌面交互验证记录；主要发布包为 Windows 版本，见 [平台支持](platforms.md)。
 
 ```sh
 flutter pub get
