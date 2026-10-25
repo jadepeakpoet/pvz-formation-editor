@@ -11,8 +11,11 @@ import 'package:flutter/foundation.dart';
 import '../domain/formation.dart';
 import '../domain/zombie_layout.dart';
 
-/// Versioned, reproducible PNGs. Cache failure never changes or blocks archives.
+/// Versioned thumbnail files. Cache failure never changes or blocks archives.
 class ThumbnailStore {
+  /// Resource-strategy benchmark switch; normal builds keep disk caching on.
+  static const diskCacheEnabled = bool.fromEnvironment(
+      'PVZ_THUMBNAIL_DISK_CACHE', defaultValue: true);
   static Directory? directoryOverride;
   static Future<Directory?>? _root;
   static int diskHits = 0,
@@ -61,6 +64,7 @@ class ThumbnailStore {
   }
 
   static Future<ui.Image?> read(String key) async {
+    if (!diskCacheEnabled) return null;
     File? file;
     try {
       final dir = await directory();
@@ -104,6 +108,7 @@ class ThumbnailStore {
   }
 
   static Future<void> write(String key, Uint8List bytes, {String extension = 'webp'}) async {
+    if (!diskCacheEnabled) return;
     if (extension != 'webp' && extension != 'png') throw ArgumentError.value(extension);
     File? temporary;
     try {

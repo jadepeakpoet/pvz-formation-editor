@@ -332,6 +332,18 @@ Future<void> main() async {
     });
     report['root'] = await stats();
     report['sidebar'] = await command('stats');
+    final cold = report['cold'] as Map, warm = report['warm'] as Map;
+    final sidebar = report['sidebar'] as Map;
+    const diskCache = bool.fromEnvironment('PVZ_THUMBNAIL_DISK_CACHE', defaultValue: true);
+    if (diskCache) {
+      check((sidebar['diskHits'] as int) > 0, 'Disk cache must actually be read');
+      check(warm['generated'] == cold['generated'], 'Warm scrolling must reuse disk previews');
+    } else {
+      check(sidebar['diskHits'] == 0 && (sidebar['diskBytesByFormat'] as Map).isEmpty,
+          'Memory-only mode must not read or write disk previews');
+      check((warm['generated'] as int) > (cold['generated'] as int),
+          'Memory-only mode must regenerate evicted previews');
+    }
     report['status'] = 'complete';
     check(errors.isEmpty && (report['sidebar'] as Map)['errors'] is List &&
         ((report['sidebar'] as Map)['errors'] as List).isEmpty, 'No Flutter errors');

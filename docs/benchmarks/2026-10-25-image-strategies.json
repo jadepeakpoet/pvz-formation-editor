@@ -403,173 +403,185 @@
       "phases": {
         "startup": {
           "privateWorkingSetMiB": {
-            "median": 126.99,
-            "min": 126.87,
-            "max": 127.11
+            "median": 141.12,
+            "min": 139.45,
+            "max": 142.79
           },
           "workingSetMiB": {
-            "median": 168.68,
-            "min": 168.56,
-            "max": 168.79
+            "median": 182.86,
+            "min": 181.18,
+            "max": 184.54
           },
           "privateCommitMiB": {
-            "median": 213.49,
-            "min": 210.84,
-            "max": 216.14
+            "median": 218.1,
+            "min": 217.1,
+            "max": 219.1
           }
         },
         "seed_chooser": {
           "privateWorkingSetMiB": {
-            "median": 140.62,
-            "min": 135.84,
-            "max": 145.41
+            "median": 154.45,
+            "min": 148.67,
+            "max": 160.24
           },
           "workingSetMiB": {
-            "median": 182.59,
-            "min": 177.81,
-            "max": 187.36
+            "median": 196.43,
+            "min": 190.63,
+            "max": 202.23
           },
           "privateCommitMiB": {
-            "median": 235.62,
-            "min": 232.9,
-            "max": 238.33
+            "median": 241.02,
+            "min": 239.63,
+            "max": 242.41
           }
         },
         "cards_and_appearances": {
           "privateWorkingSetMiB": {
-            "median": 176.22,
-            "min": 175.08,
-            "max": 177.35
+            "median": 176.94,
+            "min": 167.44,
+            "max": 186.44
           },
           "workingSetMiB": {
-            "median": 218.88,
-            "min": 217.85,
-            "max": 219.91
+            "median": 219.71,
+            "min": 210.2,
+            "max": 229.23
           },
           "privateCommitMiB": {
-            "median": 274.38,
-            "min": 273.59,
-            "max": 275.17
+            "median": 269.21,
+            "min": 264.68,
+            "max": 273.73
           }
         },
         "twelve_preset_tabs": {
           "privateWorkingSetMiB": {
-            "median": 243.39,
-            "min": 234.99,
-            "max": 251.79
+            "median": 263.46,
+            "min": 254.25,
+            "max": 272.67
           },
           "workingSetMiB": {
-            "median": 286.25,
-            "min": 277.86,
-            "max": 294.64
+            "median": 306.33,
+            "min": 297.1,
+            "max": 315.55
           },
           "privateCommitMiB": {
-            "median": 333.38,
-            "min": 323.93,
-            "max": 342.84
+            "median": 348.65,
+            "min": 347.54,
+            "max": 349.77
           }
         },
         "my_archives_full_scroll": {
           "privateWorkingSetMiB": {
-            "median": 252.64,
-            "min": 249.88,
-            "max": 255.41
+            "median": 245.77,
+            "min": 235.98,
+            "max": 255.56
           },
           "workingSetMiB": {
-            "median": 296.09,
-            "min": 293.32,
-            "max": 298.86
+            "median": 292.67,
+            "min": 286.22,
+            "max": 299.11
           },
           "privateCommitMiB": {
-            "median": 345.39,
-            "min": 344.51,
-            "max": 346.28
+            "median": 334.06,
+            "min": 331.89,
+            "max": 336.23
           }
         },
         "presets_full_scroll_cold": {
           "privateWorkingSetMiB": {
-            "median": 252.92,
-            "min": 250.74,
-            "max": 255.1
+            "median": 254.27,
+            "min": 243.77,
+            "max": 264.77
           },
           "workingSetMiB": {
-            "median": 296.5,
-            "min": 294.3,
-            "max": 298.71
+            "median": 297.94,
+            "min": 287.43,
+            "max": 308.44
           },
           "privateCommitMiB": {
-            "median": 345.34,
-            "min": 344.75,
-            "max": 345.93
+            "median": 339.97,
+            "min": 338.91,
+            "max": 341.03
           }
         },
         "presets_full_scroll_warm": {
           "privateWorkingSetMiB": {
-            "median": 253.3,
-            "min": 249.24,
-            "max": 257.36
+            "median": 256.79,
+            "min": 248.38,
+            "max": 265.21
           },
           "workingSetMiB": {
-            "median": 296.9,
-            "min": 292.81,
-            "max": 300.99
+            "median": 300.47,
+            "min": 292.05,
+            "max": 308.89
           },
           "privateCommitMiB": {
-            "median": 344.38,
-            "min": 343.63,
-            "max": 345.13
+            "median": 343.23,
+            "min": 341.88,
+            "max": 344.58
           }
         },
         "library_idle_30s": {
           "privateWorkingSetMiB": {
-            "median": 254.34,
-            "min": 250.25,
-            "max": 258.43
+            "median": 257.82,
+            "min": 249.46,
+            "max": 266.18
           },
           "workingSetMiB": {
-            "median": 297.94,
-            "min": 293.83,
-            "max": 302.06
+            "median": 301.5,
+            "min": 293.13,
+            "max": 309.87
           },
           "privateCommitMiB": {
-            "median": 342.36,
-            "min": 341.61,
-            "max": 343.11
+            "median": 341.71,
+            "min": 340.86,
+            "max": 342.55
           }
         },
         "return_to_editor_idle_30s": {
           "privateWorkingSetMiB": {
-            "median": 232.19,
-            "min": 231.5,
-            "max": 232.88
+            "median": 249.01,
+            "min": 244.52,
+            "max": 253.51
           },
           "workingSetMiB": {
-            "median": 275.8,
-            "min": 275.09,
-            "max": 276.51
+            "median": 292.7,
+            "min": 288.2,
+            "max": 297.21
           },
           "privateCommitMiB": {
-            "median": 325.15,
-            "min": 322.64,
-            "max": 327.67
+            "median": 328.77,
+            "min": 328.67,
+            "max": 328.87
           }
         }
       },
       "peakWorkingSetMiB": [
-        333.23,
-        347.24
+        363.59,
+        340.81
       ],
       "peakPrivateWorkingSetMiB": [
-        273.09,
-        286.59
+        301.57,
+        277.0
       ],
       "coldScrollSeconds": [
-        17.01,
-        17.11
+        17.05,
+        17.03
       ],
       "warmScrollSeconds": [
-        17.01,
-        17.02
+        17.03,
+        17.03
+      ],
+      "generatedAfterCold": [
+        381,
+        381
+      ],
+      "generatedAfterWarm": [
+        381,
+        381
+      ],
+      "diskHits": [
+        1011,
+        1011
       ],
       "diskBytesByFormat": [
         {
@@ -578,18 +590,6 @@
         {
           "webp": 7946828
         }
-      ],
-      "rootDecodedBytes": [
-        22838800,
-        22838800
-      ],
-      "sidebarDecodedBytes": [
-        8341032,
-        8341032
-      ],
-      "generatedThumbnails": [
-        1392,
-        1392
       ]
     }
   },
@@ -597,11 +597,18 @@
   "sourceRefs": {
     "v1-prebuilt": "v1.0.1 (5c5a90f)",
     "v2-runtime-frames": "b0183e7, standardized original logo",
-    "v3-webp-on-demand": "48f9191 plus WebP encoder and cache-format changes, standardized original logo"
+    "v3-webp-on-demand": "2e8520b plus disk-cache switch enabled, standardized original logo; corrected decoder lifetime"
   },
   "nativeHostSha256": {
     "pvz_formation_editor.exe": "3a086bb929b58b7c7fa889b9bc9804f08cf74116bf5fa93b0442e9c5dd4c92f5",
     "flutter_windows.dll": "eca1f8c9b1537bd585bbbcc62362df9ca7e69faa7d4e895688108af63ccea157",
     "data/icudtl.dat": "325a86063d26334c2eabe1743cea073b612540fbf3d8fc2ef0b5708e3763a8c7"
-  }
+  },
+  "erratum": "Previous v3 snapshot wrote WebP but failed to read it (zero disk hits). Its measurements are superseded by two corrected runs. v1/v2 measurements are unchanged.",
+  "correctedRunOrder": [
+    "v3",
+    "v4",
+    "v4",
+    "v3"
+  ]
 }

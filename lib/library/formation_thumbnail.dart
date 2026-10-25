@@ -126,7 +126,9 @@ class _FormationThumbnailState extends State<FormationThumbnail> {
           ThumbnailStore.generated++;
           FormationThumbnail.images[key] = result;
           // Display immediately; encoding/writing never delays the ready Future.
-          unawaited(_persist(key, result.clone()));
+          if (ThumbnailStore.diskCacheEnabled) {
+            unawaited(_persist(key, result.clone()));
+          }
         } else {
           FormationThumbnail.images[key] = result;
         }
