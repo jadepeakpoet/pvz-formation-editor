@@ -5,6 +5,7 @@
 #include <flutter/method_channel.h>
 #include <flutter/method_result_functions.h>
 #include <flutter/standard_method_codec.h>
+#include <algorithm>
 #include <functional>
 #include <string>
 #include <utility>
@@ -107,6 +108,55 @@ struct EditorWindows::Impl {
   void Refresh() {
     if(library_channel) library_channel->InvokeMethod("refresh",std::make_unique<V>(configuration));
   }
+  bool ResetWindowPositions() {
+    const HWND editor=main->GetHandle();
+    const HWND panel=sidebar ? sidebar->GetHandle() : nullptr;
+    if(!IsWindowEnabled(editor) || (panel && !IsWindowEnabled(panel))) return false;
+    MONITORINFO monitor{sizeof(MONITORINFO)};
+    if(!GetMonitorInfoW(MonitorFromWindow(editor,MONITOR_DEFAULTTONEAREST),&monitor)) return false;
+    auto frame=[](HWND hwnd,RECT& rect) {
+      if(!IsIconic(hwnd)) return GetWindowRect(hwnd,&rect)!=FALSE;
+      WINDOWPLACEMENT placement{sizeof(WINDOWPLACEMENT)};
+      if(!GetWindowPlacement(hwnd,&placement)) return false;
+      rect=placement.rcNormalPosition; return true;
+    };
+    RECT editorFrame{},panelFrame{};
+    if(!frame(editor,editorFrame) || (panel && !frame(panel,panelFrame))) return false;
+    const LONG editorWidth=editorFrame.right-editorFrame.left;
+    const LONG editorHeight=editorFrame.bottom-editorFrame.top;
+    const LONG panelWidth=panel ? panelFrame.right-panelFrame.left : 0;
+    const LONG panelHeight=panel ? panelFrame.bottom-panelFrame.top : 0;
+    const LONG gap=panel ? MulDiv(8,GetDpiForWindow(editor),96) : 0;
+    const RECT work=monitor.rcWork;
+    const LONG left=work.left+(std::max)(0L,(work.right-work.left-editorWidth-gap-panelWidth)/2);
+    const LONG top=work.top+(std::max)(0L,(work.bottom-work.top-editorHeight)/2);
+    auto move=[&](HWND hwnd,LONG x,LONG y) {
+      if(!IsIconic(hwnd)) return SetWindowPos(hwnd,nullptr,x,y,0,0,
+          SWP_NOSIZE|SWP_NOZORDER|SWP_NOACTIVATE|SWP_NOOWNERZORDER)!=FALSE;
+      WINDOWPLACEMENT placement{sizeof(WINDOWPLACEMENT)};
+      if(!GetWindowPlacement(hwnd,&placement)) return false;
+      const LONG width=placement.rcNormalPosition.right-placement.rcNormalPosition.left;
+      const LONG height=placement.rcNormalPosition.bottom-placement.rcNormalPosition.top;
+      // WINDOWPLACEMENT uses workspace coordinates for ordinary top-level windows.
+      if(!(GetWindowLongPtr(hwnd,GWL_EXSTYLE)&WS_EX_TOOLWINDOW)) {
+        x-=work.left-monitor.rcMonitor.left;
+        y-=work.top-monitor.rcMonitor.top;
+      }
+      placement.rcNormalPosition={x,y,x+width,y+height};
+      placement.showCmd=SW_SHOWMINNOACTIVE;
+      const bool visible=IsWindowVisible(hwnd)!=FALSE;
+      const bool moved=SetWindowPlacement(hwnd,&placement)!=FALSE;
+      if(!visible) ShowWindow(hwnd,SW_HIDE);
+      return moved;
+    };
+    if(!move(editor,left,top)) return false;
+    if(panel) {
+      const LONG panelX=std::clamp(left+editorWidth+gap,work.left,(std::max)(work.left,work.right-panelWidth));
+      const LONG panelY=std::clamp(top,work.top,(std::max)(work.top,work.bottom-panelHeight));
+      if(!move(panel,panelX,panelY)) return false;
+    }
+    return true;
+  }
   bool EnsureSidebar() {
     if(sidebar) return true;
     sidebar=std::make_unique<Sidebar>();
@@ -180,6 +230,7 @@ struct EditorWindows::Impl {
   void Handle(const Call& call,std::unique_ptr<Result> result,bool secondary) {
     const auto& method=call.method_name(); const auto args=Arguments(call);
     Configure(args);
+    if(method=="resetWindowPositions") { result->Success(V(ResetWindowPositions())); return; }
     if(method=="setLanguage") {
       const auto requested=Text(args,"language");
       if(requested!="zh" && requested!="en") {
