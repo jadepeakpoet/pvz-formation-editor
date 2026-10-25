@@ -2,20 +2,23 @@
 // Usage: swift tool/restart_macos_app.swift /absolute/path/to/PVZ Formation Editor.app
 import Cocoa
 
-guard CommandLine.arguments.count == 2 else {
-  fputs("Usage: restart_macos_app.swift /path/to/PVZ Formation Editor.app\n", stderr)
+guard CommandLine.arguments.count == 2 ||
+      (CommandLine.arguments.count == 3 && CommandLine.arguments[2] == "--quit-only") else {
+  fputs("Usage: restart_macos_app.swift /path/to/PVZ Formation Editor.app [--quit-only]\n", stderr)
   exit(2)
 }
 let url = URL(fileURLWithPath: CommandLine.arguments[1]).resolvingSymlinksInPath()
 guard url.pathExtension == "app", let bundle = Bundle(url: url),
       let identifier = bundle.bundleIdentifier,
-      identifier == "com.example.pvzFormationEditor",
+      identifier == "com.xiaomeng.pvz.formation.macos",
       let executable = bundle.executableURL,
       FileManager.default.isExecutableFile(atPath: executable.path) else {
   fputs("Expected a built PVZ Studio app bundle\n", stderr); exit(2)
 }
 func matchingApps() -> [NSRunningApplication] {
-  NSRunningApplication.runningApplications(withBundleIdentifier: identifier).filter {
+  [identifier, "com.example.pvzFormationEditor"].flatMap {
+    NSRunningApplication.runningApplications(withBundleIdentifier: $0)
+  }.filter {
     $0.executableURL?.lastPathComponent == executable.lastPathComponent
   }
 }
@@ -32,6 +35,10 @@ while !matchingApps().isEmpty && Date() < deadline {
 guard matchingApps().isEmpty else {
   fputs("Existing app has not finished saving/quitting; no replacement launched\n", stderr)
   exit(4)
+}
+if CommandLine.arguments.count == 3 {
+  print("Gracefully closed \(previous.count) instance(s); no replacement launched")
+  exit(0)
 }
 // Updating a bundle at the same path can leave Dock using an old or wrapped
 // Launch Services icon. Refresh only this bundle from its shipped artwork.
