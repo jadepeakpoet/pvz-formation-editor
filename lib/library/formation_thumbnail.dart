@@ -8,8 +8,7 @@ import '../editor/resource_image.dart';
 import 'thumbnail_store.dart';
 import 'thumbnail_encoder.dart';
 
-/// Visible cells pin their image. Cold entries are evictable; all previews also
-/// live on disk, so scrolling back does not render the formation again.
+/// Visible cells pin their image; cold entries share a bounded memory cache.
 class FormationThumbnail extends StatefulWidget {
   const FormationThumbnail(
       {super.key, this.document, this.cacheKey, this.documentLoader})

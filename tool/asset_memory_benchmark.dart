@@ -171,7 +171,10 @@ Future<void> sidebarLoop() async {
               final passes = command['passes'] as int? ?? 2;
               for (var pass = 0; pass < passes; pass++) {
                 final max = scroll.position.maxScrollExtent;
-                for (var offset = 0.0; offset <= max + 400; offset += 400) {
+                // Keep consecutive viewports overlapping even when toolbars
+                // leave less than 400 px for the list.
+                final step = (scroll.position.viewportDimension * .75).clamp(1.0, 400.0);
+                for (var offset = 0.0; offset <= max + step; offset += step) {
                   final pixel = offset.clamp(0.0, max);
                   scroll.position.jumpTo(pass.isEven ? pixel : max - pixel);
                   await delay(100);
@@ -184,8 +187,8 @@ Future<void> sidebarLoop() async {
               await until(() => visibleThumbnailsReady(seen), 'Scroll-back thumbnails');
               details.addAll({'seenThumbnails': seen.length, 'passes': passes,
                 'milliseconds': clock.elapsedMilliseconds - began});
-              if (section == '预制名阵') check(seen.length >= 363, 'All 363 presets actually displayed');
-              if (section == '我的存档') check(seen.length >= 37, 'All 37 user archives actually displayed');
+              if (section == '预制名阵') check(seen.length >= 363, 'All 363 presets actually displayed (seen ${seen.length})');
+              if (section == '我的存档') check(seen.length >= 37, 'All 37 user archives actually displayed (seen ${seen.length})');
             }
             final dir = ThumbnailStore.directoryOverride!;
             final cache = <String, int>{};
@@ -334,7 +337,7 @@ Future<void> main() async {
     report['sidebar'] = await command('stats');
     final cold = report['cold'] as Map, warm = report['warm'] as Map;
     final sidebar = report['sidebar'] as Map;
-    const diskCache = bool.fromEnvironment('PVZ_THUMBNAIL_DISK_CACHE', defaultValue: true);
+    const diskCache = ThumbnailStore.diskCacheEnabled;
     if (diskCache) {
       check((sidebar['diskHits'] as int) > 0, 'Disk cache must actually be read');
       check(warm['generated'] == cold['generated'], 'Warm scrolling must reuse disk previews');

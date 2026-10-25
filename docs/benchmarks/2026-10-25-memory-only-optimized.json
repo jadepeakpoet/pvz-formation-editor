@@ -1,0 +1,372 @@
+{
+  "sdk": "Flutter 3.47.8 / Dart 3.13.7 / Skia / Windows x64 Release",
+  "method": "Same 2-engine native host, normalized original logo, window sizes and fixtures. Optimized measured twice afterward. Scroll steps now overlap at 75% of the actual list viewport (capped at 400px), so old fixed-400px measurements are contextual references rather than a controlled timing comparison. No forced GC or working-set trim.",
+  "variants": {
+    "v4-memory-only": {
+      "phases": {
+        "startup": {
+          "privateWorkingSetMiB": {
+            "median": 139.26,
+            "min": 134.4,
+            "max": 144.12
+          },
+          "workingSetMiB": {
+            "median": 180.95,
+            "min": 176.1,
+            "max": 185.81
+          },
+          "privateCommitMiB": {
+            "median": 213.31,
+            "min": 209.61,
+            "max": 217.02
+          }
+        },
+        "seed_chooser": {
+          "privateWorkingSetMiB": {
+            "median": 149.5,
+            "min": 143.2,
+            "max": 155.8
+          },
+          "workingSetMiB": {
+            "median": 191.45,
+            "min": 185.15,
+            "max": 197.76
+          },
+          "privateCommitMiB": {
+            "median": 235.5,
+            "min": 229.16,
+            "max": 241.84
+          }
+        },
+        "cards_and_appearances": {
+          "privateWorkingSetMiB": {
+            "median": 176.26,
+            "min": 174.98,
+            "max": 177.55
+          },
+          "workingSetMiB": {
+            "median": 219.32,
+            "min": 217.59,
+            "max": 221.05
+          },
+          "privateCommitMiB": {
+            "median": 266.51,
+            "min": 264.52,
+            "max": 268.5
+          }
+        },
+        "twelve_preset_tabs": {
+          "privateWorkingSetMiB": {
+            "median": 245.27,
+            "min": 234.7,
+            "max": 255.84
+          },
+          "workingSetMiB": {
+            "median": 288.13,
+            "min": 277.55,
+            "max": 298.71
+          },
+          "privateCommitMiB": {
+            "median": 333.09,
+            "min": 325.76,
+            "max": 340.42
+          }
+        },
+        "my_archives_full_scroll": {
+          "privateWorkingSetMiB": {
+            "median": 250.6,
+            "min": 248.33,
+            "max": 252.86
+          },
+          "workingSetMiB": {
+            "median": 293.77,
+            "min": 291.5,
+            "max": 296.04
+          },
+          "privateCommitMiB": {
+            "median": 335.19,
+            "min": 335.07,
+            "max": 335.32
+          }
+        },
+        "presets_full_scroll_cold": {
+          "privateWorkingSetMiB": {
+            "median": 245.53,
+            "min": 244.22,
+            "max": 246.84
+          },
+          "workingSetMiB": {
+            "median": 288.81,
+            "min": 287.52,
+            "max": 290.11
+          },
+          "privateCommitMiB": {
+            "median": 330.35,
+            "min": 326.43,
+            "max": 334.27
+          }
+        },
+        "presets_full_scroll_warm": {
+          "privateWorkingSetMiB": {
+            "median": 243.06,
+            "min": 241.61,
+            "max": 244.52
+          },
+          "workingSetMiB": {
+            "median": 286.36,
+            "min": 284.91,
+            "max": 287.8
+          },
+          "privateCommitMiB": {
+            "median": 327.69,
+            "min": 323.93,
+            "max": 331.46
+          }
+        },
+        "library_idle_30s": {
+          "privateWorkingSetMiB": {
+            "median": 242.16,
+            "min": 241.59,
+            "max": 242.72
+          },
+          "workingSetMiB": {
+            "median": 285.46,
+            "min": 284.88,
+            "max": 286.04
+          },
+          "privateCommitMiB": {
+            "median": 326.69,
+            "min": 322.97,
+            "max": 330.41
+          }
+        },
+        "return_to_editor_idle_30s": {
+          "privateWorkingSetMiB": {
+            "median": 228.01,
+            "min": 227.38,
+            "max": 228.65
+          },
+          "workingSetMiB": {
+            "median": 271.33,
+            "min": 270.69,
+            "max": 271.97
+          },
+          "privateCommitMiB": {
+            "median": 313.41,
+            "min": 310.12,
+            "max": 316.71
+          }
+        }
+      },
+      "peakWorkingSetMiB": [
+        349.45,
+        350.18
+      ],
+      "peakPrivateWorkingSetMiB": [
+        303.27,
+        294.31
+      ],
+      "coldScrollSeconds": [
+        17.03,
+        17.02
+      ],
+      "warmScrollSeconds": [
+        17.02,
+        17.03
+      ],
+      "generatedAfterCold": [
+        720,
+        720
+      ],
+      "generatedAfterWarm": [
+        1392,
+        1392
+      ],
+      "diskHits": [
+        0,
+        0
+      ],
+      "diskBytesByFormat": [
+        {},
+        {}
+      ]
+    },
+    "v4-optimized": {
+      "phases": {
+        "startup": {
+          "privateWorkingSetMiB": {
+            "median": 141.64,
+            "min": 136.43,
+            "max": 146.85
+          },
+          "workingSetMiB": {
+            "median": 183.33,
+            "min": 178.12,
+            "max": 188.54
+          },
+          "privateCommitMiB": {
+            "median": 214.81,
+            "min": 213.48,
+            "max": 216.15
+          }
+        },
+        "seed_chooser": {
+          "privateWorkingSetMiB": {
+            "median": 156.05,
+            "min": 149.63,
+            "max": 162.47
+          },
+          "workingSetMiB": {
+            "median": 198.0,
+            "min": 191.58,
+            "max": 204.41
+          },
+          "privateCommitMiB": {
+            "median": 233.87,
+            "min": 230.72,
+            "max": 237.02
+          }
+        },
+        "cards_and_appearances": {
+          "privateWorkingSetMiB": {
+            "median": 183.28,
+            "min": 178.06,
+            "max": 188.49
+          },
+          "workingSetMiB": {
+            "median": 225.94,
+            "min": 220.65,
+            "max": 231.24
+          },
+          "privateCommitMiB": {
+            "median": 265.08,
+            "min": 259.32,
+            "max": 270.84
+          }
+        },
+        "twelve_preset_tabs": {
+          "privateWorkingSetMiB": {
+            "median": 266.88,
+            "min": 261.34,
+            "max": 272.43
+          },
+          "workingSetMiB": {
+            "median": 309.74,
+            "min": 304.2,
+            "max": 315.28
+          },
+          "privateCommitMiB": {
+            "median": 344.14,
+            "min": 343.2,
+            "max": 345.08
+          }
+        },
+        "my_archives_full_scroll": {
+          "privateWorkingSetMiB": {
+            "median": 261.47,
+            "min": 256.95,
+            "max": 265.98
+          },
+          "workingSetMiB": {
+            "median": 304.64,
+            "min": 300.11,
+            "max": 309.17
+          },
+          "privateCommitMiB": {
+            "median": 334.92,
+            "min": 326.33,
+            "max": 343.52
+          }
+        },
+        "presets_full_scroll_cold": {
+          "privateWorkingSetMiB": {
+            "median": 253.94,
+            "min": 246.41,
+            "max": 261.48
+          },
+          "workingSetMiB": {
+            "median": 297.23,
+            "min": 289.71,
+            "max": 304.75
+          },
+          "privateCommitMiB": {
+            "median": 332.79,
+            "min": 330.82,
+            "max": 334.77
+          }
+        },
+        "presets_full_scroll_warm": {
+          "privateWorkingSetMiB": {
+            "median": 253.23,
+            "min": 246.08,
+            "max": 260.37
+          },
+          "workingSetMiB": {
+            "median": 296.51,
+            "min": 289.39,
+            "max": 303.64
+          },
+          "privateCommitMiB": {
+            "median": 331.63,
+            "min": 329.51,
+            "max": 333.76
+          }
+        },
+        "library_idle_30s": {
+          "privateWorkingSetMiB": {
+            "median": 254.18,
+            "min": 247.02,
+            "max": 261.34
+          },
+          "workingSetMiB": {
+            "median": 297.49,
+            "min": 290.35,
+            "max": 304.62
+          },
+          "privateCommitMiB": {
+            "median": 330.81,
+            "min": 328.93,
+            "max": 332.68
+          }
+        },
+        "return_to_editor_idle_30s": {
+          "privateWorkingSetMiB": {
+            "median": 241.18,
+            "min": 240.56,
+            "max": 241.8
+          },
+          "workingSetMiB": {
+            "median": 284.49,
+            "min": 283.84,
+            "max": 285.13
+          },
+          "privateCommitMiB": {
+            "median": 316.29,
+            "min": 312.69,
+            "max": 319.89
+          }
+        }
+      },
+      "peakWorkingSetMiB": [
+        359.7,
+        347.38
+      ],
+      "peakPrivateWorkingSetMiB": [
+        297.19,
+        297.26
+      ],
+      "generatedAfterCold": [
+        720,
+        720
+      ],
+      "generatedAfterWarm": [
+        1392,
+        1392
+      ],
+      "diskHits": [
+        0,
+        0
+      ]
+    }
+  }
+}

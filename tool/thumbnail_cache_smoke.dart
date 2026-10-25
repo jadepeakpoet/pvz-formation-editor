@@ -44,13 +44,15 @@ Future<void> main() async {
   FlutterError.onError = (e) => errors.add(e.exceptionAsString());
   final temp = await Directory.systemTemp.createTemp('pvz-thumbnail-cache-');
   ThumbnailStore.directoryOverride = temp;
-  if (Platform.isWindows) {
+  if (Platform.isWindows && ThumbnailStore.diskCacheEnabled) {
+    // ignore: invalid_use_of_visible_for_testing_member
     ThumbnailEncoder.libraryPathOverride = Platform.environment['PVZ_TEST_WEBP_DLL'] ??
         '${Directory.current.path}/build/windows-slim-assets/webp/Release/pvz_webp.dll';
   }
   final extension = Platform.isWindows ? 'webp' : 'png';
   try {
     await OriginalAssets.ensureLoaded();
+    if (ThumbnailStore.diskCacheEnabled) {
     final probeRecorder = ui.PictureRecorder();
     ui.Canvas(probeRecorder).drawColor(const Color(0xff228833), BlendMode.src);
     final probePicture = probeRecorder.endRecording();
@@ -66,6 +68,7 @@ Future<void> main() async {
         'Encoded previews decode at their original dimensions');
     decodedProbe.dispose();
     probeCodec.dispose();
+    }
     await LibraryPresets.ensurePreviewIndex();
     check((await temp.list().length) == 0 && ThumbnailStore.generated == 0,
         'Startup loads metadata without rendering or writing thumbnails');
@@ -105,8 +108,10 @@ Future<void> main() async {
     await WidgetsBinding.instance.endOfFrame;
     await waitFor(() => visibleImages() >= 6,
         'Scroll-back reloads cached local previews');
-    await waitFor(() => ThumbnailStore.diskHits > 0,
-        'Scroll-back reuses locally generated previews');
+    if (ThumbnailStore.diskCacheEnabled) {
+      await waitFor(() => ThumbnailStore.diskHits > 0,
+          'Scroll-back reuses locally generated previews');
+    }
     check(FormationThumbnail.cachedBytes <= (4 << 20),
         'Cold preview cache fits byte budget');
     var peakPreviewBytes = FormationThumbnail.cachedBytes;
@@ -128,8 +133,15 @@ Future<void> main() async {
             'Repeated scrolling returns to its cache budget');
       }
     }
-    check(ThumbnailStore.diskHits > presets.length,
-        'Repeated full preset passes reuse the disk cache');
+    if (ThumbnailStore.diskCacheEnabled) {
+      check(ThumbnailStore.diskHits > presets.length,
+          'Repeated full preset passes reuse the disk cache');
+    } else {
+      check(ThumbnailStore.diskHits == 0 && (await temp.list().length) == 0,
+          'Memory-only previews never read or write disk cache files');
+      check(ThumbnailStore.generated > presets.length,
+          'Evicted previews regenerate instead of using disk');
+    }
     final base = presets.first.document;
     final custom = base.copy(pieces: [
       ...base.pieces,
@@ -146,8 +158,10 @@ Future<void> main() async {
     await waitFor(() => visibleImages() >= 1,
         'Custom preview first generation completes');
     final key = ThumbnailStore.key(custom);
-    await waitFor(() => File('${temp.path}/$key.$extension').existsSync(),
-        'Custom preview persists to disk');
+    if (ThumbnailStore.diskCacheEnabled) {
+      await waitFor(() => File('${temp.path}/$key.$extension').existsSync(),
+          'Custom preview persists to disk');
+    }
     final generated = ThumbnailStore.generated;
     runApp(const SizedBox());
     await Future<void>.delayed(const Duration(milliseconds: 100));
@@ -155,11 +169,14 @@ Future<void> main() async {
     runApp(MaterialApp(home: FormationThumbnail(document: duplicate)));
     await waitFor(
         () => visibleImages() >= 1, 'Custom preview reopens from local cache');
-    check(ThumbnailStore.generated == generated,
-        'Disk hit bypasses plant/background decoding and composition');
+    check(ThumbnailStore.diskCacheEnabled
+            ? ThumbnailStore.generated == generated
+            : ThumbnailStore.generated > generated,
+        'Custom preview respects the selected cache policy');
     runApp(const SizedBox());
     await Future<void>.delayed(const Duration(milliseconds: 100));
     FormationThumbnail.clearCache();
+    if (ThumbnailStore.diskCacheEnabled) {
     await File('${temp.path}/$key.$extension').writeAsBytes([1, 2, 3]);
     check(await ThumbnailStore.read(key) == null,
         'Corrupt cache is treated as a miss');
@@ -172,6 +189,7 @@ Future<void> main() async {
     check(legacyHit?.width == 256 && legacyHit?.height == 192,
         'Existing PNG caches remain readable after switching new writes to WebP');
     legacyHit?.dispose();
+    }
     check(errors.isEmpty, 'No image-lifetime or framework errors: $errors');
     final cachedFiles = await temp.list().where((f) => f.path.endsWith('.$extension')).toList();
     var diskBytes = 0;

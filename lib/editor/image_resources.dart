@@ -82,6 +82,8 @@ class ImageResources extends MapBase<String, ui.Image> {
   @override
   Iterable<String> get keys => _entries.keys;
   @override
+  bool containsKey(Object? key) => _entries.containsKey(key);
+  @override
   ui.Image? remove(Object? key) {
     final image = _entries.remove(key);
     _used.remove(key);

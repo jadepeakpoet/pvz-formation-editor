@@ -6,6 +6,7 @@ import 'package:pvz_formation_editor/editor/image_resources.dart';
 import 'package:pvz_formation_editor/editor/original_assets.dart';
 import 'package:pvz_formation_editor/editor/board_painter.dart';
 import 'package:pvz_formation_editor/library/library_presets.dart';
+import 'package:pvz_formation_editor/domain/formation.dart';
 
 void check(bool value, String message) {
   if (!value) throw StateError(message);
@@ -58,6 +59,18 @@ Future<void> main() async {
     await OriginalAssets.ensureLoaded();
     check(
         OriginalAssets.images.isEmpty, 'Metadata startup decodes no pictures');
+    final appearances = [
+      Piece(id: 'sleep', type: 'ice', row: 0, col: 0, layer: 20, frameRow: 0),
+      Piece(id: 'awake', type: 'ice', row: 0, col: 1, layer: 20, frameRow: 1),
+      Piece(id: 'imitater', type: 'ice', row: 0, col: 2, layer: 20,
+          frameRow: 1, effects: {'模仿者'}),
+      Piece(id: 'duplicate', type: 'ice', row: 0, col: 3, layer: 20,
+          frameRow: 1, effects: {'模仿者'}),
+    ];
+    await OriginalAssets.ensurePieceImages(appearances);
+    check(appearances.every(OriginalAssets.pieceImagesReady),
+        'Shared loading preserves sleeping, awake and imitation appearances');
+    OriginalAssets.releaseColdImages();
     for (final preset in LibraryPresets.all.take(40)) {
       final bytes = await exportPng(preset.document, multiplier: .32);
       check(bytes.length > 1000, 'Populated thumbnail ${preset.id}');

@@ -371,10 +371,15 @@ class OriginalAssets {
   static Future<void> ensurePieceImages(Iterable<Piece> pieces,
       {double scale = 1, bool hitMasks = false}) async {
     await ensureLoaded();
-    await Future.wait(pieces.map((piece) => _ensureSprite(
-        piece.type, piece.frameRow, piece.frameCol,
+    final appearances = <(String, int, int, bool)>{
+      for (final piece in pieces)
+        (piece.type, piece.frameRow, piece.frameCol,
+            piece.effects.contains('\u6a21\u4eff\u8005')),
+    };
+    await Future.wait(appearances.map((appearance) => _ensureSprite(
+        appearance.$1, appearance.$2, appearance.$3,
         scale: scale,
-        imitation: piece.effects.contains('\u6a21\u4eff\u8005'),
+        imitation: appearance.$4,
         hitMasks: hitMasks)));
   }
 

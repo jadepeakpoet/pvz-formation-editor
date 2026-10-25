@@ -13,9 +13,9 @@ import '../domain/zombie_layout.dart';
 
 /// Versioned thumbnail files. Cache failure never changes or blocks archives.
 class ThumbnailStore {
-  /// Resource-strategy benchmark switch; normal builds keep disk caching on.
+  /// Disk caching is opt-in for resource-strategy comparisons.
   static const diskCacheEnabled = bool.fromEnvironment(
-      'PVZ_THUMBNAIL_DISK_CACHE', defaultValue: true);
+      'PVZ_THUMBNAIL_DISK_CACHE', defaultValue: false);
   static Directory? directoryOverride;
   static Future<Directory?>? _root;
   static int diskHits = 0,
