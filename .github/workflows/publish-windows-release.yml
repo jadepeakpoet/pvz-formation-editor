@@ -1,0 +1,88 @@
+name: Publish verified Windows release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing release tag
+        required: true
+        default: v1.0.1
+        type: string
+      windows_sha256:
+        description: SHA-256 of the locally verified Windows ZIP
+        required: true
+        default: dd21febd438c21f20bed424ad8b6a377363d9922c5b4d48dfc34367a9687d3be
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publish-${{ inputs.tag }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_TAG: ${{ inputs.tag }}
+      EXPECTED_WINDOWS_SHA256: ${{ inputs.windows_sha256 }}
+    steps:
+      - name: Validate release tag and retrieve release notes
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          [[ "$EXPECTED_WINDOWS_SHA256" =~ ^[0-9a-f]{64}$ ]]
+          version="${RELEASE_TAG#v}"
+          commit="$(gh api "repos/$GITHUB_REPOSITORY/commits/$RELEASE_TAG" --jq .sha)"
+          gh api "repos/$GITHUB_REPOSITORY/contents/docs/releases/$version.md?ref=$commit" --jq .content | base64 --decode > release-notes.md
+          echo "RELEASE_VERSION=$version" >> "$GITHUB_ENV"
+          echo "Release tag: $RELEASE_TAG ($commit)"
+
+      - name: Download and verify the tested portable package
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib, json, os, pathlib, urllib.request, zipfile
+          origin = 'https://xmpvz.pages.dev'
+          headers = {'User-Agent': 'PvZ-Formation-Editor-release-publisher', 'Cache-Control': 'no-cache'}
+          def request(path):
+              return urllib.request.urlopen(urllib.request.Request(origin + path, headers=headers), timeout=120)
+          with request('/release.json') as response:
+              release = json.load(response)
+          name = 'PvZ-Formation-Editor-' + os.environ['RELEASE_VERSION'] + '-windows-x64.zip'
+          expected = os.environ['EXPECTED_WINDOWS_SHA256']
+          assert release['name'] == name, 'Website version does not match the release tag'
+          assert release['path'] == '/downloads/' + name, 'Unexpected package path'
+          assert release['sha256'] == expected, 'Website package differs from the reviewed package'
+          digest = hashlib.sha256()
+          size = 0
+          with request(release['path']) as response, open(name, 'wb') as output:
+              while chunk := response.read(1024 * 1024):
+                  output.write(chunk)
+                  digest.update(chunk)
+                  size += len(chunk)
+          assert size == release['size'], 'Download size mismatch'
+          assert digest.hexdigest() == expected, 'Downloaded ZIP checksum mismatch'
+          with zipfile.ZipFile(name) as archive:
+              assert archive.testzip() is None, 'ZIP integrity check failed'
+          pathlib.Path('SHA256SUMS.txt').write_text(expected + '  ' + name + '\n', encoding='ascii')
+          print(name + ': ' + str(size) + ' bytes; SHA256 ' + expected)
+          PY
+
+      - name: Publish release and Windows download
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo 'A release already exists for this tag; refusing to replace its assets.' >&2
+            exit 1
+          fi
+          gh release create "$RELEASE_TAG" \
+            "PvZ-Formation-Editor-$RELEASE_VERSION-windows-x64.zip" SHA256SUMS.txt \
+            --repo "$GITHUB_REPOSITORY" --verify-tag --latest \
+            --title "$RELEASE_TAG · Windows" --notes-file release-notes.md
