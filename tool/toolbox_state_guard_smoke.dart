@@ -11,6 +11,7 @@ import 'package:pvz_formation_editor/editor/original_assets.dart';
 import 'package:pvz_formation_editor/platform/original_audio.dart';
 import 'package:pvz_formation_editor/storage/formation_repository.dart';
 import 'parity_support.dart';
+import 'package:pvz_formation_editor/editor/sprite_frame_image.dart';
 
 Future<void> main() async {
   ParityBinding();
@@ -94,11 +95,8 @@ Future<void> main() async {
     await h.settle();
     h.expect(h.all((w) => w is AlertDialog).isNotEmpty,
         'Appearance picker did not open for $reason');
-    h.expect(h.all((w) => w is Image && w.image is ResizeImage &&
-        (w.image as ResizeImage).imageProvider is AssetImage &&
-        ((w.image as ResizeImage).imageProvider as AssetImage).assetName
-            .contains('/frames/')).isNotEmpty,
-        'Appearance picker uses bounded frame-sized image previews');
+    h.expect(h.all((w) => w is Image && w.image is SpriteFrameImage).isNotEmpty,
+        'Appearance picker uses bounded runtime frame previews');
     h.expect((OriginalAssets.resourceStats()['fullSpriteSheets'] as List).isEmpty,
         'Opening the picker never decodes full sprite sheets');
     await mutate();

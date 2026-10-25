@@ -38,6 +38,7 @@ import 'editor/archive_history_dialog.dart';
 import 'editor/shovel_targets.dart';
 import 'editor/classic_window.dart';
 import 'editor/original_assets.dart';
+import 'editor/sprite_frame_image.dart';
 import 'editor/sprite_presentation.dart';
 import 'editor/resource_image.dart';
 import 'domain/original_catalog.dart';
@@ -5350,10 +5351,12 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                                               : Colors.blueGrey)),
                                   child: Column(children: [
                                     Expanded(
-                                        child: Image.asset(
-                                          'assets/original/${OriginalAssets.spriteFramePath(layer, row, col)}',
+                                        child: Image(
+                                          image: SpriteFrameImage(
+                                            OriginalAssets.spriteFramePath(layer, row, col),
+                                            scale: previewWidth / (layer['rw'] as num),
+                                          ),
                                           fit: BoxFit.contain,
-                                          cacheWidth: previewWidth,
                                           gaplessPlayback: true,
                                         )),
                                     Text('${row + 1}-${col + 1}',

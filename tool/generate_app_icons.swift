@@ -5,11 +5,11 @@ import UniformTypeIdentifiers
 
 // Run from the repository root. Preserve approved artwork; only resize/package.
 let root = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
-let sourceURL = root.appendingPathComponent("assets/branding/app-logo.png")
+let sourceURL = root.appendingPathComponent("assets/branding/source/app-logo.png")
 guard let source = CGImageSourceCreateWithURL(sourceURL as CFURL, nil),
       let image = CGImageSourceCreateImageAtIndex(source, 0, nil),
       image.width == image.height else {
-  fatalError("Expected square assets/branding/app-logo.png")
+  fatalError("Expected square assets/branding/source/app-logo.png")
 }
 let colorSpace = CGColorSpace(name: CGColorSpace.sRGB)!
 func png(_ size: Int, opaque: Bool = false) throws -> Data {

@@ -22,11 +22,10 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    - assets/branding/
+    - assets/branding/app-logo.png
     - assets/catalog.json
     - assets/original/
     - assets/original/image/
-    - assets/original/frames/
     - assets/original/thumbnails/
     - assets/original/image/Aero/
     - assets/original/image/Card/

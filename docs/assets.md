@@ -4,9 +4,9 @@
 
 ## 本地渲染
 
-地图与角色图片由 Canvas 绘制。植物外观以当前帧按需解码，相同像素内容复用同一文件；图鉴卡片、模仿者效果与编辑命中掩码分别管理。
+地图与角色图片由 Canvas 绘制。植物外观以当前帧按需裁切，相同像素内容复用同一缓存项；图鉴卡片、模仿者效果与编辑命中掩码分别管理。
 
-`assets/original/frames` 保存预裁切帧与压缩的一位透明掩码，`tool/prepare_sprite_frames.py` 用于生成资源。完整精灵图用于外观选择，阵图绘制使用所需帧。
+`assets/original/frame_index.json` 记录帧坐标与像素去重索引，`tool/prepare_sprite_index.py` 用于生成元数据。包内只保存原始精灵图，不携带预裁切图片与命中掩码。运行时按需裁切当前外观，批次内共享临时精灵图并在裁切完成后释放；裁切结果使用有容量限制的缓存，命中掩码按需从帧的透明度生成。外观选择器也使用小尺寸运行时帧。
 
 `assets/original/thumbnails` 随包保存 363 张 256×192 WebP 缩略图，合计约 7.49 MiB。`tool/prepare_builtin_thumbnails.dart` 和 `tool/compress_builtin_thumbnails.py` 提供生成流程。自定义阵型缩略图按画面内容生成并缓存到本地。
 

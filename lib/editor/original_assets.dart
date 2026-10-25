@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
-import 'dart:io' show ZLibDecoder;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import '../domain/formation.dart';
@@ -39,6 +38,7 @@ class OriginalAssets {
         'imitationBytes': _grayImages.bytes,
         'imitationImages': _grayImages.length,
         'maskBytes': _hitMasks.values.fold<int>(0, (a, b) => a + b.length),
+        'transientSheets': _sheetLoading.length,
         'fullSpriteSheets':
             images.keys.where((key) => _frameIndex.containsKey(key)).toList(),
       };
@@ -222,6 +222,63 @@ class OriginalAssets {
   }
 
   static final _frameIndex = <String, dynamic>{};
+  static final _frameSources = <String, (String, ui.Rect)>{};
+  static final _sheetLoading = <String, Future<ui.Image>>{};
+  static final _sheetUsers = <String, int>{};
+
+  /// The cache key identifies pixel-equivalent frames, not a bundled PNG.
+  /// Full sheets exist only while their requested frames are being extracted.
+  static Future<ui.Image> loadFrameImage(String path, {double scale = 1}) async {
+    await ensureLoaded();
+    await _loadImage(path, scale: scale);
+    final result = images[imageKey(path, scale)];
+    if (result == null) throw StateError('Cannot load sprite frame $path');
+    return result.clone();
+  }
+
+  static Future<ui.Image> _decodeSheet(String path) async {
+    final data = await rootBundle.load('assets/original/$path');
+    final codec = await ui.instantiateImageCodec(
+        data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes));
+    try {
+      return (await codec.getNextFrame()).image;
+    } finally {
+      codec.dispose();
+    }
+  }
+
+  static Future<ui.Image> _extractFrame(String path, double scale) async {
+    final (source, rect) = _frameSources[path]!;
+    _sheetUsers.update(source, (n) => n + 1, ifAbsent: () => 1);
+    final loading = _sheetLoading.putIfAbsent(source, () => _decodeSheet(source));
+    ui.Image? sheet;
+    try {
+      sheet = await loading;
+      final width = (rect.width * scale).ceil().clamp(1, 16384);
+      final height = (rect.height * scale).ceil().clamp(1, 16384);
+      final recorder = ui.PictureRecorder();
+      final canvas = ui.Canvas(recorder);
+      canvas.drawImageRect(sheet, rect,
+          ui.Rect.fromLTWH(0, 0, width.toDouble(), height.toDouble()),
+          ui.Paint()..filterQuality = scale == 1
+              ? ui.FilterQuality.none : ui.FilterQuality.low);
+      final picture = recorder.endRecording();
+      try {
+        return await picture.toImage(width, height);
+      } finally {
+        picture.dispose();
+      }
+    } finally {
+      final remaining = _sheetUsers[source]! - 1;
+      if (remaining == 0) {
+        _sheetUsers.remove(source);
+        _sheetLoading.remove(source);
+        sheet?.dispose();
+      } else {
+        _sheetUsers[source] = remaining;
+      }
+    }
+  }
   static String spriteFramePath(Map part, int row, int col) {
     final path = part['path'] as String;
     final entry = _frameIndex[path] as Map?;
@@ -348,10 +405,21 @@ class OriginalAssets {
   static Future<void> _ensureFrameMask(Map part, int row, int col) {
     final path = spriteFramePath(part, row, col);
     return _frameMaskLoading.putIfAbsent(path, () async {
-      final data = await rootBundle
-          .load('assets/original/${path.replaceFirst('.png', '.mask')}');
-      _hitMasks[path] = Uint8List.fromList(ZLibDecoder().convert(
-          data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes)));
+      final image = await loadFrameImage(path);
+      try {
+        final data = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
+        if (data == null) throw StateError('Cannot read sprite alpha $path');
+        final pixels = data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
+        final mask = Uint8List((image.width * image.height + 7) ~/ 8);
+        for (var pixel = 0; pixel < image.width * image.height; pixel++) {
+          if (pixels[pixel * 4 + 3] >= 16) {
+            mask[pixel >> 3] |= 1 << (pixel & 7);
+          }
+        }
+        _hitMasks[path] = mask;
+      } finally {
+        image.dispose();
+      }
       revision.value++;
     });
   }
@@ -418,6 +486,11 @@ class OriginalAssets {
       final slot = _decodeSlot++ % _decodeSlots.length;
       final job = _decodeSlots[slot].then((_) async {
         try {
+          if (_frameSources.containsKey(path)) {
+            images[key] = await _extractFrame(path, scale);
+            revision.value++;
+            return;
+          }
           final data = await rootBundle.load('assets/original/$path');
           final buffer = await ui.ImmutableBuffer.fromUint8List(
               data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes));
@@ -458,14 +531,27 @@ class OriginalAssets {
         jsonDecode(await rootBundle.loadString('assets/original/maps.json'))
             as Map<String, dynamic>);
     _frameIndex.addAll(jsonDecode(
-            await rootBundle.loadString('assets/original/frames/index.json'))
+            await rootBundle.loadString('assets/original/frame_index.json'))
         as Map<String, dynamic>);
+    for (final entry in _frameIndex.entries) {
+      final data = entry.value as Map;
+      final cols = data['cols'] as int;
+      final frames = data['frames'] as List;
+      for (var i = 0; i < frames.length; i++) {
+        _frameSources.putIfAbsent('frames/${frames[i]}.png', () => (
+          entry.key,
+          ui.Rect.fromLTWH((i % cols) * (data['w'] as num).toDouble(),
+              (i ~/ cols) * (data['h'] as num).toDouble(),
+              (data['w'] as num).toDouble(), (data['h'] as num).toDouble()),
+        ));
+      }
+    }
     sprites.addAll(
         jsonDecode(await rootBundle.loadString('assets/original/sprites.json'))
             as Map<String, dynamic>);
 
     final styles = jsonDecode(
-            await rootBundle.loadString('assets/original/frames/styles.json'))
+            await rootBundle.loadString('assets/original/sprite_styles.json'))
         as Map;
     for (final entry in styles.entries) {
       final style = entry.value as Map;
