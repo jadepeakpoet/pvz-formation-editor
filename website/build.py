@@ -25,7 +25,8 @@ parts_dir=dist/'downloads/parts'
 if parts_dir.exists():
     for stale in parts_dir.glob('*.bin'): stale.unlink()
 releases=[]
-for src in sorted((root.parent/'release').glob('*/*-windows-x64.zip')):
+for src in sorted((root.parent/'release').glob('*/*.zip')):
+    if not re.fullmatch(r'PvZ-Formation-Editor-\d+\.\d+\.\d+-(windows-x64|macos-arm64|macos-x64)\.zip', src.name): continue
     data=src.read_bytes();sha=hashlib.sha256(data).hexdigest();part_size=8*1024*1024
     parts=dist/'downloads/parts';parts.mkdir(exist_ok=True)
     for index,offset in enumerate(range(0,len(data),part_size)):
@@ -41,6 +42,7 @@ worker=worker.replace('// __ANALYTICS__',(root/'analytics-worker.js').read_text(
 (dist/'_worker.js').write_text(worker,encoding='utf-8')
 (dist/'_routes.json').write_text(json.dumps({'version':1,'include':[r['path'] for r in releases]+['/api/*'],'exclude':[]}),encoding='utf-8')
 (dist/'release.json').write_text(json.dumps(latest,indent=2),encoding='utf-8')
+(dist/'releases.json').write_text(json.dumps(releases,indent=2),encoding='utf-8')
 (dist/'downloads/SHA256SUMS.txt').write_text(''.join(f"{r['sha256']}  {r['name']}\n" for r in releases),encoding='ascii')
 (dist/'_headers').write_text('/*\n  X-Content-Type-Options: nosniff\n  Referrer-Policy: strict-origin-when-cross-origin\n  X-Frame-Options: DENY\n',encoding='utf-8')
 for source_zip in (dist/'downloads').glob('*-source.zip'):

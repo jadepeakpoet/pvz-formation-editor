@@ -6,7 +6,7 @@
 
 **落植为棋，布阵成道。** 基于 **Flutter Widget / Canvas** 的跨平台本地布阵器，以 **Windows** 为主要发布和验证平台，集阵图编辑、本地存档、阵型码交换、图片导出及 Windows 游戏阵型读写于一体。
 
-**v1.0.2** · [官网](https://xmpvz.pages.dev) · [使用文档](https://xmpvz.pages.dev/docs/) · [Windows x64 绿色包](https://xmpvz.pages.dev/downloads/PvZ-Formation-Editor-1.0.2-windows-x64.zip) · [GitHub Releases](https://github.com/jadepeakpoet/pvz-formation-editor/releases) · [交流 QQ 群：425175276](https://qm.qq.com/q/BbkV57ELaa)
+**v1.0.2** · [官网](https://xmpvz.pages.dev) · [使用文档](https://xmpvz.pages.dev/docs/) · [Windows x64 绿色包](https://xmpvz.pages.dev/downloads/PvZ-Formation-Editor-1.0.2-windows-x64.zip) · [macOS Apple Silicon](https://xmpvz.pages.dev/downloads/PvZ-Formation-Editor-1.0.2-macos-arm64.zip) · [macOS Intel](https://xmpvz.pages.dev/downloads/PvZ-Formation-Editor-1.0.2-macos-x64.zip) · [GitHub Releases](https://github.com/jadepeakpoet/pvz-formation-editor/releases) · [交流 QQ 群：425175276](https://qm.qq.com/q/BbkV57ELaa)
 
 作者及维护者：**越小梦**。源代码采用 [GNU GPL v3.0](LICENSE)。
 
@@ -28,7 +28,7 @@
 | 平台 | 工程与界面 | 已有验证与发布状态 |
 | --- | --- | --- |
 | **Windows** | 主要平台，独立主窗口与共享侧窗，主窗口可单独最小化；集成原版游戏读写 | **Release 构建、启动、双窗口、自动保存、导入导出及真实 1051 游戏阵型读写已验证；提供 Windows x64 绿色包** |
-| macOS | Flutter 桌面工程与原生双窗口桥接 | 已有 macOS 构建、启动及桌面交互验证记录；发布包以 Windows 版本为主 |
+| macOS | Flutter 桌面工程与原生双窗口桥接 | macOS 12.0+；提供 Apple Silicon / Intel ZIP，验证范围见 [macOS 说明](docs/macos-run.md) |
 | Linux | Flutter Linux 工程及平台文件适配 | 提供源码工程，平台构建与设备验证待开展 |
 | Android | Flutter Android 工程 | 提供源码工程，设备运行验证待开展 |
 | iOS | Flutter iOS 工程 | 提供源码工程，构建与设备验证待开展 |
@@ -43,6 +43,14 @@
 4. 查看顶部自动保存状态；分享时复制阵型码或导出项目、存档集合和 PNG。
 
 [使用指南](docs/user-guide.md) · [平台支持](docs/platforms.md) · [v1.0.2 更新说明](docs/releases/1.0.2.md) · [下载校验值](https://xmpvz.pages.dev/downloads/SHA256SUMS.txt)
+
+## macOS 快速开始
+
+1. 在“ → 关于本机”查看芯片，Apple Silicon（M 系列）选择 [arm64 包](https://xmpvz.pages.dev/downloads/PvZ-Formation-Editor-1.0.2-macos-arm64.zip)，Intel 选择 [x64 包](https://xmpvz.pages.dev/downloads/PvZ-Formation-Editor-1.0.2-macos-x64.zip)。要求 macOS 12.0 或更新版本。
+2. 解压后将 `PVZ Formation Editor.app` 拖入“应用程序”，再打开。
+3. 包使用临时签名（ad-hoc），没有 Apple Developer ID 签名或公证。首次打开若被系统拦截，确认来源及 [SHA-256 校验值](https://xmpvz.pages.dev/downloads/SHA256SUMS.txt) 后，在“系统设置 → 隐私与安全性”中为该应用选择“仍要打开”。
+
+macOS 提供本地编辑、存档及格式交换；实际游戏读取和应用仅支持 Windows。如提示“已损坏”，见 [macOS 打开问题排查](docs/macos-run.md#提示已损坏或无法打开)。旧开发包的存档迁移、构建与验证范围见 [macOS 说明](docs/macos-run.md)。
 
 ## 自动保存与本地数据
 

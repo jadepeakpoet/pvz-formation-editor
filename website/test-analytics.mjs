@@ -54,6 +54,11 @@ function simulate(opt={},href){const sent=[],storage=new Map();let click;const c
 assert.equal(simulate({doNotTrack:'1'}).length,0);assert.equal(simulate({globalPrivacyControl:true}).length,0);assert.equal(simulate({blocked:true}).length,1);assert.equal(simulate().length,1);
 const githubDownload='https://github.com/jadepeakpoet/pvz-formation-editor/releases/download/v1.0.2/PvZ-Formation-Editor-1.0.2-windows-x64.zip';
 assert.equal(simulate({},githubDownload).at(-1).event,'download_click');
+for (const platform of ['macos-arm64','macos-x64']) {
+ const name=`PvZ-Formation-Editor-1.0.2-${platform}.zip`;
+ for (const origin of [base+'/downloads/', 'https://github.com/jadepeakpoet/pvz-formation-editor/releases/download/v1.0.2/'])
+  assert.equal(simulate({},origin+name).at(-1).event,'download_click');
+}
 assert.equal(simulate({},base+'/downloads/PvZ-Formation-Editor-1.0.2-windows-x64.zip').at(-1).event,'download_click');
 assert.equal(simulate({},githubDownload.replace('/jadepeakpoet/','/unrelated/')).length,1);
 assert.equal(simulate({doNotTrack:'1'},githubDownload).length,0);

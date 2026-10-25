@@ -6,7 +6,7 @@
 
 **Plants as pieces. Formation as an art.** A **Windows-first**, cross-platform local formation editor built with **Flutter widgets and Canvas**, combining board editing, local archives, formation codes, image export and Windows live-game integration.
 
-**v1.0.2** · [Website](https://xmpvz.pages.dev/en/) · [User guide](https://xmpvz.pages.dev/en/docs/) · [Windows x64 ZIP](https://xmpvz.pages.dev/downloads/PvZ-Formation-Editor-1.0.2-windows-x64.zip) · [Releases](https://github.com/jadepeakpoet/pvz-formation-editor/releases) · [QQ group 425175276](https://qm.qq.com/q/BbkV57ELaa)
+**v1.0.2** · [Website](https://xmpvz.pages.dev/en/) · [User guide](https://xmpvz.pages.dev/en/docs/) · [Windows x64 ZIP](https://xmpvz.pages.dev/downloads/PvZ-Formation-Editor-1.0.2-windows-x64.zip) · [macOS Apple Silicon](https://xmpvz.pages.dev/downloads/PvZ-Formation-Editor-1.0.2-macos-arm64.zip) · [macOS Intel](https://xmpvz.pages.dev/downloads/PvZ-Formation-Editor-1.0.2-macos-x64.zip) · [Releases](https://github.com/jadepeakpoet/pvz-formation-editor/releases) · [QQ group 425175276](https://qm.qq.com/q/BbkV57ELaa)
 
 Author and maintainer: **越小梦 (yuexiaomeng)**. Source license: [GNU GPL v3.0](LICENSE).
 
@@ -28,7 +28,7 @@ Author and maintainer: **越小梦 (yuexiaomeng)**. Source license: [GNU GPL v3.
 | Platform | Implementation | Validation / distribution |
 | --- | --- | --- |
 | **Windows** | Primary platform; independent main/sidebar windows and native PvZ integration | **Release build, startup, windows, autosave, import/export and real 1051 game read/write verified; Windows x64 ZIP distribution** |
-| macOS | Flutter desktop project with native dual-window integration | Historical macOS build, startup and desktop-interaction validation; current binary distribution focuses on Windows |
+| macOS | Flutter desktop project with native dual-window integration | macOS 12.0+; Apple Silicon / Intel ZIPs; see [macOS validation](docs/macos-run.md) |
 | Linux | Flutter Linux project and file adapters | Source project; platform build/device validation pending |
 | Android | Flutter Android project | Source project; device validation pending |
 | iOS | Flutter iOS project | Source project; build/device validation pending |
@@ -43,6 +43,14 @@ The formation model, editing, rendering, storage and codecs are shared. **Live P
 4. Check autosave status and share codes, project files, archive collections or PNGs.
 
 [Release notes](docs/releases/1.0.2.md) · [Checksums](https://xmpvz.pages.dev/downloads/SHA256SUMS.txt)
+
+## macOS quick start
+
+1. Check the chip in Apple menu → About This Mac. Choose [arm64](https://xmpvz.pages.dev/downloads/PvZ-Formation-Editor-1.0.2-macos-arm64.zip) for Apple Silicon (M series), or [x64](https://xmpvz.pages.dev/downloads/PvZ-Formation-Editor-1.0.2-macos-x64.zip) for Intel. macOS 12.0 or later is required.
+2. Extract the ZIP, move `PVZ Formation Editor.app` to Applications, then open it.
+3. Packages are ad-hoc signed, without an Apple Developer ID signature or notarization. If macOS blocks the first launch, verify the source and [SHA-256 checksum](https://xmpvz.pages.dev/downloads/SHA256SUMS.txt), then choose Open Anyway for this app in System Settings → Privacy & Security.
+
+macOS supports local editing, archives and format exchange. Live-game read/apply features require Windows. If macOS reports the app is damaged, see [opening troubleshooting](https://xmpvz.pages.dev/en/docs/#macos-damaged). See [legacy development-build data migration, macOS build and validation details](docs/macos-run.md).
 
 ## Autosave and local data
 

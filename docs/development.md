@@ -61,7 +61,9 @@ node website/test-download.mjs
 
 打包时显式指定已验证的构建目录：`python tool/package_windows_release.py --build build/windows/x64/runner/Release`。脚本自动查找 MSVC x64 运行库，也可用 `--crt` 指定。源码包使用 `python tool/package_source_release.py --ref <已审核的提交或标签>`，从对应 Git 提交读取版本并归档。
 
-GitHub Release 上传 Windows 绿色包和 SHA-256 校验文件；GitHub 根据发布标签自动提供 Source code (zip / tar.gz)，无需另传一份源码 ZIP。官网提供绿色包与文档，源码入口指向 GitHub。官网部署说明见 [website/README](../website/README.md)。
+GitHub Release 上传 Windows x64 绿色包、macOS arm64 / x64 ZIP 和 SHA-256 校验文件；GitHub 根据发布标签自动提供 Source code (zip / tar.gz)，无需另传一份源码 ZIP。官网提供对应平台下载包与文档，源码入口指向 GitHub。官网部署说明见 [website/README](../website/README.md)。
+
+macOS 发布包要求 macOS 12.0+，使用 Flutter 3.47.8 与 Xcode 构建。运行 `python tool/package_macos_release.py --build "build/macos/Build/Products/Release/PVZ Formation Editor.app"`，从已验证的通用 Release 应用生成 arm64 / x64 两个 ZIP 到 `release/<version>/`。Apple Silicon 与 Intel 分别打包并检查包内 Mach-O 架构，保留应用资源、框架、插件和签名；没有 Developer ID / 公证的包须明确说明临时签名和首次打开方式。签名校验、架构检查、ZIP 完整性和设备运行是独立验证项，不能以交叉构建代替 Intel 真机验收。详见 [macOS 构建与运行](macos-run.md)。
 
 ## Windows 渲染后端对照
 

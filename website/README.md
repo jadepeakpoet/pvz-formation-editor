@@ -15,7 +15,9 @@
 
 部署须在 `website` 目录运行 `wrangler pages deploy dist --project-name xmpvz --branch main`，让 Wrangler 自动读取当前目录的配置，确保 D1 的 `DB` 绑定保留（Pages deploy 不接受自定义配置路径）。`_routes.json` 只将 `/api/*` 和 ZIP 路径交给 Worker；页面仍由静态资源服务。
 
-先运行 `python tool/package_windows_release.py --build <已验证的Release目录>` 打包完整 Windows Release，再运行 `python website/build.py` 生成 website/dist。官网只提供应用绿色包下载，源码入口统一指向 GitHub；构建脚本不会发布源码压缩包。
+先运行 `python tool/package_windows_release.py --build <已验证的Release目录>` 打包完整 Windows Release；在 macOS 上运行 `python tool/package_macos_release.py --build "build/macos/Build/Products/Release/PVZ Formation Editor.app"` 生成 Apple Silicon arm64 与 Intel x64 ZIP，再运行 `python website/build.py` 生成 website/dist。官网提供 Windows x64 与 macOS 双芯片下载，源码入口统一指向 GitHub；构建脚本不会发布源码压缩包。
+
+官网发布时保留现有 Windows ZIP，加入两个 macOS ZIP；首页中英文下载入口均提供站内与 GitHub 备用链接。macOS 要求 12.0+，包为临时签名、未经 Apple 公证，首次打开说明位于 `/docs/#macos` 与 `/en/docs/#macos`。实际游戏读写仍仅支持 Windows。
 
 运行 `node website/test-download.mjs` 验证完整 ZIP SHA256、跨分段 Range、后缀下载、无效范围和 HEAD。
 

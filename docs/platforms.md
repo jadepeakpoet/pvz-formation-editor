@@ -5,10 +5,12 @@
 | 平台 | 实现 | 验证状态 | 发布 |
 | --- | --- | --- | --- |
 | **Windows** | 主窗口与共享侧窗、桌面文件与剪贴板、Win32 游戏接入 | Release 构建和运行、双窗口、存档读写、自动保存、实际 1051 游戏读取/应用均已验证 | **Windows x64 绿色包，面向 Windows 10 / 11** |
-| macOS | 桌面工程、原生双窗口桥接、系统文件与剪贴板适配 | 已有 macOS 构建、启动与桌面交互验证记录 | 源码工程 |
+| macOS | 桌面工程、原生双窗口桥接、系统文件与剪贴板适配 | 两包架构、签名及 ZIP 检查通过；Apple Silicon 解压启动通过，Intel 原机运行待验，见 [macOS 说明](macos-run.md) | macOS 12.0+，Apple Silicon arm64 / Intel x64 ZIP |
 | Linux | 桌面工程、GTK 文件与剪贴板适配 | 平台构建与设备验证待开展 | 源码工程 |
 | Android | Flutter Android 工程 | 设备运行验证待开展 | 源码工程 |
 | iOS | Flutter iOS 工程 | 构建与设备验证待开展 | 源码工程 |
+
+macOS 包使用临时签名（ad-hoc），未经 Apple Developer ID 签名或公证；首次打开说明见 [macOS 文档](macos-run.md)。
 
 ## Windows 专属能力
 

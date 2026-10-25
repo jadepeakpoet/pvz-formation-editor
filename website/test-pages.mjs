@@ -6,6 +6,8 @@ import path from 'node:path';
 const root = fileURLToPath(new URL('./dist/', import.meta.url));
 const spec = await readFile(new URL('../pubspec.yaml', import.meta.url), 'utf8');
 const version = spec.match(/^version: (\d+\.\d+\.\d+)/m)[1];
+const releases = JSON.parse(await readFile(path.join(root, 'releases.json'), 'utf8'));
+const downloadPaths = new Set(releases.map(item => item.path));
 const latest = JSON.parse(await readFile(path.join(root, 'release.json'), 'utf8'));
 assert.equal(latest.name, `PvZ-Formation-Editor-${version}-windows-x64.zip`);
 const pages = ['index.html', 'docs/index.html', 'en/index.html', 'en/docs/index.html',
@@ -25,7 +27,7 @@ for (const page of pages) {
     const url = new URL(match[1], 'https://local.test/'+page);
     if (url.origin !== 'https://local.test') continue;
     links++;
-    if (url.pathname === latest.path) continue; // Served by the download Worker.
+    if (downloadPaths.has(url.pathname)) continue; // Served by the download Worker.
     let target = path.join(root, decodeURIComponent(url.pathname));
     if (url.pathname.endsWith('/')) target = path.join(target, 'index.html');
     await stat(target);
