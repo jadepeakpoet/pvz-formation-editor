@@ -1,6 +1,6 @@
 # Application logo
 
-`source/app-logo.png` preserves the final user-selected PVZ seedling grid artwork at its original resolution. `app-logo.png` is its smaller in-app and website variant. Only the smaller variant is bundled with Flutter. Preserve the approved artwork, border treatment and spacing; do not regenerate or redraw it from a prompt.
+`source/app-logo.png` preserves the final user-selected PVZ seedling grid artwork at its original resolution. `app-logo.png` is its 256 × 256 in-app and website favicon variant. The website hero uses the original 1254 × 1254 artwork, published as `/assets/app-logo-large.png` by `website/build.py`. Only the smaller variant is bundled with Flutter. Preserve the approved artwork, border treatment and spacing; do not regenerate or redraw it from a prompt.
 
 On macOS, regenerate platform sizes from the repository root:
 

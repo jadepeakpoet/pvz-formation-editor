@@ -19,6 +19,7 @@ for page in dist.rglob('*.html'):
 shutil.copy2(root.parent/'LICENSE',dist/'license.txt')
 (dist/'assets').mkdir(exist_ok=True)
 shutil.copy2(root.parent/'assets/branding/app-logo.png',dist/'assets/app-logo.png')
+shutil.copy2(root.parent/'assets/branding/source/app-logo.png',dist/'assets/app-logo-large.png')
 (dist/'downloads').mkdir(exist_ok=True)
 parts_dir=dist/'downloads/parts'
 if parts_dir.exists():
