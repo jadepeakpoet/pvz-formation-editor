@@ -9,8 +9,8 @@ class SidebarTabs extends StatelessWidget {
   final int selected;
   final ValueChanged<int> onSelected;
   static const labels = ['存档仓库', '懒人布局', '图鉴选卡', '镜像窗口', '载入导出', '选项设置'];
-  static const englishLabels = ['Library', 'Layouts', 'Catalog', 'Mirrors', 'Transfer', 'Settings'];
-  static const englishHints = ['Archive library', 'Quick layouts', 'Plant and zombie catalog',
+  static const englishLabels = ['Archives', 'Quick', 'Cards', 'Mirrors', 'Transfer', 'Settings'];
+  static const englishHints = ['Archive library', 'Quick layouts', 'Plant, zombie and item cards',
     'Mirror windows', 'Import and export formation codes and images', 'Application settings'];
   @override
   Widget build(BuildContext context) => Material(
