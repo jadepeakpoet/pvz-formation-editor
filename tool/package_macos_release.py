@@ -78,16 +78,12 @@ for label, arch in [('arm64', 'arm64'), ('x64', 'x86_64')]:
             'This build is ad-hoc signed, without Developer ID signing or Apple notarization.\n'
             'After verifying the download source and SHA-256, if macOS blocks opening,\n'
             'use System Settings > Privacy & Security > Open Anyway (when offered).\n'
-            'If macOS reports damaged, first verify the ZIP SHA-256; re-download if it differs.\n'
-            'For a verified official download with no Open Anyway option, use Terminal:\n'
-            'xattr -dr com.apple.quarantine "/Applications/PVZ Formation Editor.app"\n'
-            'Adjust the app path if installed elsewhere. Do not disable Gatekeeper globally.\n'
+            'Installation help: https://xmpvz.pages.dev/en/docs/#macos\n'
             'Live PvZ game integration is available on Windows only.\n\n'
             '需要 macOS 12 或更新版本。解压后将应用拖入“应用程序”。\n'
             '本包采用本地签名，未经 Apple 公证；确认来源及校验值后，若系统阻止打开，\n'
             '可在“系统设置 > 隐私与安全”中使用“仍要打开”（若系统提供）。\n'
-            '若提示“已损坏”，先核验 ZIP 校验值；不一致时重新下载。确认来源及校验值后，\n'
-            '若没有“仍要打开”，可在终端执行上方 xattr 命令（按实际安装位置修改路径）。\n'
+            '安装说明：https://xmpvz.pages.dev/docs/#macos\n'
             '游戏读取/应用等游戏接入功能仅适用于 Windows。\n', encoding='utf-8')
         archive = release / (stage.name + '.zip')
         run('ditto', '-c', '-k', '--sequesterRsrc', '--keepParent', stage, archive)

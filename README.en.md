@@ -50,7 +50,7 @@ The formation model, editing, rendering, storage and codecs are shared. **Live P
 2. Extract the ZIP, move `PVZ Formation Editor.app` to Applications, then open it.
 3. Packages are ad-hoc signed, without an Apple Developer ID signature or notarization. If macOS blocks the first launch, verify the source and [SHA-256 checksum](https://xmpvz.pages.dev/downloads/SHA256SUMS.txt), then choose Open Anyway for this app in System Settings → Privacy & Security.
 
-macOS supports local editing, archives and format exchange. Live-game read/apply features require Windows. If macOS reports the app is damaged, see [opening troubleshooting](https://xmpvz.pages.dev/en/docs/#macos-damaged). See [legacy development-build data migration, macOS build and validation details](docs/macos-run.md).
+macOS supports local editing, archives and format exchange. Live-game read/apply features require Windows. See [legacy development-build data migration, macOS build and validation details](docs/macos-run.md).
 
 ## Autosave and local data
 

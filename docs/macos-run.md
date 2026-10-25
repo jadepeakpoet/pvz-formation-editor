@@ -29,18 +29,6 @@ macOS 应用标识（Bundle ID）为 `com.xiaomeng.pvz.formation.macos`。
 
 macOS 支持本地编辑、自动保存、存档管理、阵型码与项目交换和图片导出。原版 Windows PvZ 的进程识别、实际游戏读写及游戏存档目录接入不在 macOS 提供。
 
-## 提示“已损坏”或无法打开
-
-先对照官网或 GitHub 发布的 SHA-256 校验值检查 ZIP；不一致时重新下载，不应继续打开。若校验一致且确认来自官方发布页，优先在“系统设置 → 隐私与安全性”中为此应用选择“仍要打开”。
-
-系统未提供该选项时，可在终端仅移除这个应用的下载隔离标记：
-
-```sh
-xattr -dr com.apple.quarantine '/Applications/PVZ Formation Editor.app'
-```
-
-若安装在其他位置，请修改命令中的应用路径。此操作无需 `sudo`，不关闭系统整体 Gatekeeper。隔离标记只是可能原因之一；校验失败、解压损坏或签名校验失败需要重新下载或反馈问题，不能一概当作误报。
-
 ## 旧开发包存档迁移
 
 新 Bundle ID 使用独立的 macOS 应用容器，旧开发包 `com.example.pvzFormationEditor` 的数据库不会自动变成新包的存档。迁移工具仅复制完整资料库到空目标，不合并两份资料库，也不覆盖目标中已有的存档、草稿或历史。

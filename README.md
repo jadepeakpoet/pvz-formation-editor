@@ -50,7 +50,7 @@
 2. 解压后将 `PVZ Formation Editor.app` 拖入“应用程序”，再打开。
 3. 包使用临时签名（ad-hoc），没有 Apple Developer ID 签名或公证。首次打开若被系统拦截，确认来源及 [SHA-256 校验值](https://xmpvz.pages.dev/downloads/SHA256SUMS.txt) 后，在“系统设置 → 隐私与安全性”中为该应用选择“仍要打开”。
 
-macOS 提供本地编辑、存档及格式交换；实际游戏读取和应用仅支持 Windows。如提示“已损坏”，见 [macOS 打开问题排查](docs/macos-run.md#提示已损坏或无法打开)。旧开发包的存档迁移、构建与验证范围见 [macOS 说明](docs/macos-run.md)。
+macOS 提供本地编辑、存档及格式交换；实际游戏读取和应用仅支持 Windows。旧开发包的存档迁移、构建与验证范围见 [macOS 说明](docs/macos-run.md)。
 
 ## 自动保存与本地数据
 
