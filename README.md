@@ -6,7 +6,7 @@
 
 **落植为棋，布阵成道。** 基于 **Flutter Widget / Canvas** 的跨平台本地布阵器，以 **Windows** 为主要发布和验证平台，集阵图编辑、本地存档、阵型码交换、图片导出及 Windows 游戏阵型读写于一体。
 
-**v1.0.1** · [官网](https://xmpvz.pages.dev) · [使用文档](https://xmpvz.pages.dev/docs/) · [Windows x64 绿色包](https://xmpvz.pages.dev/downloads/PvZ-Formation-Editor-1.0.1-windows-x64.zip) · [GitHub Releases](https://github.com/jadepeakpoet/pvz-formation-editor/releases) · [交流 QQ 群：425175276](https://qm.qq.com/q/BbkV57ELaa)
+**v1.0.2** · [官网](https://xmpvz.pages.dev) · [使用文档](https://xmpvz.pages.dev/docs/) · [Windows x64 绿色包](https://xmpvz.pages.dev/downloads/PvZ-Formation-Editor-1.0.2-windows-x64.zip) · [GitHub Releases](https://github.com/jadepeakpoet/pvz-formation-editor/releases) · [交流 QQ 群：425175276](https://qm.qq.com/q/BbkV57ELaa)
 
 作者及维护者：**越小梦**。源代码采用 [GNU GPL v3.0](LICENSE)。
 
@@ -20,7 +20,7 @@
 - **阵型码与文件**：读写 PvZ Toolkit 阵型码、网页布阵器阵型码、完整项目 JSON 和存档集合，提供原文件保存、覆盖前备份与恢复。
 - **图片分享**：PNG 图片导出、背景导出、图片复制、导出倍率与背景设置；默认保持游戏原比例，在工具箱弹窗中预览、复制和导出。默认导出目录为文稿目录下的 `PvzFormationEditor`。
 - **Windows 游戏接入**：识别运行中的原版游戏，读取和应用实际阵型，支持六种标准场地、模仿者、蘑菇睡眠、玉米炮装填及多类植物状态，提供游戏存档文件读取与备份入口。
-- **图片资源管理**：植物帧按需裁切、相同图片复用；名阵与自定义存档的 256×192 缩略图首次显示时生成并缓存到本地，列表使用有容量预算的解码缓存。
+- **图片资源管理**：植物帧按需裁切、相同图片复用；名阵与自定义存档的 256×192 缩略图按需生成，使用 4 MiB 内存缓存，并保留当前可见预览。
 - **中英文界面**：应用与官网提供简体中文和 English，语言选择会保留。
 
 ## 平台与验证状态
@@ -42,7 +42,7 @@
 3. 在侧窗选择地图、植物与工具，也可从“存档仓库”打开名阵，直接开始编辑。
 4. 查看顶部自动保存状态；分享时复制阵型码或导出项目、存档集合和 PNG。
 
-[使用指南](docs/user-guide.md) · [平台支持](docs/platforms.md) · [v1.0.1 更新说明](docs/releases/1.0.1.md) · [下载校验值](https://xmpvz.pages.dev/downloads/SHA256SUMS.txt)
+[使用指南](docs/user-guide.md) · [平台支持](docs/platforms.md) · [v1.0.2 更新说明](docs/releases/1.0.2.md) · [下载校验值](https://xmpvz.pages.dev/downloads/SHA256SUMS.txt)
 
 ## 自动保存与本地数据
 

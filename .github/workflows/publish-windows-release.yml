@@ -6,12 +6,11 @@ on:
       tag:
         description: Existing release tag
         required: true
-        default: v1.0.1
+        default: v1.0.2
         type: string
       windows_sha256:
         description: SHA-256 of the locally verified Windows ZIP
         required: true
-        default: dd21febd438c21f20bed424ad8b6a377363d9922c5b4d48dfc34367a9687d3be
         type: string
 
 permissions:

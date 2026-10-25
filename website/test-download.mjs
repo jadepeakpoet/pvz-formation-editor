@@ -12,7 +12,8 @@ const env={ASSETS:{async fetch(request){
 const run=(headers={},method='GET')=>worker.fetch(new Request('https://example.com'+meta.path,{headers,method}),env);
 const full=await run();const bytes=Buffer.from(await full.arrayBuffer());
 assert.equal(createHash('sha256').update(bytes).digest('hex'),meta.sha256);
-for(const [range,start,end] of [['bytes=0-50',0,50],['bytes=8388580-8388630',8388580,8388630],['bytes=-21',bytes.length-21,bytes.length-1],['bytes=30000000-',30000000,bytes.length-1]]){
+const resumeAt=Math.min(30000000,Math.floor(bytes.length*.7));
+for(const [range,start,end] of [['bytes=0-50',0,50],['bytes=8388580-8388630',8388580,8388630],['bytes=-21',bytes.length-21,bytes.length-1],[`bytes=${resumeAt}-`,resumeAt,bytes.length-1]]){
  const response=await run({Range:range});assert.equal(response.status,206);
  const part=Buffer.from(await response.arrayBuffer());assert.deepEqual(part,bytes.subarray(start,end+1));
  assert.equal(Number(response.headers.get('Content-Length')),part.length);

@@ -6,7 +6,7 @@
 
 **Plants as pieces. Formation as an art.** A **Windows-first**, cross-platform local formation editor built with **Flutter widgets and Canvas**, combining board editing, local archives, formation codes, image export and Windows live-game integration.
 
-**v1.0.1** · [Website](https://xmpvz.pages.dev/en/) · [User guide](https://xmpvz.pages.dev/en/docs/) · [Windows x64 ZIP](https://xmpvz.pages.dev/downloads/PvZ-Formation-Editor-1.0.1-windows-x64.zip) · [Releases](https://github.com/jadepeakpoet/pvz-formation-editor/releases) · [QQ group 425175276](https://qm.qq.com/q/BbkV57ELaa)
+**v1.0.2** · [Website](https://xmpvz.pages.dev/en/) · [User guide](https://xmpvz.pages.dev/en/docs/) · [Windows x64 ZIP](https://xmpvz.pages.dev/downloads/PvZ-Formation-Editor-1.0.2-windows-x64.zip) · [Releases](https://github.com/jadepeakpoet/pvz-formation-editor/releases) · [QQ group 425175276](https://qm.qq.com/q/BbkV57ELaa)
 
 Author and maintainer: **越小梦 (yuexiaomeng)**. Source license: [GNU GPL v3.0](LICENSE).
 
@@ -20,7 +20,7 @@ Author and maintainer: **越小梦 (yuexiaomeng)**. Source license: [GNU GPL v3.
 - Exchange PvZ Toolkit codes, reference-site codes, complete project JSON and archive collections; save back to source files with overwrite backups and recovery.
 - Export PNGs and backgrounds, preserve the game's aspect ratio by default, and preview/copy/save generated images in a popup inside the toolbox. The default export folder is Documents/PvzFormationEditor.
 - On Windows, read and apply real game formations, including six standard scenes, Imitaters, mushroom sleep, cannon loading and other stable plant states. Browse and back up game-save files.
-- Extract and share plant frames on demand. Preset and custom previews are generated at 256×192 when first displayed and cached locally, with a bounded decoded-image cache.
+- Extract and share plant frames on demand. Preset and custom previews are generated at 256×192 and share a 4 MiB memory cache that protects visible previews.
 - Use Simplified Chinese or English in the app and on the website.
 
 ## Platforms and validation
@@ -37,12 +37,12 @@ The formation model, editing, rendering, storage and codecs are shared. **Live P
 
 ## Windows quick start
 
-1. Download and fully extract the [v1.0.1 ZIP](https://xmpvz.pages.dev/downloads/PvZ-Formation-Editor-1.0.1-windows-x64.zip).
+1. Download and fully extract the [v1.0.2 ZIP](https://xmpvz.pages.dev/downloads/PvZ-Formation-Editor-1.0.2-windows-x64.zip).
 2. Keep the DLL files and `data` folder beside `pvz_formation_editor.exe`, then run it. The package targets Windows 10 / 11 x64 and includes the local MSVC runtime.
 3. Pick a map and plants, or open a preset from Archive Library, then edit.
 4. Check autosave status and share codes, project files, archive collections or PNGs.
 
-[Release notes](docs/releases/1.0.1.md) · [Checksums](https://xmpvz.pages.dev/downloads/SHA256SUMS.txt)
+[Release notes](docs/releases/1.0.2.md) · [Checksums](https://xmpvz.pages.dev/downloads/SHA256SUMS.txt)
 
 ## Autosave and local data
 

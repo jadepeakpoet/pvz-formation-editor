@@ -1,6 +1,6 @@
 /// Public release metadata shared by application links and About.
 class AppInfo {
-  static const version = '1.0.1';
+  static const version = '1.0.2';
   static const website = 'https://xmpvz.pages.dev';
   static const documentation = '$website/docs/';
   static const repository =
