@@ -50,6 +50,11 @@ db.prepare('INSERT INTO events VALUES (?,?,?,?,?,?,?,?,?)').run(randomUUID(),yes
 const multi=await(await call('/api/admin/report?days=7',{cookie})).json();assert.equal(multi.visitors,2);assert.equal(multi.pageViews,4);
 // Client respects opt-out and stays functional if browser storage is blocked.
 const client=await readFile(new URL('./telemetry.js',import.meta.url),'utf8');
-function simulate(opt={}){const sent=[],storage=new Map();const context={location:{hostname:'xmpvz.pages.dev',origin:base,pathname:'/'},navigator:opt,crypto:globalThis.crypto,URL,document:{referrer:'',addEventListener(){}},fetch:(path,init)=>{sent.push(JSON.parse(init.body));return Promise.resolve();}};context.window={};for(const key of ['localStorage','sessionStorage'])Object.defineProperty(context.window,key,{get(){if(opt.blocked)throw Error('denied');return{getItem:k=>storage.get(k),setItem:(k,v)=>storage.set(k,v)};}});vm.runInNewContext(client,context);return sent;}
+function simulate(opt={},href){const sent=[],storage=new Map();let click;const context={location:{hostname:'xmpvz.pages.dev',origin:base,pathname:'/'},navigator:opt,crypto:globalThis.crypto,URL,document:{referrer:'',addEventListener(name,handler){if(name==='click')click=handler;}},fetch:(path,init)=>{sent.push(JSON.parse(init.body));return Promise.resolve();}};context.window={};for(const key of ['localStorage','sessionStorage'])Object.defineProperty(context.window,key,{get(){if(opt.blocked)throw Error('denied');return{getItem:k=>storage.get(k),setItem:(k,v)=>storage.set(k,v)};}});vm.runInNewContext(client,context);if(href)click?.({target:{closest:()=>({href})}});return sent;}
 assert.equal(simulate({doNotTrack:'1'}).length,0);assert.equal(simulate({globalPrivacyControl:true}).length,0);assert.equal(simulate({blocked:true}).length,1);assert.equal(simulate().length,1);
+const githubDownload='https://github.com/jadepeakpoet/pvz-formation-editor/releases/download/v1.0.2/PvZ-Formation-Editor-1.0.2-windows-x64.zip';
+assert.equal(simulate({},githubDownload).at(-1).event,'download_click');
+assert.equal(simulate({},base+'/downloads/PvZ-Formation-Editor-1.0.2-windows-x64.zip').at(-1).event,'download_click');
+assert.equal(simulate({},githubDownload.replace('/jadepeakpoet/','/unrelated/')).length,1);
+assert.equal(simulate({doNotTrack:'1'},githubDownload).length,0);
 console.log('Analytics passed: auth, signed cookies, origin, deduplication, date/UV reports, sanitization, rate limits, opt-out, blocked storage.');
