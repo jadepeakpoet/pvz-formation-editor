@@ -43,23 +43,9 @@ Future<void> main() async {
   ThumbnailStore.directoryOverride = temp;
   try {
     await OriginalAssets.ensureLoaded();
-    final progress = <double>[];
-    void updated() {
-      final value = ThumbnailStore.preparationProgress.value;
-      if (value != null) progress.add(value);
-    }
-
-    ThumbnailStore.preparationProgress.addListener(updated);
-    await ThumbnailStore.primeBuiltins();
-    check(
-        (await temp.list().where((f) => f.path.endsWith('.webp')).length) == 0,
-        'First-start registers bundled previews without copying/decoding 363 files');
-    check(progress.first == 0 && progress.last == 1,
-        'First-start progress completes');
-    progress.clear();
-    await ThumbnailStore.primeBuiltins();
-    check(progress.isEmpty, 'Second start reuses completed cache');
-    ThumbnailStore.preparationProgress.removeListener(updated);
+    await LibraryPresets.ensurePreviewIndex();
+    check((await temp.list().length) == 0 && ThumbnailStore.generated == 0,
+        'Startup loads metadata without rendering or writing thumbnails');
     final controller = ScrollController();
     final presets = LibraryPresets.all.toList();
     runApp(MaterialApp(
@@ -80,8 +66,8 @@ Future<void> main() async {
                     ])))));
     await waitFor(() => visibleImages() >= 6,
         'First completed thumbnail Futures reach widgets');
-    check(ThumbnailStore.generated == 0,
-        'Built-in previews never render full formations');
+    check(ThumbnailStore.generated > 0,
+        'Uncached preset previews generate on demand');
     for (var page = 1; page <= 10; page++) {
       controller.jumpTo(page * 600);
       await WidgetsBinding.instance.endOfFrame;
@@ -96,8 +82,8 @@ Future<void> main() async {
     await WidgetsBinding.instance.endOfFrame;
     await waitFor(() => visibleImages() >= 6,
         'Scroll-back reloads cached local previews');
-    check(ThumbnailStore.generated == 0,
-        'Scroll-back never renders built-in previews');
+    check(ThumbnailStore.diskHits > 0,
+        'Scroll-back reuses locally generated previews');
     check(FormationThumbnail.cachedBytes <= (4 << 20),
         'Cold preview cache fits byte budget');
     var peakPreviewBytes = FormationThumbnail.cachedBytes;
@@ -119,8 +105,8 @@ Future<void> main() async {
             'Repeated scrolling returns to its cache budget');
       }
     }
-    check(ThumbnailStore.generated == 0,
-        'Three full preset passes use bundled previews only');
+    check(ThumbnailStore.diskHits > presets.length,
+        'Repeated full preset passes reuse the disk cache');
     final base = presets.first.document;
     final custom = base.copy(pieces: [
       ...base.pieces,
@@ -155,15 +141,19 @@ Future<void> main() async {
     check(await ThumbnailStore.read(key) == null,
         'Corrupt cache is treated as a miss');
     check(errors.isEmpty, 'No image-lifetime or framework errors: $errors');
+    final cachedFiles = await temp.list().where((f) => f.path.endsWith('.png')).toList();
+    var diskBytes = 0;
+    for (final file in cachedFiles) { diskBytes += (await file.stat()).size; }
     stdout.writeln(jsonEncode({
       'status': 'pass',
-      'bundledHits': ThumbnailStore.bundledHits,
       'diskHits': ThumbnailStore.diskHits,
       'generated': ThumbnailStore.generated,
       'previewBytes': FormationThumbnail.cachedBytes,
       'presetCount': presets.length,
       'fullScrollPasses': 3,
       'peakPreviewBytes': peakPreviewBytes,
+      'diskCacheFiles': cachedFiles.length,
+      'diskCacheBytes': diskBytes,
       'errors': errors
     }));
     exit(0);

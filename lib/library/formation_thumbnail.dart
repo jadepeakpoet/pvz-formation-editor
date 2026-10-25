@@ -115,7 +115,7 @@ class _FormationThumbnailState extends State<FormationThumbnail> {
         }
         if (result == null) {
           final source = document ?? loader?.call();
-          if (source == null) throw StateError('Bundled preview unavailable');
+          if (source == null) throw StateError('Preview document unavailable');
           result = await renderThumbnail(source, isNeeded: needed);
           if (result == null || !needed()) {
             result?.dispose();

@@ -26,7 +26,6 @@ flutter:
     - assets/catalog.json
     - assets/original/
     - assets/original/image/
-    - assets/original/thumbnails/
     - assets/original/image/Aero/
     - assets/original/image/Card/
     - assets/original/audio/

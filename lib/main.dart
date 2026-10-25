@@ -87,7 +87,6 @@ Future<void> main() async {
           PlantingPreferences.load(),
           AppLanguage.load()
         ]);
-        await ThumbnailStore.primeBuiltins();
         return const FormationApp();
       }));
 }
@@ -230,13 +229,6 @@ class _StartupAppState extends State<_StartupApp> {
                                       style: const TextStyle(
                                           color: Color(0xff304b32))),
                                   const SizedBox(height: 18),
-                                  ValueListenableBuilder<double?>(
-                                    valueListenable: ThumbnailStore.preparationProgress,
-                                    builder: (context, progress, _) => progress == null ? const SizedBox.shrink()
-                                      : SizedBox(width:240,child:Column(children:[
-                                          LinearProgressIndicator(value:progress), const SizedBox(height:8),
-                                          Text('${AppLanguage.locale.value == 'en' ? 'Preparing previews' : '\u6b63\u5728\u51c6\u5907\u9884\u89c8'} ${(progress*100).round()}%'),
-                                        ]))),
                                   if (state.hasError)
                                     OutlinedButton(
                                         onPressed: () => setState(
@@ -1743,7 +1735,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
             if (!mounted) return null;
             if (method == 'resourceDiagnostics') {
               return {...OriginalAssets.resourceStats(), 'thumbnailBytes': FormationThumbnail.cachedBytes,
-                'bundledHits':ThumbnailStore.bundledHits,'diskHits':ThumbnailStore.diskHits,
+                'diskHits':ThumbnailStore.diskHits,
                 'generatedThumbnails':ThumbnailStore.generated};
             }
             if (method == 'selectToolboxTab') {

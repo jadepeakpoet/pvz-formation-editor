@@ -8,7 +8,7 @@
 
 `assets/original/frame_index.json` 记录帧坐标与像素去重索引，`tool/prepare_sprite_index.py` 用于生成元数据。包内只保存原始精灵图，不携带预裁切图片与命中掩码。运行时按需裁切当前外观，批次内共享临时精灵图并在裁切完成后释放；裁切结果使用有容量限制的缓存，命中掩码按需从帧的透明度生成。外观选择器也使用小尺寸运行时帧。
 
-`assets/original/thumbnails` 随包保存 363 张 256×192 WebP 缩略图，合计约 7.49 MiB。`tool/prepare_builtin_thumbnails.dart` 和 `tool/compress_builtin_thumbnails.py` 提供生成流程。自定义阵型缩略图按画面内容生成并缓存到本地。
+`assets/original/preset_previews.json` 仅保存名阵筛选与预览所需的轻量元数据。名阵和自定义存档的缩略图在首次显示时按需生成，保存为本地 256×192 PNG 缓存；再次查看优先读取磁盘，解码图片使用 4 MiB 缓存预算。移出列表可见区域后尚未开始的生成任务会取消。
 
 ## 应用图标与权利
 

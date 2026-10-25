@@ -56,7 +56,7 @@ class LibraryPresets {
   static Future<void>? _previewLoading;
   static Future<void> ensurePreviewIndex() => _previewLoading ??= (() async {
         final data = jsonDecode(await rootBundle
-            .loadString('assets/original/thumbnails/index.json')) as Map;
+            .loadString('assets/original/preset_previews.json')) as Map;
         previewMetadata.addAll((data['presets'] as Map).map((key, value) =>
             MapEntry(key as String, Map<String, dynamic>.from(value as Map))));
       })();

@@ -5,8 +5,7 @@ import 'dart:ui' as ui;
 
 import 'package:crypto/crypto.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter/foundation.dart';
+import 'dart:typed_data';
 
 import '../domain/formation.dart';
 import '../domain/zombie_layout.dart';
@@ -15,8 +14,7 @@ import '../domain/zombie_layout.dart';
 class ThumbnailStore {
   static Directory? directoryOverride;
   static Future<Directory?>? _root;
-  static int bundledHits = 0,
-      diskHits = 0,
+  static int diskHits = 0,
       generated = 0,
       skipped = 0,
       memoryHits = 0;
@@ -61,80 +59,7 @@ class ThumbnailStore {
     })();
   }
 
-  static final preparationProgress = ValueNotifier<double?>(null);
-  static Future<void> primeBuiltins() async {
-    final dir = await directory();
-    if (dir == null) return;
-    final marker = File('${dir.path}/ready-v3');
-    if (await marker.exists()) return;
-    try {
-      preparationProgress.value = 0;
-      final index = jsonDecode(
-        await rootBundle.loadString('assets/original/thumbnails/index.json'),
-      ) as Map;
-      final keys = Set<String>.from(index['keys'] as List);
-      final keyPattern = RegExp(r'^[0-9a-f]{64}$');
-      if (index['version'] != 3 ||
-          keys.any((key) => !keyPattern.hasMatch(key))) {
-        throw const FormatException('Preview index');
-      }
-      // The compressed files are already local in flutter_assets. No startup
-      // copy or decode of the 363 previews is necessary.
-      _bundledKeys = Future.value(keys);
-      preparationProgress.value = 1;
-      await marker.writeAsString('3:${keys.length}', flush: true);
-    } catch (error) {
-      debugPrint('Thumbnail cache preparation: $error');
-    } finally {
-      preparationProgress.value = null;
-    }
-  }
-
-  static Future<Set<String>>? _bundledKeys;
-  static Future<ui.Image> _decodePreview(Uint8List encoded) async {
-    final buffer = await ui.ImmutableBuffer.fromUint8List(encoded);
-    final descriptor = await ui.ImageDescriptor.encoded(buffer);
-    try {
-      if (descriptor.width != 256 || descriptor.height != 192) {
-        throw const FormatException('Preview dimensions');
-      }
-      final codec = await descriptor.instantiateCodec();
-      try {
-        return (await codec.getNextFrame()).image;
-      } finally {
-        codec.dispose();
-      }
-    } finally {
-      descriptor.dispose();
-      buffer.dispose();
-    }
-  }
-
-  static Future<ui.Image?> _readBundled(String key) async {
-    try {
-      final keys = await (_bundledKeys ??= (() async {
-        final data = jsonDecode(
-          await rootBundle.loadString('assets/original/thumbnails/index.json'),
-        ) as Map;
-        return Set<String>.from(data['keys'] as List);
-      })());
-      if (!keys.contains(key)) return null;
-      final data = await rootBundle.load(
-        'assets/original/thumbnails/$key.webp',
-      );
-      final image = await _decodePreview(
-        data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes),
-      );
-      bundledHits++;
-      return image;
-    } catch (_) {
-      return null;
-    }
-  }
-
   static Future<ui.Image?> read(String key) async {
-    final bundled = await _readBundled(key);
-    if (bundled != null) return bundled;
     File? file;
     try {
       final dir = await directory();

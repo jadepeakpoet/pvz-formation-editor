@@ -100,7 +100,6 @@ Future<void> scrollPreviewTest(File file) async {
       'status': 'pass',
       'rssSamplesBytes': samples,
       'previewBytes': FormationThumbnail.cachedBytes,
-      'bundledHits': ThumbnailStore.bundledHits,
       'diskHits': ThumbnailStore.diskHits,
       'generated': ThumbnailStore.generated,
       'resources': OriginalAssets.resourceStats(),
@@ -122,7 +121,7 @@ Future<void> main() async {
   final cache = Platform.environment['PVZ_THUMBNAIL_CACHE_ROOT'];
   if (cache != null) {
     ThumbnailStore.directoryOverride = Directory(cache);
-    await ThumbnailStore.primeBuiltins();
+    await LibraryPresets.ensurePreviewIndex();
   }
   final reportFile = File(Platform.environment['PVZ_MEMORY_REPORT']!);
   final scrollPath = Platform.environment['PVZ_SCROLL_REPORT'];

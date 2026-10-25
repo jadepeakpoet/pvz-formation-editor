@@ -20,7 +20,7 @@ Author and maintainer: **越小梦 (yuexiaomeng)**. Source license: [GNU GPL v3.
 - Exchange PvZ Toolkit codes, reference-site codes, complete project JSON and archive collections; save back to source files with overwrite backups and recovery.
 - Export PNGs and backgrounds, preserve the game's aspect ratio by default, and preview/copy/save generated images in a popup inside the toolbox. The default export folder is Documents/PvzFormationEditor.
 - On Windows, read and apply real game formations, including six standard scenes, Imitaters, mushroom sleep, cannon loading and other stable plant states. Browse and back up game-save files.
-- Load and share plant frames on demand. The package includes 363 thumbnails at 256×192, totaling about 7.49 MiB, with a bounded decoded-image cache and local caching for custom previews.
+- Extract and share plant frames on demand. Preset and custom previews are generated at 256×192 when first displayed and cached locally, with a bounded decoded-image cache.
 - Use Simplified Chinese or English in the app and on the website.
 
 ## Platforms and validation
