@@ -31,6 +31,7 @@ import 'widgets/app_dropdown.dart';
 import 'widgets/clear_game_zombies_option.dart';
 import 'widgets/app_about.dart';
 import 'widgets/sidebar_tabs.dart';
+import 'widgets/seed_packet_icon.dart';
 import 'editor/rename_dialog.dart';
 import 'editor/map_picker_dialog.dart';
 import 'editor/archive_history_dialog.dart';
@@ -2265,7 +2266,7 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
   Widget seedChooserButton() => classicButton('卡槽选卡',
       () => unawaited(toggleSeedChooserFromTab()),
       active: seedChooserOpen, key: const ValueKey('board-picker-toggle'),
-      icon: Icons.style_outlined, tooltip: '选择当前阵型的游戏卡槽');
+      leading: const SeedPacketIcon(size: 16), tooltip: '选择当前阵型的游戏卡槽');
 
   Widget applyCurrentToGameButton() => classicButton('应用阵型',
       gameBusy ? null : () => unawaited(gameFormationAction(read: false)),
@@ -4211,7 +4212,8 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
   }
 
   Widget classicButton(String label, VoidCallback? action,
-      {bool active = false, Key? key, IconData? icon, bool iconOnly = false, String? tooltip}) {
+      {bool active = false, Key? key, IconData? icon, Widget? leading, bool iconOnly = false, String? tooltip}) {
+    final symbol = leading ?? (icon == null ? null : Icon(icon, size: 16));
     final button = Padding(
         padding: const EdgeInsets.all(2),
         child: SizedBox(
@@ -4233,12 +4235,12 @@ class _EditorPageState extends State<EditorPage> with WidgetsBindingObserver {
                         borderRadius: BorderRadius.circular(7)),
                     textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
                 onPressed: action,
-                child: icon == null
+                child: symbol == null
                     ? Text(AppLanguage.text(label))
                     : iconOnly
-                        ? Semantics(label: AppLanguage.text(label), child: Icon(icon, size: 16))
+                        ? Semantics(label: AppLanguage.text(label), child: symbol)
                         : Row(mainAxisSize: MainAxisSize.min, children: [
-                        Icon(icon, size: 16),
+                        symbol,
                         const SizedBox(width: 3),
                         Text(AppLanguage.text(label)),
                       ]))));

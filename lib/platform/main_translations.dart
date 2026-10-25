@@ -1,5 +1,10 @@
 /// English translations for the main editor interface.
 const Map<String, String> mainTranslations = {
+  '智能搭梯': 'Smart Ladders',
+  '搭梯': 'Add Ladders',
+  '碾花盆': 'Crush Pots',
+  '炸荷叶': 'Blast Lily Pads',
+  '破南瓜': 'Damage Pumpkins',
   '全选': 'Select all',
   '删除所选': 'Delete selected',
   '正在删除…': 'Deleting…',
@@ -29,7 +34,7 @@ const Map<String, String> mainTranslations = {
   '粘贴导入失败，请检查阵型码是否完整、格式是否正确': 'Import failed. Check that the formation code is complete and valid.',
   'PvZ Toolkit 码用于复制和分享；应用阵型直接替换游戏中的布阵，可包含僵尸及其所选状态。': 'Copy and share PvZ Toolkit codes; Apply formation directly replaces the in-game layout, including zombies and their selected states.',
   '同步到游戏': 'Sync to game',
-  '应用阵型': 'Apply formation',
+  '应用阵型': 'Apply',
   '已同步到游戏': 'Synced to game',
   '阵型已应用到游戏': 'Formation applied to the game',
   'PvZ Toolkit 码': 'PvZ Toolkit',
@@ -191,7 +196,7 @@ const Map<String, String> mainTranslations = {
   "另存为新存档": "Save as a new archive",
   "更新原存档（保留旧版本）": "Update archive (keep previous version)",
   "更新存档": "Update archive",
-  "卡槽选卡": "Seed chooser",
+  "卡槽选卡": "Seeds",
   "懒人布局": "Quick layouts",
   "图鉴选卡": "Catalog",
   "镜像窗口": "Mirror windows",

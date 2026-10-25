@@ -57,7 +57,7 @@ The database is `formations.sqlite` in the user application-support directory. E
 The supported target is **original Windows PvZ 1.0.0.1051, Survival Endless modes 11–15**.
 
 - Read from game fills the input above Load / Export. Reading and copying each have independent Toolkit/website format choices. Load into editor opens the code for editing; Paste and import validates clipboard text before loading it.
-- Apply formation replaces the current in-game layout. The main toolbar, Load / Export, archive details and each item's More menu expose the same action.
+- Apply replaces the current in-game layout. The main toolbar, Load / Export, archive details and each item's More menu expose the same action.
 - Website-format reads include zombies. Game integration supports 21 zombie types and their stable appearances, including carried objects, grounded balloons, submerged/surfaced snorkel zombies and eating. Dolphin layouts account for atlas/game position differences and initialize the selected pose while paused; plant highlights initialize the game's chew flash.
 - Card defaults select awake appearances for Fume-shrooms, Gloom-shrooms and Magnet-shrooms. Later user choices remain authoritative. Loaded cannons are immediately ready; empty cannons have zero cooldown and begin charging when play resumes.
 - Read/write stable growth, height and damage states for supported plants, and browse/import/back up supported game-save files.
@@ -98,4 +98,4 @@ Technical references: [PvZ Toolkit](https://pvz.tools/toolkit/) by lmintlcx and 
 
 Source code: [GNU GPL v3.0](LICENSE), Copyright (C) 2026 越小梦 (yuexiaomeng). Assets and third-party dependencies retain their own rights and licenses; see [Acknowledgments](ACKNOWLEDGMENTS.md) and [asset provenance](docs/assets.md).
 
-Apply formation offers an unchecked-by-default Clear zombies option. Lazy Layout also provides a standalone clear action that retains existing plants and sunlight. Formations containing zombies still replace them with the target layout. Archive details use mutually exclusive Toolkit/website choices and one Copy formation code button.
+Apply offers an unchecked-by-default Clear zombies option. Lazy Layout also provides a standalone clear action that retains existing plants and sunlight. Formations containing zombies still replace them with the target layout. Archive details use mutually exclusive Toolkit/website choices and one Copy formation code button.
