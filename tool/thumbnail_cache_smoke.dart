@@ -1,10 +1,13 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:convert';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:pvz_formation_editor/editor/original_assets.dart';
+import 'package:pvz_formation_editor/editor/board_painter.dart';
 import 'package:pvz_formation_editor/library/formation_thumbnail.dart';
 import 'package:pvz_formation_editor/library/thumbnail_store.dart';
+import 'package:pvz_formation_editor/library/thumbnail_encoder.dart';
 import 'package:pvz_formation_editor/library/library_presets.dart';
 import 'package:pvz_formation_editor/domain/formation.dart';
 import 'sidebar_title_smoke.dart' as h;
@@ -41,8 +44,28 @@ Future<void> main() async {
   FlutterError.onError = (e) => errors.add(e.exceptionAsString());
   final temp = await Directory.systemTemp.createTemp('pvz-thumbnail-cache-');
   ThumbnailStore.directoryOverride = temp;
+  if (Platform.isWindows) {
+    ThumbnailEncoder.libraryPathOverride = Platform.environment['PVZ_TEST_WEBP_DLL'] ??
+        '${Directory.current.path}/build/windows-slim-assets/webp/Release/pvz_webp.dll';
+  }
+  final extension = Platform.isWindows ? 'webp' : 'png';
   try {
     await OriginalAssets.ensureLoaded();
+    final probeRecorder = ui.PictureRecorder();
+    ui.Canvas(probeRecorder).drawColor(const Color(0xff228833), BlendMode.src);
+    final probePicture = probeRecorder.endRecording();
+    final probeImage = await probePicture.toImage(256, 192);
+    final (probeFormat, probeBytes) = await ThumbnailEncoder.encode(probeImage);
+    probeImage.dispose();
+    probePicture.dispose();
+    check(probeFormat == extension && probeBytes.length > 12,
+        'Native thumbnail encoder is available before testing the cache');
+    final probeCodec = await ui.instantiateImageCodec(probeBytes);
+    final decodedProbe = (await probeCodec.getNextFrame()).image;
+    check(decodedProbe.width == 256 && decodedProbe.height == 192,
+        'Encoded previews decode at their original dimensions');
+    decodedProbe.dispose();
+    probeCodec.dispose();
     await LibraryPresets.ensurePreviewIndex();
     check((await temp.list().length) == 0 && ThumbnailStore.generated == 0,
         'Startup loads metadata without rendering or writing thumbnails');
@@ -82,7 +105,7 @@ Future<void> main() async {
     await WidgetsBinding.instance.endOfFrame;
     await waitFor(() => visibleImages() >= 6,
         'Scroll-back reloads cached local previews');
-    check(ThumbnailStore.diskHits > 0,
+    await waitFor(() => ThumbnailStore.diskHits > 0,
         'Scroll-back reuses locally generated previews');
     check(FormationThumbnail.cachedBytes <= (4 << 20),
         'Cold preview cache fits byte budget');
@@ -123,7 +146,7 @@ Future<void> main() async {
     await waitFor(() => visibleImages() >= 1,
         'Custom preview first generation completes');
     final key = ThumbnailStore.key(custom);
-    await waitFor(() => File('${temp.path}/$key.png').existsSync(),
+    await waitFor(() => File('${temp.path}/$key.$extension').existsSync(),
         'Custom preview persists to disk');
     final generated = ThumbnailStore.generated;
     runApp(const SizedBox());
@@ -137,11 +160,20 @@ Future<void> main() async {
     runApp(const SizedBox());
     await Future<void>.delayed(const Duration(milliseconds: 100));
     FormationThumbnail.clearCache();
-    await File('${temp.path}/$key.png').writeAsBytes([1, 2, 3]);
+    await File('${temp.path}/$key.$extension').writeAsBytes([1, 2, 3]);
     check(await ThumbnailStore.read(key) == null,
         'Corrupt cache is treated as a miss');
+    final legacyImage = (await renderThumbnail(custom))!;
+    final legacyPng = (await legacyImage.toByteData(format: ui.ImageByteFormat.png))!;
+    await File('${temp.path}/$key.png').writeAsBytes(legacyPng.buffer.asUint8List(
+        legacyPng.offsetInBytes, legacyPng.lengthInBytes));
+    legacyImage.dispose();
+    final legacyHit = await ThumbnailStore.read(key);
+    check(legacyHit?.width == 256 && legacyHit?.height == 192,
+        'Existing PNG caches remain readable after switching new writes to WebP');
+    legacyHit?.dispose();
     check(errors.isEmpty, 'No image-lifetime or framework errors: $errors');
-    final cachedFiles = await temp.list().where((f) => f.path.endsWith('.png')).toList();
+    final cachedFiles = await temp.list().where((f) => f.path.endsWith('.$extension')).toList();
     var diskBytes = 0;
     for (final file in cachedFiles) { diskBytes += (await file.stat()).size; }
     stdout.writeln(jsonEncode({

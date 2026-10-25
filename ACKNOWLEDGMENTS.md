@@ -6,4 +6,5 @@
 - **[PvZ Toolkit](https://pvz.tools/toolkit/)**（lmintlcx）：阵型码和游戏阵型读写的参考项目。
 - **[PvZ-Portable](https://github.com/wszqkzqk/PvZ-Portable)**（wszqkzqk）：种植槽位和铲子区显示关系的参考项目。
 - **Flutter / Dart contributors**：应用框架与语言工具链。Application framework and language tooling.
+- **[libwebp](https://developers.google.com/speed/webp) — Google / WebM contributors**：Windows 缩略图缓存的 WebP 编码。上游许可与专利授权见 `windows/webp/COPYING`、`windows/webp/PATENTS`。
 - **开源依赖贡献者 / Dependency contributors**：`path_provider`、`sqflite`、`ffi`、`test`、`flutter_lints` 及其传递依赖；版本见 `pubspec.lock`，授权以各上游许可证为准。Versions are recorded in `pubspec.lock`; each dependency retains its upstream license.

@@ -6,6 +6,7 @@ import '../editor/board_painter.dart';
 import '../editor/image_resources.dart';
 import '../editor/resource_image.dart';
 import 'thumbnail_store.dart';
+import 'thumbnail_encoder.dart';
 
 /// Visible cells pin their image. Cold entries are evictable; all previews also
 /// live on disk, so scrolling back does not render the formation again.
@@ -141,11 +142,8 @@ class _FormationThumbnailState extends State<FormationThumbnail> {
 
   static Future<void> _persist(String key, ui.Image image) async {
     try {
-      final data = await image.toByteData(format: ui.ImageByteFormat.png);
-      if (data != null) {
-        await ThumbnailStore.write(key,
-            data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes));
-      }
+      final (extension, bytes) = await ThumbnailEncoder.encode(image);
+      await ThumbnailStore.write(key, bytes, extension: extension);
     } catch (_) {
     } finally {
       image.dispose();

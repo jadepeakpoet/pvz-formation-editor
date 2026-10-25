@@ -1,0 +1,607 @@
+{
+  "driverSha256": "0a76ca2710a1a85bb7d0105d8a346f1243237373666a235fa430a0d23891c272",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "sdk": "Flutter 3.47.8 / Dart 3.13.7 / Skia / Windows x64 Release",
+  "logicalWindowSizes": [
+    [
+      810.0,
+      695.3333333333334
+    ],
+    [
+      410.0,
+      695.3333333333334
+    ]
+  ],
+  "variants": {
+    "v1-prebuilt": {
+      "phases": {
+        "startup": {
+          "privateWorkingSetMiB": {
+            "median": 150.24,
+            "min": 150.0,
+            "max": 150.47
+          },
+          "workingSetMiB": {
+            "median": 192.06,
+            "min": 191.67,
+            "max": 192.44
+          },
+          "privateCommitMiB": {
+            "median": 221.22,
+            "min": 219.16,
+            "max": 223.29
+          }
+        },
+        "seed_chooser": {
+          "privateWorkingSetMiB": {
+            "median": 165.3,
+            "min": 159.46,
+            "max": 171.13
+          },
+          "workingSetMiB": {
+            "median": 207.24,
+            "min": 201.4,
+            "max": 213.07
+          },
+          "privateCommitMiB": {
+            "median": 247.06,
+            "min": 244.73,
+            "max": 249.39
+          }
+        },
+        "cards_and_appearances": {
+          "privateWorkingSetMiB": {
+            "median": 183.39,
+            "min": 176.95,
+            "max": 189.83
+          },
+          "workingSetMiB": {
+            "median": 225.94,
+            "min": 219.5,
+            "max": 232.37
+          },
+          "privateCommitMiB": {
+            "median": 267.69,
+            "min": 265.33,
+            "max": 270.04
+          }
+        },
+        "twelve_preset_tabs": {
+          "privateWorkingSetMiB": {
+            "median": 238.3,
+            "min": 235.59,
+            "max": 241.0
+          },
+          "workingSetMiB": {
+            "median": 281.17,
+            "min": 278.47,
+            "max": 283.87
+          },
+          "privateCommitMiB": {
+            "median": 321.0,
+            "min": 320.55,
+            "max": 321.44
+          }
+        },
+        "my_archives_full_scroll": {
+          "privateWorkingSetMiB": {
+            "median": 263.03,
+            "min": 255.74,
+            "max": 270.33
+          },
+          "workingSetMiB": {
+            "median": 306.37,
+            "min": 299.07,
+            "max": 313.66
+          },
+          "privateCommitMiB": {
+            "median": 343.06,
+            "min": 340.21,
+            "max": 345.91
+          }
+        },
+        "presets_full_scroll_cold": {
+          "privateWorkingSetMiB": {
+            "median": 242.02,
+            "min": 235.04,
+            "max": 249.0
+          },
+          "workingSetMiB": {
+            "median": 285.62,
+            "min": 278.62,
+            "max": 292.61
+          },
+          "privateCommitMiB": {
+            "median": 318.3,
+            "min": 315.39,
+            "max": 321.21
+          }
+        },
+        "presets_full_scroll_warm": {
+          "privateWorkingSetMiB": {
+            "median": 248.97,
+            "min": 245.46,
+            "max": 252.47
+          },
+          "workingSetMiB": {
+            "median": 293.21,
+            "min": 290.02,
+            "max": 296.4
+          },
+          "privateCommitMiB": {
+            "median": 326.01,
+            "min": 325.45,
+            "max": 326.57
+          }
+        },
+        "library_idle_30s": {
+          "privateWorkingSetMiB": {
+            "median": 250.0,
+            "min": 246.53,
+            "max": 253.48
+          },
+          "workingSetMiB": {
+            "median": 294.25,
+            "min": 291.09,
+            "max": 297.41
+          },
+          "privateCommitMiB": {
+            "median": 325.21,
+            "min": 324.98,
+            "max": 325.44
+          }
+        },
+        "return_to_editor_idle_30s": {
+          "privateWorkingSetMiB": {
+            "median": 235.78,
+            "min": 232.2,
+            "max": 239.36
+          },
+          "workingSetMiB": {
+            "median": 279.25,
+            "min": 275.66,
+            "max": 282.84
+          },
+          "privateCommitMiB": {
+            "median": 310.69,
+            "min": 310.64,
+            "max": 310.73
+          }
+        }
+      },
+      "peakWorkingSetMiB": [
+        322.12,
+        310.07
+      ],
+      "peakPrivateWorkingSetMiB": [
+        270.39,
+        261.12
+      ],
+      "coldScrollSeconds": [
+        17.32,
+        17.02
+      ],
+      "warmScrollSeconds": [
+        17.03,
+        17.02
+      ],
+      "diskBytesByFormat": [
+        {
+          "png": 2147501
+        },
+        {
+          "png": 2147501
+        }
+      ],
+      "rootDecodedBytes": [
+        22838800,
+        22838800
+      ],
+      "sidebarDecodedBytes": [
+        3090540,
+        3090540
+      ],
+      "generatedThumbnails": [
+        18,
+        18
+      ]
+    },
+    "v2-runtime-frames": {
+      "phases": {
+        "startup": {
+          "privateWorkingSetMiB": {
+            "median": 145.13,
+            "min": 141.29,
+            "max": 148.97
+          },
+          "workingSetMiB": {
+            "median": 186.87,
+            "min": 183.04,
+            "max": 190.69
+          },
+          "privateCommitMiB": {
+            "median": 215.41,
+            "min": 212.77,
+            "max": 218.05
+          }
+        },
+        "seed_chooser": {
+          "privateWorkingSetMiB": {
+            "median": 165.67,
+            "min": 162.8,
+            "max": 168.54
+          },
+          "workingSetMiB": {
+            "median": 207.68,
+            "min": 204.79,
+            "max": 210.56
+          },
+          "privateCommitMiB": {
+            "median": 245.36,
+            "min": 241.02,
+            "max": 249.7
+          }
+        },
+        "cards_and_appearances": {
+          "privateWorkingSetMiB": {
+            "median": 196.83,
+            "min": 185.58,
+            "max": 208.08
+          },
+          "workingSetMiB": {
+            "median": 240.0,
+            "min": 228.39,
+            "max": 251.61
+          },
+          "privateCommitMiB": {
+            "median": 283.27,
+            "min": 274.36,
+            "max": 292.19
+          }
+        },
+        "twelve_preset_tabs": {
+          "privateWorkingSetMiB": {
+            "median": 244.44,
+            "min": 243.2,
+            "max": 245.69
+          },
+          "workingSetMiB": {
+            "median": 287.33,
+            "min": 286.07,
+            "max": 288.59
+          },
+          "privateCommitMiB": {
+            "median": 324.17,
+            "min": 323.93,
+            "max": 324.41
+          }
+        },
+        "my_archives_full_scroll": {
+          "privateWorkingSetMiB": {
+            "median": 258.31,
+            "min": 255.36,
+            "max": 261.26
+          },
+          "workingSetMiB": {
+            "median": 301.69,
+            "min": 298.71,
+            "max": 304.66
+          },
+          "privateCommitMiB": {
+            "median": 334.66,
+            "min": 330.19,
+            "max": 339.14
+          }
+        },
+        "presets_full_scroll_cold": {
+          "privateWorkingSetMiB": {
+            "median": 255.8,
+            "min": 251.21,
+            "max": 260.39
+          },
+          "workingSetMiB": {
+            "median": 299.91,
+            "min": 294.83,
+            "max": 304.99
+          },
+          "privateCommitMiB": {
+            "median": 329.97,
+            "min": 326.02,
+            "max": 333.92
+          }
+        },
+        "presets_full_scroll_warm": {
+          "privateWorkingSetMiB": {
+            "median": 259.15,
+            "min": 257.58,
+            "max": 260.73
+          },
+          "workingSetMiB": {
+            "median": 303.7,
+            "min": 302.19,
+            "max": 305.21
+          },
+          "privateCommitMiB": {
+            "median": 334.48,
+            "min": 333.43,
+            "max": 335.52
+          }
+        },
+        "library_idle_30s": {
+          "privateWorkingSetMiB": {
+            "median": 260.25,
+            "min": 258.67,
+            "max": 261.82
+          },
+          "workingSetMiB": {
+            "median": 304.81,
+            "min": 303.29,
+            "max": 306.32
+          },
+          "privateCommitMiB": {
+            "median": 334.46,
+            "min": 333.41,
+            "max": 335.5
+          }
+        },
+        "return_to_editor_idle_30s": {
+          "privateWorkingSetMiB": {
+            "median": 245.82,
+            "min": 244.52,
+            "max": 247.13
+          },
+          "workingSetMiB": {
+            "median": 289.33,
+            "min": 288.03,
+            "max": 290.64
+          },
+          "privateCommitMiB": {
+            "median": 320.42,
+            "min": 318.88,
+            "max": 321.96
+          }
+        }
+      },
+      "peakWorkingSetMiB": [
+        367.65,
+        355.51
+      ],
+      "peakPrivateWorkingSetMiB": [
+        309.6,
+        303.3
+      ],
+      "coldScrollSeconds": [
+        17.06,
+        17.0
+      ],
+      "warmScrollSeconds": [
+        17.01,
+        17.01
+      ],
+      "diskBytesByFormat": [
+        {
+          "png": 2146958
+        },
+        {
+          "png": 2146958
+        }
+      ],
+      "rootDecodedBytes": [
+        22838800,
+        22838800
+      ],
+      "sidebarDecodedBytes": [
+        6339564,
+        6339564
+      ],
+      "generatedThumbnails": [
+        18,
+        18
+      ]
+    },
+    "v3-webp-on-demand": {
+      "phases": {
+        "startup": {
+          "privateWorkingSetMiB": {
+            "median": 126.99,
+            "min": 126.87,
+            "max": 127.11
+          },
+          "workingSetMiB": {
+            "median": 168.68,
+            "min": 168.56,
+            "max": 168.79
+          },
+          "privateCommitMiB": {
+            "median": 213.49,
+            "min": 210.84,
+            "max": 216.14
+          }
+        },
+        "seed_chooser": {
+          "privateWorkingSetMiB": {
+            "median": 140.62,
+            "min": 135.84,
+            "max": 145.41
+          },
+          "workingSetMiB": {
+            "median": 182.59,
+            "min": 177.81,
+            "max": 187.36
+          },
+          "privateCommitMiB": {
+            "median": 235.62,
+            "min": 232.9,
+            "max": 238.33
+          }
+        },
+        "cards_and_appearances": {
+          "privateWorkingSetMiB": {
+            "median": 176.22,
+            "min": 175.08,
+            "max": 177.35
+          },
+          "workingSetMiB": {
+            "median": 218.88,
+            "min": 217.85,
+            "max": 219.91
+          },
+          "privateCommitMiB": {
+            "median": 274.38,
+            "min": 273.59,
+            "max": 275.17
+          }
+        },
+        "twelve_preset_tabs": {
+          "privateWorkingSetMiB": {
+            "median": 243.39,
+            "min": 234.99,
+            "max": 251.79
+          },
+          "workingSetMiB": {
+            "median": 286.25,
+            "min": 277.86,
+            "max": 294.64
+          },
+          "privateCommitMiB": {
+            "median": 333.38,
+            "min": 323.93,
+            "max": 342.84
+          }
+        },
+        "my_archives_full_scroll": {
+          "privateWorkingSetMiB": {
+            "median": 252.64,
+            "min": 249.88,
+            "max": 255.41
+          },
+          "workingSetMiB": {
+            "median": 296.09,
+            "min": 293.32,
+            "max": 298.86
+          },
+          "privateCommitMiB": {
+            "median": 345.39,
+            "min": 344.51,
+            "max": 346.28
+          }
+        },
+        "presets_full_scroll_cold": {
+          "privateWorkingSetMiB": {
+            "median": 252.92,
+            "min": 250.74,
+            "max": 255.1
+          },
+          "workingSetMiB": {
+            "median": 296.5,
+            "min": 294.3,
+            "max": 298.71
+          },
+          "privateCommitMiB": {
+            "median": 345.34,
+            "min": 344.75,
+            "max": 345.93
+          }
+        },
+        "presets_full_scroll_warm": {
+          "privateWorkingSetMiB": {
+            "median": 253.3,
+            "min": 249.24,
+            "max": 257.36
+          },
+          "workingSetMiB": {
+            "median": 296.9,
+            "min": 292.81,
+            "max": 300.99
+          },
+          "privateCommitMiB": {
+            "median": 344.38,
+            "min": 343.63,
+            "max": 345.13
+          }
+        },
+        "library_idle_30s": {
+          "privateWorkingSetMiB": {
+            "median": 254.34,
+            "min": 250.25,
+            "max": 258.43
+          },
+          "workingSetMiB": {
+            "median": 297.94,
+            "min": 293.83,
+            "max": 302.06
+          },
+          "privateCommitMiB": {
+            "median": 342.36,
+            "min": 341.61,
+            "max": 343.11
+          }
+        },
+        "return_to_editor_idle_30s": {
+          "privateWorkingSetMiB": {
+            "median": 232.19,
+            "min": 231.5,
+            "max": 232.88
+          },
+          "workingSetMiB": {
+            "median": 275.8,
+            "min": 275.09,
+            "max": 276.51
+          },
+          "privateCommitMiB": {
+            "median": 325.15,
+            "min": 322.64,
+            "max": 327.67
+          }
+        }
+      },
+      "peakWorkingSetMiB": [
+        333.23,
+        347.24
+      ],
+      "peakPrivateWorkingSetMiB": [
+        273.09,
+        286.59
+      ],
+      "coldScrollSeconds": [
+        17.01,
+        17.11
+      ],
+      "warmScrollSeconds": [
+        17.01,
+        17.02
+      ],
+      "diskBytesByFormat": [
+        {
+          "webp": 7946828
+        },
+        {
+          "webp": 7946828
+        }
+      ],
+      "rootDecodedBytes": [
+        22838800,
+        22838800
+      ],
+      "sidebarDecodedBytes": [
+        8341032,
+        8341032
+      ],
+      "generatedThumbnails": [
+        1392,
+        1392
+      ]
+    }
+  },
+  "presetWebpCacheBytes": 7544712,
+  "sourceRefs": {
+    "v1-prebuilt": "v1.0.1 (5c5a90f)",
+    "v2-runtime-frames": "b0183e7, standardized original logo",
+    "v3-webp-on-demand": "48f9191 plus WebP encoder and cache-format changes, standardized original logo"
+  },
+  "nativeHostSha256": {
+    "pvz_formation_editor.exe": "3a086bb929b58b7c7fa889b9bc9804f08cf74116bf5fa93b0442e9c5dd4c92f5",
+    "flutter_windows.dll": "eca1f8c9b1537bd585bbbcc62362df9ca7e69faa7d4e895688108af63ccea157",
+    "data/icudtl.dat": "325a86063d26334c2eabe1743cea073b612540fbf3d8fc2ef0b5708e3763a8c7"
+  }
+}

@@ -6,6 +6,7 @@ import 'dart:ui' as ui;
 import 'package:crypto/crypto.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 
 import '../domain/formation.dart';
 import '../domain/zombie_layout.dart';
@@ -64,7 +65,8 @@ class ThumbnailStore {
     try {
       final dir = await directory();
       if (dir == null) return null;
-      file = File('${dir.path}/$key.png');
+      file = File('${dir.path}/$key.webp');
+      if (!await file.exists()) file = File('${dir.path}/$key.png');
       if (!await file.exists()) return null;
       final size = await file.length();
       if (size > 1 << 20 || size < 24) {
@@ -72,23 +74,28 @@ class ThumbnailStore {
         return null;
       }
       final bytes = await file.readAsBytes();
-      final header = ByteData.sublistView(bytes);
-      if (header.getUint32(0) != 0x89504e47 ||
-          header.getUint32(16) != 256 ||
-          header.getUint32(20) != 192) {
-        await file.delete();
-        return null;
-      }
-      final codec = await ui.instantiateImageCodec(bytes);
+      final buffer = await ui.ImmutableBuffer.fromUint8List(bytes);
+      final descriptor = await ui.ImageDescriptor.encoded(buffer);
       try {
-        final image = (await codec.getNextFrame()).image;
-        diskHits++;
-        unawaited(file.setLastModified(DateTime.now()).catchError((_) => file));
-        return image;
+        if (descriptor.width != 256 || descriptor.height != 192) {
+          await file.delete();
+          return null;
+        }
+        final codec = await descriptor.instantiateCodec();
+        try {
+          final image = (await codec.getNextFrame()).image;
+          diskHits++;
+          unawaited(file.setLastModified(DateTime.now()).catchError((_) => file));
+          return image;
+        } finally {
+          codec.dispose();
+        }
       } finally {
-        codec.dispose();
+        descriptor.dispose();
+        buffer.dispose();
       }
-    } catch (_) {
+    } catch (error) {
+      debugPrint('Thumbnail cache read failed: $error');
       try {
         if (file != null && await file.exists()) await file.delete();
       } catch (_) {}
@@ -96,12 +103,13 @@ class ThumbnailStore {
     }
   }
 
-  static Future<void> write(String key, Uint8List bytes) async {
+  static Future<void> write(String key, Uint8List bytes, {String extension = 'webp'}) async {
+    if (extension != 'webp' && extension != 'png') throw ArgumentError.value(extension);
     File? temporary;
     try {
       final dir = await directory();
       if (dir == null) return;
-      final file = File('${dir.path}/$key.png');
+      final file = File('${dir.path}/$key.$extension');
       if (await file.exists()) return;
       temporary = File('${file.path}.$pid.tmp');
       await temporary.writeAsBytes(bytes, flush: false);
